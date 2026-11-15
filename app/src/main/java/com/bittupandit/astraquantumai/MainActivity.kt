@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.SelectionContainer
@@ -195,7 +196,7 @@ private fun AstraApp(
         HorizontalDivider(color = line)
         when (page) {
             "Home" -> {
-                Column(Modifier.weight(1f).fillMaxWidth().background(paper).padding(18.dp)) {
+                Column(Modifier.weight(1f).fillMaxWidth().background(paper).verticalScroll(rememberScrollState()).padding(18.dp)) {
                     Text("YOUR INTELLIGENCE SPACE", color = Color(0xFF666660), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                     Spacer(Modifier.height(12.dp))
                     Card(colors = CardDefaults.cardColors(containerColor = ink), shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
@@ -402,7 +403,7 @@ private fun AstraApp(
 
 @Composable
 private fun ColumnScope.SimplePage(title: String, description: String, content: @Composable ColumnScope.() -> Unit) {
-    Column(Modifier.weight(1f).fillMaxWidth().background(ink).padding(20.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
+    Column(Modifier.weight(1f).fillMaxWidth().background(ink).verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
         Text(title, color = white, fontSize = 18.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         Text(description, color = muted, fontSize = 13.sp)
         content()
