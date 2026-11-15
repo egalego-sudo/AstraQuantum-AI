@@ -2,7 +2,7 @@ import http from "node:http";
 
 const PORT = Number(process.env.PORT || 8080);
 const API_KEY = process.env.GEMINI_API_KEY;
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 const ORIGIN = process.env.ALLOWED_ORIGIN || "*";
 const WINDOW_MS = 60_000;
 const MAX_REQUESTS = 20;
