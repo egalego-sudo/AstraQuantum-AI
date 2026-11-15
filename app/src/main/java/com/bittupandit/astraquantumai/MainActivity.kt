@@ -171,7 +171,7 @@ private fun AstraApp(
     Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF030611), Color(0xFF0B1230), Color(0xFF160D35))))) {
         CosmicStarfield(Modifier.fillMaxSize())
         Column(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxWidth().background(charcoal).padding(horizontal = 20.dp, vertical = 14.dp)) {
+        Column(Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(Color(0xE6101834), Color(0xB30A1025), Color.Transparent))).padding(horizontal = 20.dp, vertical = 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(white), contentAlignment = Alignment.Center) {
                     Text("A", color = ink, fontWeight = FontWeight.Black, fontSize = 24.sp)
@@ -206,7 +206,7 @@ private fun AstraApp(
                 Column(Modifier.weight(1f).fillMaxWidth().background(Color.Transparent).verticalScroll(rememberScrollState()).padding(18.dp)) {
                     Text("YOUR INTELLIGENCE SPACE", color = mint, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                     Spacer(Modifier.height(12.dp))
-                    Card(colors = CardDefaults.cardColors(containerColor = graphite), shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
+                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xB31A2B4D)), shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(18.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
@@ -228,7 +228,7 @@ private fun AstraApp(
                     Spacer(Modifier.height(8.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         listOf("ATOM", "GALAXY", "NEURAL", "CIRCUIT").forEachIndexed { index, label ->
-                            Card(modifier = Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = charcoal), shape = RoundedCornerShape(13.dp)) {
+                            Card(modifier = Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = Color(0x99101A31)), shape = RoundedCornerShape(13.dp)) {
                                 Column(Modifier.fillMaxWidth().padding(7.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                                     QuantumArtwork(Modifier.size(58.dp), index)
                                     Text(label, color = mint, fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = .5.sp)
@@ -253,7 +253,7 @@ private fun AstraApp(
                         modules.chunked(2).forEach { pair ->
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 pair.forEach { module ->
-                                    Card(onClick = { page = module.title }, modifier = Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = charcoal), shape = RoundedCornerShape(16.dp)) {
+                                    Card(onClick = { page = module.title }, modifier = Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = Color(0xB3101A31)), shape = RoundedCornerShape(16.dp)) {
                                         Column(Modifier.padding(13.dp)) {
                                             Text(module.symbol, color = white, fontSize = 23.sp, fontWeight = FontWeight.Bold)
                                             Spacer(Modifier.height(8.dp))
@@ -281,7 +281,7 @@ private fun AstraApp(
                     LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(vertical = 10.dp)) {
                         items(chat) { item ->
                             val isAi = item.from == "ASTRA"
-                            Card(colors = CardDefaults.cardColors(containerColor = if (isAi) graphite else Color(0xFF18324A)), shape = RoundedCornerShape(17.dp), modifier = Modifier.fillMaxWidth()) {
+                            Card(colors = CardDefaults.cardColors(containerColor = if (isAi) Color(0xCC202D50) else Color(0xCC123A52)), shape = RoundedCornerShape(17.dp), modifier = Modifier.fillMaxWidth()) {
                                 Column(Modifier.padding(14.dp)) {
                                     Text(if (isAi) "✳  ASTRA" else "YOU", color = if (isAi) white else muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                                     Spacer(Modifier.height(7.dp))
@@ -301,7 +301,7 @@ private fun AstraApp(
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = white, unfocusedTextColor = white,
                             focusedBorderColor = white, unfocusedBorderColor = line,
-                            cursorColor = white, focusedContainerColor = charcoal, unfocusedContainerColor = charcoal
+                            cursorColor = white, focusedContainerColor = Color(0xE6101834), unfocusedContainerColor = Color(0xCC101A31)
                         )
                     )
                     Spacer(Modifier.height(8.dp))
@@ -403,7 +403,7 @@ private fun AstraApp(
             }
         }
         if (page != "Home") {
-            Text("Creator by Bittu Pandit", color = mint, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.fillMaxWidth().background(charcoal).padding(12.dp))
+            Text("Creator by Bittu Pandit", color = mint, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.fillMaxWidth().background(Color(0xCC080F23)).padding(12.dp))
         }
         }
     }
@@ -425,12 +425,12 @@ private fun CosmicStarfield(modifier: Modifier = Modifier) {
 
 @Composable
 private fun ColumnScope.SimplePage(title: String, description: String, content: @Composable ColumnScope.() -> Unit) {
-    Column(Modifier.weight(1f).fillMaxWidth().background(paper).verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
+    Column(Modifier.weight(1f).fillMaxWidth().background(Color(0xB30B1226)).verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
         Text(title, color = white, fontSize = 18.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         Text(description, color = muted, fontSize = 13.sp)
         content()
         Spacer(Modifier.weight(1f))
-        Text("Creator by Bittu Pandit", color = muted, fontSize = 10.sp)
+        Text("Creator by Bittu Pandit", color = mint, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 
