@@ -168,8 +168,8 @@ private fun AstraApp(
         projectInput = ""
     }
 
-    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF030611), Color(0xFF0B1230), Color(0xFF160D35))))) {
-        CosmicStarfield(Modifier.fillMaxSize())
+    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF02030D), Color(0xFF080D27), Color(0xFF170A32), Color(0xFF050B1B))))) {
+        CosmicNebulaBackground(Modifier.fillMaxSize())
         Column(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(Color(0xE6101834), Color(0xB30A1025), Color.Transparent))).padding(horizontal = 20.dp, vertical = 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -410,16 +410,49 @@ private fun AstraApp(
 }
 
 @Composable
-private fun CosmicStarfield(modifier: Modifier = Modifier) {
+private fun CosmicNebulaBackground(modifier: Modifier = Modifier) {
     Canvas(modifier) {
-        val stars = listOf(.04f to .08f, .18f to .16f, .31f to .06f, .47f to .13f, .68f to .07f, .86f to .18f, .95f to .09f, .09f to .32f, .25f to .27f, .42f to .36f, .59f to .29f, .78f to .34f, .91f to .43f, .03f to .57f, .16f to .49f, .36f to .58f, .54f to .51f, .72f to .61f, .89f to .55f, .11f to .76f, .29f to .69f, .48f to .81f, .66f to .73f, .84f to .84f, .97f to .72f)
-        stars.forEachIndexed { index, point ->
-            drawCircle(if (index % 4 == 0) mint.copy(alpha = .72f) else Color.White.copy(alpha = .62f), radius = if (index % 6 == 0) 2.1.dp.toPx() else 1.dp.toPx(), center = Offset(size.width * point.first, size.height * point.second))
+        val w = size.width
+        val h = size.height
+        val clouds = listOf(
+            Triple(Offset(w * .18f, h * .25f), size.minDimension * .62f, Color(0xFF5526A8)),
+            Triple(Offset(w * .86f, h * .42f), size.minDimension * .58f, Color(0xFF075D9B)),
+            Triple(Offset(w * .48f, h * .82f), size.minDimension * .66f, Color(0xFF7A236E)),
+            Triple(Offset(w * .06f, h * .88f), size.minDimension * .42f, Color(0xFF123F91))
+        )
+        clouds.forEach { (center, radius, tint) ->
+            drawCircle(
+                brush = Brush.radialGradient(
+                    0.0f to tint.copy(alpha = .34f),
+                    .34f to tint.copy(alpha = .17f),
+                    .72f to tint.copy(alpha = .055f),
+                    1.0f to Color.Transparent,
+                    center = center,
+                    radius = radius
+                ),
+                radius = radius,
+                center = center
+            )
         }
-        val c = Offset(size.width * .82f, size.height * .36f)
-        drawCircle(Brush.radialGradient(listOf(violet.copy(alpha = .14f), Color.Transparent), center = c, radius = size.minDimension * .42f), radius = size.minDimension * .42f, center = c)
-        val c2 = Offset(size.width * .13f, size.height * .72f)
-        drawCircle(Brush.radialGradient(listOf(white.copy(alpha = .09f), Color.Transparent), center = c2, radius = size.minDimension * .34f), radius = size.minDimension * .34f, center = c2)
+        drawLine(Color(0xFF8A68D8).copy(alpha = .10f), Offset(w * .02f, h * .58f), Offset(w * .98f, h * .20f), strokeWidth = size.minDimension * .11f)
+        val stars = listOf(
+            .04f to .08f, .18f to .16f, .31f to .06f, .47f to .13f, .68f to .07f, .86f to .18f, .95f to .09f,
+            .09f to .32f, .25f to .27f, .42f to .36f, .59f to .29f, .78f to .34f, .91f to .43f,
+            .03f to .57f, .16f to .49f, .36f to .58f, .54f to .51f, .72f to .61f, .89f to .55f,
+            .11f to .76f, .29f to .69f, .48f to .81f, .66f to .73f, .84f to .84f, .97f to .72f,
+            .22f to .93f, .41f to .96f, .61f to .91f, .78f to .96f, .94f to .89f
+        )
+        stars.forEachIndexed { index, point ->
+            val center = Offset(w * point.first, h * point.second)
+            val radius = if (index % 5 == 0) 2.0.dp.toPx() else 1.05.dp.toPx()
+            drawCircle(if (index % 4 == 0) Color(0xFF9DF7F0).copy(alpha = .95f) else Color.White.copy(alpha = .82f), radius, center)
+            if (index % 5 == 0) drawCircle(Color(0xFF9DF7F0).copy(alpha = .22f), radius * 3.6f, center)
+        }
+        val planet = Offset(w * .84f, h * .28f)
+        val pr = size.minDimension * .105f
+        drawCircle(Brush.radialGradient(listOf(Color(0xFFB9A5FF).copy(alpha = .78f), Color(0xFF5436A0).copy(alpha = .50f), Color.Transparent), planet, pr * 2.1f), pr * 2.1f, planet)
+        drawCircle(Brush.radialGradient(listOf(Color(0xFF6D58B8), Color(0xFF18234D), Color(0xFF070D20)), planet, pr), pr, planet)
+        drawCircle(Color(0xFFB5A6FF).copy(alpha = .55f), pr * 1.12f, planet, style = Stroke(width = 1.dp.toPx()))
     }
 }
 
