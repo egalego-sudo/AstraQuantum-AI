@@ -1,0 +1,70 @@
+name: ASTRA Android Build
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "ASTRA_QUANTUM_AI_PLUS_COMPLETE_MASTER_UPDATED.zip"
+      - ".github/workflows/android-build.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build debug APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Inspect and extract project archive
+        id: project
+        shell: bash
+        run: |
+          set -euo pipefail
+          ARCHIVE="ASTRA_QUANTUM_AI_PLUS_COMPLETE_MASTER_UPDATED.zip"
+          test -f "$ARCHIVE" || { echo "Project ZIP not found"; exit 1; }
+          echo "Archive contents (first 120 entries):"
+          unzip -l "$ARCHIVE" | head -n 125
+          mkdir -p extracted
+          unzip -q "$ARCHIVE" -d extracted
+          SETTINGS="$(find extracted -type f \( -name settings.gradle -o -name settings.gradle.kts \) -print -quit)"
+          if [ -z "$SETTINGS" ]; then
+            echo "No Gradle Android project (settings.gradle/settings.gradle.kts) found in ZIP."
+            exit 1
+          fi
+          ROOT="$(dirname "$SETTINGS")"
+          echo "project_root=$ROOT" >> "$GITHUB_OUTPUT"
+          echo "Project root: $ROOT"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Build debug APK
+        working-directory: ${{ steps.project.outputs.project_root }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f ./gradlew ]; then
+            chmod +x ./gradlew
+            ./gradlew --no-daemon assembleDebug
+          else
+            gradle --no-daemon assembleDebug
+          fi
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ASTRA-QUANTUM-AI-debug-apk
+          path: ${{ steps.project.outputs.project_root }}/**/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
