@@ -388,7 +388,7 @@ private fun AstraApp(
 }
 
 @Composable
-private fun SimplePage(title: String, description: String, content: @Composable ColumnScope.() -> Unit) {
+private fun ColumnScope.SimplePage(title: String, description: String, content: @Composable ColumnScope.() -> Unit) {
     Column(Modifier.weight(1f).fillMaxWidth().background(ink).padding(20.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
         Text(title, color = white, fontSize = 18.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         Text(description, color = muted, fontSize = 13.sp)
