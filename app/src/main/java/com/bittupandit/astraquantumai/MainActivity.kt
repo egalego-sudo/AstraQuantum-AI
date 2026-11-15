@@ -167,8 +167,8 @@ private fun AstraApp(
         projectInput = ""
     }
 
-    Column(Modifier.fillMaxSize().background(ink)) {
-        Column(Modifier.fillMaxWidth().background(ink).padding(horizontal = 20.dp, vertical = 14.dp)) {
+    Column(Modifier.fillMaxSize().background(paper)) {
+        Column(Modifier.fillMaxWidth().background(charcoal).padding(horizontal = 20.dp, vertical = 14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(white), contentAlignment = Alignment.Center) {
                     Text("A", color = ink, fontWeight = FontWeight.Black, fontSize = 24.sp)
@@ -200,9 +200,9 @@ private fun AstraApp(
         when (page) {
             "Home" -> {
                 Column(Modifier.weight(1f).fillMaxWidth().background(paper).verticalScroll(rememberScrollState()).padding(18.dp)) {
-                    Text("YOUR INTELLIGENCE SPACE", color = Color(0xFF666660), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                    Text("YOUR INTELLIGENCE SPACE", color = mint, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                     Spacer(Modifier.height(12.dp))
-                    Card(colors = CardDefaults.cardColors(containerColor = ink), shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
+                    Card(colors = CardDefaults.cardColors(containerColor = graphite), shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(18.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
@@ -220,20 +220,20 @@ private fun AstraApp(
                         }
                     }
                     Spacer(Modifier.height(16.dp))
-                    Text("THE QUANTUM UNIVERSE", color = Color(0xFF555550), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                    Text("THE QUANTUM UNIVERSE", color = violet, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                     Spacer(Modifier.height(8.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         listOf("ATOM", "GALAXY", "NEURAL", "CIRCUIT").forEachIndexed { index, label ->
-                            Card(modifier = Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = white), shape = RoundedCornerShape(13.dp)) {
+                            Card(modifier = Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = charcoal), shape = RoundedCornerShape(13.dp)) {
                                 Column(Modifier.fillMaxWidth().padding(7.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                                     QuantumArtwork(Modifier.size(58.dp), index)
-                                    Text(label, color = Color(0xFF555550), fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = .5.sp)
+                                    Text(label, color = mint, fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = .5.sp)
                                 }
                             }
                         }
                     }
                     Spacer(Modifier.height(16.dp))
-                    Text("EXPLORE MODULES", color = Color(0xFF555550), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                    Text("EXPLORE MODULES", color = violet, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                     Spacer(Modifier.height(8.dp))
                     val modules = listOf(
                         AstraModule("AI Chat", "Groq AI के साथ बातचीत", "✳"),
@@ -249,12 +249,12 @@ private fun AstraApp(
                         modules.chunked(2).forEach { pair ->
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 pair.forEach { module ->
-                                    Card(onClick = { page = module.title }, modifier = Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = white), shape = RoundedCornerShape(16.dp)) {
+                                    Card(onClick = { page = module.title }, modifier = Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = charcoal), shape = RoundedCornerShape(16.dp)) {
                                         Column(Modifier.padding(13.dp)) {
-                                            Text(module.symbol, color = ink, fontSize = 23.sp, fontWeight = FontWeight.Bold)
+                                            Text(module.symbol, color = white, fontSize = 23.sp, fontWeight = FontWeight.Bold)
                                             Spacer(Modifier.height(8.dp))
-                                            Text(module.title, color = ink, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                            Text(module.subtitle, color = Color(0xFF666660), fontSize = 10.sp)
+                                            Text(module.title, color = white, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                            Text(module.subtitle, color = muted, fontSize = 10.sp)
                                         }
                                     }
                                 }
@@ -262,11 +262,11 @@ private fun AstraApp(
                         }
                     }
                     Spacer(Modifier.height(12.dp))
-                    Text("Creator by Bittu Pandit", color = Color(0xFF666660), fontSize = 10.sp)
+                    Text("Creator by Bittu Pandit", color = mint, fontSize = 10.sp)
                 }
             }
             "AI Chat" -> {
-                Column(Modifier.weight(1f).fillMaxWidth().padding(14.dp)) {
+                Column(Modifier.weight(1f).fillMaxWidth().background(paper).padding(14.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text("AI CONVERSATION", color = white, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
@@ -277,7 +277,7 @@ private fun AstraApp(
                     LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(vertical = 10.dp)) {
                         items(chat) { item ->
                             val isAi = item.from == "ASTRA"
-                            Card(colors = CardDefaults.cardColors(containerColor = if (isAi) charcoal else Color(0xFF303030)), shape = RoundedCornerShape(17.dp), modifier = Modifier.fillMaxWidth()) {
+                            Card(colors = CardDefaults.cardColors(containerColor = if (isAi) graphite else Color(0xFF18324A)), shape = RoundedCornerShape(17.dp), modifier = Modifier.fillMaxWidth()) {
                                 Column(Modifier.padding(14.dp)) {
                                     Text(if (isAi) "✳  ASTRA" else "YOU", color = if (isAi) white else muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                                     Spacer(Modifier.height(7.dp))
@@ -399,14 +399,14 @@ private fun AstraApp(
             }
         }
         if (page != "Home") {
-            Text("Creator by Bittu Pandit", color = muted, fontSize = 10.sp, modifier = Modifier.fillMaxWidth().background(ink).padding(12.dp))
+            Text("Creator by Bittu Pandit", color = muted, fontSize = 10.sp, modifier = Modifier.fillMaxWidth().background(charcoal).padding(12.dp))
         }
     }
 }
 
 @Composable
 private fun ColumnScope.SimplePage(title: String, description: String, content: @Composable ColumnScope.() -> Unit) {
-    Column(Modifier.weight(1f).fillMaxWidth().background(ink).verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
+    Column(Modifier.weight(1f).fillMaxWidth().background(paper).verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
         Text(title, color = white, fontSize = 18.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         Text(description, color = muted, fontSize = 13.sp)
         content()
@@ -423,21 +423,21 @@ private fun QuantumArtwork(modifier: Modifier = Modifier, variant: Int = 0) {
         val thin = 1.15.dp.toPx()
         when (variant) {
             1 -> {
-                drawCircle(Color(0xFF777777), radius = radius * 1.35f, center = center, style = Stroke(thin))
-                drawCircle(Color(0xFFB0B0B0), radius = radius * .9f, center = center, style = Stroke(thin))
-                drawArc(Color(0xFF333333), -25f, 235f, false, Offset(center.x - radius * 1.4f, center.y - radius * .7f), androidx.compose.ui.geometry.Size(radius * 2.8f, radius * 1.4f), style = Stroke(thin * 2))
-                drawCircle(Color.White, radius = radius * .13f, center = Offset(center.x + radius * .8f, center.y - radius * .7f))
-                drawCircle(Color(0xFF888888), radius = radius * .09f, center = Offset(center.x - radius * .9f, center.y + radius * .4f))
+                drawCircle(violet, radius = radius * 1.35f, center = center, style = Stroke(thin))
+                drawCircle(mint, radius = radius * .9f, center = center, style = Stroke(thin))
+                drawArc(white, -25f, 235f, false, Offset(center.x - radius * 1.4f, center.y - radius * .7f), androidx.compose.ui.geometry.Size(radius * 2.8f, radius * 1.4f), style = Stroke(thin * 2))
+                drawCircle(white, radius = radius * .13f, center = Offset(center.x + radius * .8f, center.y - radius * .7f))
+                drawCircle(violet, radius = radius * .09f, center = Offset(center.x - radius * .9f, center.y + radius * .4f))
             }
             2 -> {
-                drawCircle(Color(0xFF777777), radius = radius * 1.2f, center = center, style = Stroke(thin))
+                drawCircle(violet, radius = radius * 1.2f, center = center, style = Stroke(thin))
                 for (i in 0..5) {
                     val x = center.x + (i - 2.5f) * radius * .32f
                     val y = center.y + if (i % 2 == 0) -radius * .48f else radius * .48f
-                    drawLine(Color(0xFFBDBDBD), center, Offset(x, y), thin, cap = StrokeCap.Round)
-                    drawCircle(Color.White, radius = radius * .13f, center = Offset(x, y))
+                    drawLine(mint, center, Offset(x, y), thin, cap = StrokeCap.Round)
+                    drawCircle(white, radius = radius * .13f, center = Offset(x, y))
                 }
-                drawOval(Color(0xFF555555), Offset(center.x - radius * .7f, center.y - radius * .9f), androidx.compose.ui.geometry.Size(radius * 1.4f, radius * 1.8f), style = Stroke(thin))
+                drawOval(white, Offset(center.x - radius * .7f, center.y - radius * .9f), androidx.compose.ui.geometry.Size(radius * 1.4f, radius * 1.8f), style = Stroke(thin))
             }
             3 -> {
                 val nodes = listOf(
@@ -448,20 +448,20 @@ private fun QuantumArtwork(modifier: Modifier = Modifier, variant: Int = 0) {
                     Offset(center.x, center.y)
                 )
                 listOf(0 to 4, 1 to 4, 2 to 4, 3 to 4, 0 to 2, 1 to 3).forEach { (a, b) ->
-                    drawLine(Color(0xFF888888), nodes[a], nodes[b], thin, cap = StrokeCap.Round)
+                    drawLine(violet, nodes[a], nodes[b], thin, cap = StrokeCap.Round)
                 }
                 nodes.forEachIndexed { index, point ->
-                    drawCircle(if (index == 4) Color.White else Color(0xFFB0B0B0), radius = if (index == 4) radius * .22f else radius * .15f, center = point)
+                    drawCircle(if (index == 4) white else mint, radius = if (index == 4) radius * .22f else radius * .15f, center = point)
                 }
             }
             else -> {
-                drawCircle(Color.White, radius = radius * .42f, center = center)
-                drawCircle(Color(0xFFBDBDBD), radius = radius * .72f, center = center, style = Stroke(width = thin))
+                drawCircle(white, radius = radius * .42f, center = center)
+                drawCircle(mint, radius = radius * .72f, center = center, style = Stroke(width = thin))
                 drawOval(Color(0xFFE8E8E8), topLeft = Offset(center.x - radius * 1.4f, center.y - radius * .55f), size = androidx.compose.ui.geometry.Size(radius * 2.8f, radius * 1.1f), style = Stroke(width = thin))
-                drawOval(Color(0xFF9B9B9B), topLeft = Offset(center.x - radius * 1.4f, center.y - radius * .55f), size = androidx.compose.ui.geometry.Size(radius * 2.8f, radius * 1.1f), style = Stroke(width = thin), alpha = .8f)
-                drawCircle(Color.White, radius = radius * .12f, center = Offset(center.x + radius * 1.15f, center.y - radius * .35f))
-                drawCircle(Color(0xFFAAAAAA), radius = radius * .09f, center = Offset(center.x - radius * .95f, center.y + radius * .7f))
-                drawCircle(Color(0xFF777777), radius = radius * 1.45f, center = center, style = Stroke(width = .7.dp.toPx()), alpha = .8f)
+                drawOval(violet, topLeft = Offset(center.x - radius * 1.4f, center.y - radius * .55f), size = androidx.compose.ui.geometry.Size(radius * 2.8f, radius * 1.1f), style = Stroke(width = thin), alpha = .8f)
+                drawCircle(white, radius = radius * .12f, center = Offset(center.x + radius * 1.15f, center.y - radius * .35f))
+                drawCircle(mint, radius = radius * .09f, center = Offset(center.x - radius * .95f, center.y + radius * .7f))
+                drawCircle(violet, radius = radius * 1.45f, center = center, style = Stroke(width = .7.dp.toPx()), alpha = .8f)
             }
         }
     }
