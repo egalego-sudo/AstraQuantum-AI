@@ -3,6 +3,7 @@ package com.bittupandit.astraquantumai
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
+import android.util.Base64
 import android.os.Bundle
 import android.speech.RecognizerIntent
 import android.speech.tts.TextToSpeech
@@ -44,6 +45,7 @@ class MainActivity : ComponentActivity() {
     private var speechText by mutableStateOf("")
     private var pickedFile by mutableStateOf("")
     private var pickedMime by mutableStateOf("")
+    private var pickedUri by mutableStateOf<Uri?>(null)
     private var speaking: TextToSpeech? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,6 +61,7 @@ class MainActivity : ComponentActivity() {
         val fileLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
             uri?.let {
                 contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                pickedUri = it
                 pickedFile = it.lastPathSegment ?: it.toString()
                 pickedMime = contentResolver.getType(it) ?: "Unknown file"
             }
@@ -73,6 +76,7 @@ class MainActivity : ComponentActivity() {
                     speechText = speechText,
                     pickedFile = pickedFile,
                     pickedMime = pickedMime,
+                    pickedUri = pickedUri,
                     onSpeak = { text -> speaking?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "astra_reply") },
                     onListen = {
                         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -103,6 +107,7 @@ private fun AstraApp(
     speechText: String,
     pickedFile: String,
     pickedMime: String,
+    pickedUri: Uri?,
     onSpeak: (String) -> Unit,
     onListen: () -> Unit,
     onPickFile: () -> Unit
@@ -121,6 +126,8 @@ private fun AstraApp(
     var chat by remember { mutableStateOf(listOf(ChatLine("ASTRA", "नमस्ते! अपना सवाल लिखें। ऑनलाइन AI के लिए Settings में सुरक्षित backend URL जोड़ें।"))) }
     var qubitAngle by remember { mutableFloatStateOf(45f) }
     var qubitResult by remember { mutableStateOf("Qubit तैयार है। कोण बदलकर मापन करें।") }
+    var fileAnalysis by remember { mutableStateOf("") }
+    var fileBusy by remember { mutableStateOf(false) }
 
     LaunchedEffect(speechText) { if (speechText.isNotBlank()) prompt = speechText }
 
@@ -233,7 +240,28 @@ private fun AstraApp(
                 Button(onClick = onPickFile) { Text("फोन से फ़ाइल चुनें") }
                 Text("चुनी गई फ़ाइल: $pickedFile", color = Color.White)
                 Text("प्रकार: $pickedMime", color = pale)
-                Text("फिलहाल फ़ाइल चयन और पहचान उपलब्ध है; PDF/चित्र का AI विश्लेषण backend जोड़ने के बाद सक्रिय होगा।", color = pale)
+                Button(enabled = pickedUri != null && !fileBusy && backend.isNotBlank(), onClick = {
+                    val uri = pickedUri
+                    if (uri != null) {
+                        fileBusy = true
+                        fileAnalysis = "फ़ाइल का विश्लेषण हो रहा है…"
+                        activity.lifecycleScope.launch {
+                            val result = withContext(Dispatchers.IO) {
+                                runCatching {
+                                    val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                                        ?: error("फ़ाइल पढ़ी नहीं जा सकी")
+                                    require(bytes.size <= 7 * 1024 * 1024) { "फ़ाइल 7 MB से छोटी रखें।" }
+                                    val encoded = Base64.encodeToString(bytes, Base64.NO_WRAP)
+                                    askBackend(backend, "इस फ़ाइल का हिंदी में सारांश, मुख्य बिंदु और महत्वपूर्ण तथ्य बताइए।", pickedMime, encoded)
+                                }.getOrElse { "फ़ाइल विश्लेषण विफल: ${it.message}" }
+                            }
+                            fileAnalysis = result
+                            fileBusy = false
+                        }
+                    }
+                }) { Text(if (fileBusy) "विश्लेषण…" else "AI से फ़ाइल का विश्लेषण") }
+                if (backend.isBlank()) Text("पहले Settings में HTTPS backend URL सेव करें।", color = pale)
+                Text(fileAnalysis, color = Color.White)
             }
             "Quantum" -> {
                 Text("QUANTUM LAB · QUBIT SIMULATOR", color = pale, fontWeight = FontWeight.Bold)
@@ -273,7 +301,7 @@ private fun AstraApp(
     }
 }
 
-private fun askBackend(baseUrl: String, prompt: String): String {
+private fun askBackend(baseUrl: String, prompt: String, mimeType: String? = null, base64: String? = null): String {
     if (baseUrl.isBlank()) return "अभी ASTRA Offline मोड में है। ऑनलाइन AI उत्तर के लिए Settings में अपना HTTPS backend URL जोड़ना होगा। Gemini API key को Android ऐप में कभी न रखें।"
     return try {
         val clean = baseUrl.trim().trimEnd('/')
