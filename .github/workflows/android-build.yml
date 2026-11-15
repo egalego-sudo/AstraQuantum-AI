@@ -32,7 +32,7 @@ jobs:
           ARCHIVE="ASTRA_QUANTUM_AI_PLUS_COMPLETE_MASTER_UPDATED.zip"
           test -f "$ARCHIVE" || { echo "Project ZIP not found"; exit 1; }
           echo "Archive contents (first 120 entries):"
-          unzip -l "$ARCHIVE" | head -n 125
+          unzip -l "$ARCHIVE" | sed -n '1,125p'
           mkdir -p extracted
           unzip -q "$ARCHIVE" -d extracted
           SETTINGS="$(find extracted -type f \( -name settings.gradle -o -name settings.gradle.kts \) -print -quit)"
