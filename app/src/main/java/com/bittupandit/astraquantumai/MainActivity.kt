@@ -215,7 +215,20 @@ private fun AstraApp(
                             }
                         }
                     }
-                    Spacer(Modifier.height(18.dp))
+                    Spacer(Modifier.height(16.dp))
+                    Text("THE QUANTUM UNIVERSE", color = Color(0xFF555550), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                    Spacer(Modifier.height(8.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("ATOM", "GALAXY", "NEURAL", "CIRCUIT").forEachIndexed { index, label ->
+                            Card(modifier = Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = white), shape = RoundedCornerShape(13.dp)) {
+                                Column(Modifier.fillMaxWidth().padding(7.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                    QuantumArtwork(Modifier.size(58.dp), index)
+                                    Text(label, color = Color(0xFF555550), fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = .5.sp)
+                                }
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(16.dp))
                     Text("EXPLORE MODULES", color = Color(0xFF555550), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                     Spacer(Modifier.height(8.dp))
                     val modules = listOf(
@@ -399,17 +412,54 @@ private fun ColumnScope.SimplePage(title: String, description: String, content: 
 }
 
 @Composable
-private fun QuantumArtwork(modifier: Modifier = Modifier) {
+private fun QuantumArtwork(modifier: Modifier = Modifier, variant: Int = 0) {
     Canvas(modifier) {
         val center = Offset(size.width / 2f, size.height / 2f)
         val radius = size.minDimension * .31f
-        drawCircle(Color.White, radius = radius * .42f, center = center)
-        drawCircle(Color(0xFFBDBDBD), radius = radius * .72f, center = center, style = Stroke(width = 1.3.dp.toPx()))
-        drawOval(Color(0xFFE8E8E8), topLeft = Offset(center.x - radius * 1.4f, center.y - radius * .55f), size = androidx.compose.ui.geometry.Size(radius * 2.8f, radius * 1.1f), style = Stroke(width = 1.2.dp.toPx()))
-        drawOval(Color(0xFF9B9B9B), topLeft = Offset(center.x - radius * 1.4f, center.y - radius * .55f), size = androidx.compose.ui.geometry.Size(radius * 2.8f, radius * 1.1f), style = Stroke(width = 1.2.dp.toPx()), alpha = .8f)
-        drawCircle(Color.White, radius = radius * .12f, center = Offset(center.x + radius * 1.15f, center.y - radius * .35f))
-        drawCircle(Color(0xFFAAAAAA), radius = radius * .09f, center = Offset(center.x - radius * .95f, center.y + radius * .7f))
-        drawCircle(Color(0xFF777777), radius = radius * 1.45f, center = center, style = Stroke(width = .7.dp.toPx()), alpha = .8f)
+        val thin = 1.15.dp.toPx()
+        when (variant) {
+            1 -> {
+                drawCircle(Color(0xFF777777), radius = radius * 1.35f, center = center, style = Stroke(thin))
+                drawCircle(Color(0xFFB0B0B0), radius = radius * .9f, center = center, style = Stroke(thin))
+                drawArc(Color(0xFF333333), -25f, 235f, false, Offset(center.x - radius * 1.4f, center.y - radius * .7f), androidx.compose.ui.geometry.Size(radius * 2.8f, radius * 1.4f), style = Stroke(thin * 2))
+                drawCircle(Color.White, radius = radius * .13f, center = Offset(center.x + radius * .8f, center.y - radius * .7f))
+                drawCircle(Color(0xFF888888), radius = radius * .09f, center = Offset(center.x - radius * .9f, center.y + radius * .4f))
+            }
+            2 -> {
+                drawCircle(Color(0xFF777777), radius = radius * 1.2f, center = center, style = Stroke(thin))
+                for (i in 0..5) {
+                    val x = center.x + (i - 2.5f) * radius * .32f
+                    val y = center.y + if (i % 2 == 0) -radius * .48f else radius * .48f
+                    drawLine(Color(0xFFBDBDBD), center, Offset(x, y), thin, cap = StrokeCap.Round)
+                    drawCircle(Color.White, radius = radius * .13f, center = Offset(x, y))
+                }
+                drawOval(Color(0xFF555555), Offset(center.x - radius * .7f, center.y - radius * .9f), androidx.compose.ui.geometry.Size(radius * 1.4f, radius * 1.8f), style = Stroke(thin))
+            }
+            3 -> {
+                val nodes = listOf(
+                    Offset(center.x - radius, center.y - radius * .7f),
+                    Offset(center.x + radius, center.y - radius * .7f),
+                    Offset(center.x - radius, center.y + radius * .7f),
+                    Offset(center.x + radius, center.y + radius * .7f),
+                    Offset(center.x, center.y)
+                )
+                listOf(0 to 4, 1 to 4, 2 to 4, 3 to 4, 0 to 2, 1 to 3).forEach { (a, b) ->
+                    drawLine(Color(0xFF888888), nodes[a], nodes[b], thin, cap = StrokeCap.Round)
+                }
+                nodes.forEachIndexed { index, point ->
+                    drawCircle(if (index == 4) Color.White else Color(0xFFB0B0B0), radius = if (index == 4) radius * .22f else radius * .15f, center = point)
+                }
+            }
+            else -> {
+                drawCircle(Color.White, radius = radius * .42f, center = center)
+                drawCircle(Color(0xFFBDBDBD), radius = radius * .72f, center = center, style = Stroke(width = thin))
+                drawOval(Color(0xFFE8E8E8), topLeft = Offset(center.x - radius * 1.4f, center.y - radius * .55f), size = androidx.compose.ui.geometry.Size(radius * 2.8f, radius * 1.1f), style = Stroke(width = thin))
+                drawOval(Color(0xFF9B9B9B), topLeft = Offset(center.x - radius * 1.4f, center.y - radius * .55f), size = androidx.compose.ui.geometry.Size(radius * 2.8f, radius * 1.1f), style = Stroke(width = thin), alpha = .8f)
+                drawCircle(Color.White, radius = radius * .12f, center = Offset(center.x + radius * 1.15f, center.y - radius * .35f))
+                drawCircle(Color(0xFFAAAAAA), radius = radius * .09f, center = Offset(center.x - radius * .95f, center.y + radius * .7f))
+                drawCircle(Color(0xFF777777), radius = radius * 1.45f, center = center, style = Stroke(width = .7.dp.toPx()), alpha = .8f)
+            }
+        }
     }
 }
 
