@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
@@ -167,7 +168,9 @@ private fun AstraApp(
         projectInput = ""
     }
 
-    Column(Modifier.fillMaxSize().background(paper)) {
+    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF030611), Color(0xFF0B1230), Color(0xFF160D35))))) {
+        CosmicStarfield(Modifier.fillMaxSize())
+        Column(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxWidth().background(charcoal).padding(horizontal = 20.dp, vertical = 14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(white), contentAlignment = Alignment.Center) {
@@ -177,6 +180,7 @@ private fun AstraApp(
                 Column(Modifier.weight(1f)) {
                     Text("ASTRA", color = white, fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
                     Text("QUANTUM AI PLUS", color = muted, fontSize = 10.sp, letterSpacing = 2.sp)
+                    Text("Creator by Bittu Pandit", color = mint, fontSize = 9.sp, fontWeight = FontWeight.SemiBold)
                 }
                 Surface(color = graphite, shape = CircleShape) {
                     Text("● GROQ", color = white, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp))
@@ -199,7 +203,7 @@ private fun AstraApp(
         HorizontalDivider(color = line)
         when (page) {
             "Home" -> {
-                Column(Modifier.weight(1f).fillMaxWidth().background(paper).verticalScroll(rememberScrollState()).padding(18.dp)) {
+                Column(Modifier.weight(1f).fillMaxWidth().background(Color.Transparent).verticalScroll(rememberScrollState()).padding(18.dp)) {
                     Text("YOUR INTELLIGENCE SPACE", color = mint, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                     Spacer(Modifier.height(12.dp))
                     Card(colors = CardDefaults.cardColors(containerColor = graphite), shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
@@ -266,7 +270,7 @@ private fun AstraApp(
                 }
             }
             "AI Chat" -> {
-                Column(Modifier.weight(1f).fillMaxWidth().background(paper).padding(14.dp)) {
+                Column(Modifier.weight(1f).fillMaxWidth().background(Color.Transparent).padding(14.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text("AI CONVERSATION", color = white, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
@@ -399,8 +403,23 @@ private fun AstraApp(
             }
         }
         if (page != "Home") {
-            Text("Creator by Bittu Pandit", color = muted, fontSize = 10.sp, modifier = Modifier.fillMaxWidth().background(charcoal).padding(12.dp))
+            Text("Creator by Bittu Pandit", color = mint, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.fillMaxWidth().background(charcoal).padding(12.dp))
         }
+        }
+    }
+}
+
+@Composable
+private fun CosmicStarfield(modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val stars = listOf(.04f to .08f, .18f to .16f, .31f to .06f, .47f to .13f, .68f to .07f, .86f to .18f, .95f to .09f, .09f to .32f, .25f to .27f, .42f to .36f, .59f to .29f, .78f to .34f, .91f to .43f, .03f to .57f, .16f to .49f, .36f to .58f, .54f to .51f, .72f to .61f, .89f to .55f, .11f to .76f, .29f to .69f, .48f to .81f, .66f to .73f, .84f to .84f, .97f to .72f)
+        stars.forEachIndexed { index, point ->
+            drawCircle(if (index % 4 == 0) mint.copy(alpha = .72f) else Color.White.copy(alpha = .62f), radius = if (index % 6 == 0) 2.1.dp.toPx() else 1.dp.toPx(), center = Offset(size.width * point.first, size.height * point.second))
+        }
+        val c = Offset(size.width * .82f, size.height * .36f)
+        drawCircle(Brush.radialGradient(listOf(violet.copy(alpha = .14f), Color.Transparent), center = c, radius = size.minDimension * .42f), radius = size.minDimension * .42f, center = c)
+        val c2 = Offset(size.width * .13f, size.height * .72f)
+        drawCircle(Brush.radialGradient(listOf(white.copy(alpha = .09f), Color.Transparent), center = c2, radius = size.minDimension * .34f), radius = size.minDimension * .34f, center = c2)
     }
 }
 
