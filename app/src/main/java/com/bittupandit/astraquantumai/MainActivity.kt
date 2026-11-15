@@ -120,7 +120,7 @@ private fun AstraApp(
     var prompt by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("तैयार") }
-    var backend by remember { mutableStateOf(prefs.getString("backend_url", "") ?: "") }
+    var backend by remember { mutableStateOf(prefs.getString("backend_url", "https://astraquantum-ai.onrender.com") ?: "https://astraquantum-ai.onrender.com") }
     var memoryInput by remember { mutableStateOf("") }
     var memories by remember { mutableStateOf(prefs.getString("memories", "") ?: "") }
     var projectInput by remember { mutableStateOf("") }
@@ -192,7 +192,8 @@ private fun AstraApp(
                                     TextButton(onClick = {
                                         val clipboard = context.getSystemService(ClipboardManager::class.java)
                                         clipboard.setPrimaryClip(ClipData.newPlainText("ASTRA संदेश", line.text))
-                                    }) { Text("एरर/मैसेज कॉपी करें") }
+                                        android.widget.Toast.makeText(context, "मैसेज कॉपी हो गया", android.widget.Toast.LENGTH_SHORT).show()
+                                    }) { Text("कॉपी करें") }
                                     if (line.from == "ASTRA") TextButton(onClick = { onSpeak(line.text) }) { Text("उत्तर सुनें") }
                                 }
                             }
@@ -274,7 +275,8 @@ private fun AstraApp(
                     TextButton(onClick = {
                         val clipboard = context.getSystemService(ClipboardManager::class.java)
                         clipboard.setPrimaryClip(ClipData.newPlainText("ASTRA फ़ाइल त्रुटि", fileAnalysis))
-                    }) { Text("यह संदेश / एरर कॉपी करें") }
+                        android.widget.Toast.makeText(context, "मैसेज कॉपी हो गया", android.widget.Toast.LENGTH_SHORT).show()
+                    }) { Text("कॉपी करें") }
                 }
             }
             "Quantum" -> {
