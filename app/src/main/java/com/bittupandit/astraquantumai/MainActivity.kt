@@ -49,13 +49,16 @@ import java.net.URL
 import java.net.URLEncoder
 import java.util.Locale
 
-private val ink = Color(0xFF090909)
-private val charcoal = Color(0xFF171717)
-private val graphite = Color(0xFF252525)
-private val paper = Color(0xFFF4F4F1)
-private val white = Color(0xFFFFFFFF)
-private val muted = Color(0xFFB8B8B3)
-private val line = Color(0xFF3A3A38)
+// ASTRA Premium Cosmic Glass palette
+private val ink = Color(0xFF070B1B)       // deep-space navy
+private val charcoal = Color(0xFF101A31)  // glass panel
+private val graphite = Color(0xFF1A2B4D)  // raised panel
+private val paper = Color(0xFF0B1226)     // app canvas
+private val white = Color(0xFF55D6FF)    // electric cyan accent
+private val muted = Color(0xFFA9B9D6)    // soft starlight
+private val line = Color(0xFF263B63)     // subtle cosmic divider
+private val violet = Color(0xFF9B8CFF)   // quantum violet
+private val mint = Color(0xFF6CF2D5)     // secondary energy accent
 
 class MainActivity : ComponentActivity() {
     private var speechText by mutableStateOf("")
@@ -84,7 +87,7 @@ class MainActivity : ComponentActivity() {
         }
         setContent {
             MaterialTheme(colorScheme = darkColorScheme(
-                primary = white, onPrimary = ink, secondary = muted,
+                primary = white, onPrimary = ink, secondary = violet,
                 background = ink, surface = charcoal, onSurface = white
             )) {
                 AstraApp(
@@ -134,13 +137,13 @@ private fun AstraApp(
     var page by remember { mutableStateOf("Home") }
     var prompt by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
-    var status by remember { mutableStateOf("OPENAI ENGINE · READY") }
+    var status by remember { mutableStateOf("GROQ AI · READY") }
     var backend by remember { mutableStateOf(prefs.getString("backend_url", "https://astraquantum-ai.onrender.com") ?: "https://astraquantum-ai.onrender.com") }
     var memoryInput by remember { mutableStateOf("") }
     var memories by remember { mutableStateOf(prefs.getString("memories", "") ?: "") }
     var projectInput by remember { mutableStateOf("") }
     var projects by remember { mutableStateOf(prefs.getString("projects", "") ?: "") }
-    var chat by remember { mutableStateOf(listOf(ChatLine("ASTRA", "नमस्ते! मैं ASTRA हूँ। अपना सवाल पूछिए—मैं OpenAI से उत्तर तैयार करूँगा।"))) }
+    var chat by remember { mutableStateOf(listOf(ChatLine("ASTRA", "नमस्ते! मैं ASTRA हूँ। अपना सवाल पूछिए—मैं Groq AI से उत्तर तैयार करूँगा।"))) }
     var qubitAngle by remember { mutableFloatStateOf(45f) }
     var qubitResult by remember { mutableStateOf("Qubit तैयार है। कोण बदलकर मापन करें।") }
     var fileAnalysis by remember { mutableStateOf("") }
@@ -176,7 +179,7 @@ private fun AstraApp(
                     Text("QUANTUM AI PLUS", color = muted, fontSize = 10.sp, letterSpacing = 2.sp)
                 }
                 Surface(color = graphite, shape = CircleShape) {
-                    Text("● OPENAI", color = white, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp))
+                    Text("● GROQ", color = white, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp))
                 }
             }
             Spacer(Modifier.height(14.dp))
@@ -233,7 +236,7 @@ private fun AstraApp(
                     Text("EXPLORE MODULES", color = Color(0xFF555550), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                     Spacer(Modifier.height(8.dp))
                     val modules = listOf(
-                        AstraModule("AI Chat", "OpenAI के साथ बातचीत", "✳"),
+                        AstraModule("AI Chat", "Groq AI के साथ बातचीत", "✳"),
                         AstraModule("Research", "वेब पर जानकारी खोजें", "⌕"),
                         AstraModule("Memory", "अपने निजी नोट्स सँभालें", "◈"),
                         AstraModule("Voice", "बोलें और उत्तर सुनें", "◖"),
@@ -307,12 +310,12 @@ private fun AstraApp(
                                 chat = chat + ChatLine("You", question)
                                 prompt = ""
                                 busy = true
-                                status = "OPENAI से उत्तर आ रहा है…"
+                                status = "GROQ AI से उत्तर आ रहा है…"
                                 activity.lifecycleScope.launch {
                                     val answer = withContext(Dispatchers.IO) { askBackend(backend, question) }
                                     chat = chat + ChatLine("ASTRA", answer)
                                     busy = false
-                                    status = "OPENAI ENGINE · READY"
+                                    status = "GROQ AI · READY"
                                 }
                             },
                             modifier = Modifier.weight(1f),
@@ -340,7 +343,7 @@ private fun AstraApp(
                 SelectionContainer { Text("पहचाना गया: $speechText", color = white) }
                 Button(enabled = speechText.isNotBlank(), onClick = { onSpeak(speechText) }, colors = ButtonDefaults.buttonColors(containerColor = graphite, contentColor = white)) { Text("आवाज़ में सुनें") }
             }
-            "Files" -> SimplePage("IMAGE & PDF ANALYSIS", "PDF, JPG, PNG या WEBP चुनें और OpenAI से उसका विश्लेषण कराएँ।") {
+            "Files" -> SimplePage("IMAGE & PDF ANALYSIS", "JPG, PNG या WEBP चुनें और Groq AI से उसका विश्लेषण कराएँ। PDF सपोर्ट जल्द जोड़ा जाएगा।") {
                 Button(onClick = onPickFile, colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("फोन से फ़ाइल चुनें") }
                 Text("चुनी गई फ़ाइल: $pickedFile", color = white)
                 Text("प्रकार: $pickedMime", color = muted, fontSize = 12.sp)
@@ -362,7 +365,7 @@ private fun AstraApp(
                             fileBusy = false
                         }
                     }
-                }, colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text(if (fileBusy) "विश्लेषण…" else "OpenAI से विश्लेषण") }
+                }, colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text(if (fileBusy) "विश्लेषण…" else "Groq से विश्लेषण") }
                 if (fileAnalysis.isNotBlank()) {
                     SelectionContainer { Text(fileAnalysis, color = white) }
                     TextButton(onClick = { copyText(fileAnalysis) }) { Text("कॉपी करें", color = white) }
@@ -383,7 +386,7 @@ private fun AstraApp(
                 Button(enabled = projectInput.isNotBlank(), onClick = { addProject(projectInput) }, colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("सेव करें") }
                 SelectionContainer { Text(projects.ifBlank { "अभी कोई प्रोजेक्ट नोट नहीं।" }, color = white) }
             }
-            "Settings" -> SimplePage("CONNECTION SETTINGS", "केवल OpenAI इंजन। API key Android ऐप में नहीं, Render के सुरक्षित Environment में रहती है।") {
+            "Settings" -> SimplePage("CONNECTION SETTINGS", "Groq AI इंजन। API key Android ऐप में नहीं, Render के सुरक्षित Environment में रहती है।") {
                 OutlinedTextField(backend, { backend = it }, Modifier.fillMaxWidth(), label = { Text("Backend HTTPS URL") })
                 Button(onClick = {
                     backend = backend.trim().trimEnd('/')
@@ -487,12 +490,12 @@ private fun askBackend(baseUrl: String, prompt: String, mimeType: String? = null
         connection.disconnect()
         if (code !in 200..299) {
             val message = runCatching { JSONObject(body).optString("error") }.getOrDefault("")
-            "OpenAI सेवा में त्रुटि (HTTP $code): ${message.ifBlank { body.take(180) }}"
+            "Groq सेवा में त्रुटि (HTTP $code): ${message.ifBlank { body.take(180) }}"
         } else {
             val json = JSONObject(body)
             json.optString("text").ifBlank { json.optString("response").ifBlank { "सर्वर से उत्तर मिला, लेकिन टेक्स्ट नहीं मिला।" } }
         }
     } catch (e: Exception) {
-        "OpenAI सर्वर से कनेक्शन नहीं हो पाया: ${e.message ?: "नेटवर्क त्रुटि"}"
+        "ASTRA सर्वर से कनेक्शन नहीं हो पाया: ${e.message ?: "नेटवर्क त्रुटि"}"
     }
 }
