@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - "app/**"
+      - "backend/**"
       - "*.gradle.kts"
       - "gradle.properties"
       - "settings.gradle.kts"
@@ -26,6 +27,14 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Check backend JavaScript syntax
+        run: node --check backend/server.js
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
