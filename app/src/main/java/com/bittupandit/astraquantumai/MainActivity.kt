@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.HttpURLConnection
@@ -136,6 +137,8 @@ private fun AstraApp(
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("astra_private", 0) }
     var page by remember { mutableStateOf("Home") }
+    var showSplash by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) { delay(1800); showSplash = false }
     var prompt by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("GROQ AI · READY") }
@@ -405,6 +408,28 @@ private fun AstraApp(
         if (page != "Home") {
             Text("Creator by Bittu Pandit", color = mint, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.fillMaxWidth().background(Color(0xCC080F23)).padding(12.dp))
         }
+        }
+        if (showSplash) SplashScreen(Modifier.fillMaxSize())
+    }
+}
+
+@Composable
+private fun SplashScreen(modifier: Modifier = Modifier) {
+    Box(modifier.background(Brush.verticalGradient(listOf(Color(0xFF02030D), Color(0xFF10103A), Color(0xFF050B1B)))), contentAlignment = Alignment.Center) {
+        CosmicNebulaBackground(Modifier.fillMaxSize())
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(Modifier.size(112.dp).clip(RoundedCornerShape(34.dp)).background(Brush.linearGradient(listOf(white, violet, mint))), contentAlignment = Alignment.Center) {
+                Text("A", color = ink, fontSize = 76.sp, fontWeight = FontWeight.Black)
+            }
+            Spacer(Modifier.height(24.dp))
+            Text("ASTRA", color = white, fontSize = 31.sp, fontWeight = FontWeight.Black, letterSpacing = 8.sp)
+            Text("QUANTUM AI", color = muted, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 5.sp)
+            Spacer(Modifier.height(22.dp))
+            Text("Explore the unknown", color = mint, fontSize = 12.sp, letterSpacing = 2.sp)
+            Spacer(Modifier.height(38.dp))
+            CircularProgressIndicator(color = white, strokeWidth = 2.dp, modifier = Modifier.size(24.dp))
+            Spacer(Modifier.height(28.dp))
+            Text("Creator by Bittu Pandit", color = mint, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }
