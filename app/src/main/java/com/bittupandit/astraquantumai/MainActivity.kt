@@ -2,6 +2,8 @@ package com.bittupandit.astraquantumai
 
 import android.app.Activity
 import android.content.Intent
+import android.content.ClipboardManager
+import android.content.ClipData
 import android.net.Uri
 import android.util.Base64
 import android.os.Bundle
@@ -186,7 +188,13 @@ private fun AstraApp(
                             Column(Modifier.padding(12.dp)) {
                                 Text(line.from, color = pale, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                 Text(line.text, color = Color.White)
-                                if (line.from == "ASTRA") TextButton(onClick = { onSpeak(line.text) }) { Text("उत्तर सुनें") }
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    TextButton(onClick = {
+                                        val clipboard = context.getSystemService(ClipboardManager::class.java)
+                                        clipboard.setPrimaryClip(ClipData.newPlainText("ASTRA संदेश", line.text))
+                                    }) { Text("एरर/मैसेज कॉपी करें") }
+                                    if (line.from == "ASTRA") TextButton(onClick = { onSpeak(line.text) }) { Text("उत्तर सुनें") }
+                                }
                             }
                         }
                     }
@@ -262,6 +270,12 @@ private fun AstraApp(
                 }) { Text(if (fileBusy) "विश्लेषण…" else "AI से फ़ाइल का विश्लेषण") }
                 if (backend.isBlank()) Text("पहले Settings में HTTPS backend URL सेव करें।", color = pale)
                 Text(fileAnalysis, color = Color.White)
+                if (fileAnalysis.isNotBlank()) {
+                    TextButton(onClick = {
+                        val clipboard = context.getSystemService(ClipboardManager::class.java)
+                        clipboard.setPrimaryClip(ClipData.newPlainText("ASTRA फ़ाइल त्रुटि", fileAnalysis))
+                    }) { Text("यह संदेश / एरर कॉपी करें") }
+                }
             }
             "Quantum" -> {
                 Text("QUANTUM LAB · QUBIT SIMULATOR", color = pale, fontWeight = FontWeight.Bold)
