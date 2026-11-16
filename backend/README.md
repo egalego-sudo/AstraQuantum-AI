@@ -12,7 +12,7 @@ Node.js HTTP service that keeps the Groq API key on the server, never in the And
   - `PORT` (default: `8080`)
   - `ALLOWED_ORIGIN` (default: `*`; restrict this when your deployment needs it)
 
-Do not commit a real API key or a local `.env` file.
+Do not commit a real API key or a local `.env` file. Keep both Groq and IBM credentials only in Render's private Environment settings.
 
 ## Run locally
 
@@ -43,6 +43,14 @@ The `/v1/analyze` route is also accepted by the server and uses the same request
 - Retrieves up to five Wikipedia overview pages and five Crossref scholarly records, then synthesizes a Hindi/English report through Groq.
 - Response includes `text` and a `sources` list with IDs, source types, titles, URLs and years.
 - This is an initial, limited source set. It is not exhaustive web search, primary-source review, or guaranteed fact verification. Users should open and assess the cited sources.
+
+## IBM Quantum hardware connector
+
+- Server routes: `GET /v1/quantum/backends`, `POST /v1/quantum/demo`, and `GET /v1/quantum/jobs/{id}`.
+- Configure `IBM_QUANTUM_API_KEY` and `IBM_QUANTUM_SERVICE_CRN` as Render secrets/environment values. Optional `IBM_QUANTUM_BASE_URL` supports `https://quantum.cloud.ibm.com` or `https://eu-de.quantum.cloud.ibm.com`.
+- The backend exchanges the API key for a short-lived IAM bearer token and keeps the token only in server memory. The Android app never receives the IBM API key.
+- The demo submits a fixed one-qubit sampler circuit to the selected backend only after the user confirms in the app. IBM instance access, available backends, usage allocation and queue availability are controlled by IBM.
+- Until those credentials and a valid instance CRN are configured, this is connector code only—not an active QPU connection. Never paste IBM credentials into chat or source files.
 
 ## Limits and deployment notes
 
