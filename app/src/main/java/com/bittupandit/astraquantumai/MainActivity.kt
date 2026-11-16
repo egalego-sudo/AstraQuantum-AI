@@ -277,7 +277,7 @@ private fun AstraApp(
                     }
                 }
                 Text("ईमानदार क्षमता स्थिति", color = mint, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                Text("• इमेज समझना अभी ऑनलाइन Vision पर निर्भर है; Offline Vision उपलब्ध नहीं।\\n• आवाज़ की पहचान फोन के speech provider पर निर्भर है।\\n• स्रोत जुटाना और AI रिपोर्ट बनाना उपलब्ध है, पर स्वतः निर्णायक सत्यापन नहीं।\\n• Action Core अभी सुरक्षित planning/workspace स्तर पर है; कोई संदेश, भुगतान या फोन-सेटिंग बिना स्पष्ट अनुमति नहीं की जाती।\\n• Quantum Learning अभी शैक्षिक classical simulation है; वास्तविक QPU के लिए IBM credentials और अलग पुष्टि चाहिए।", color = muted, fontSize = 11.sp, lineHeight = 18.sp)
+                Text("• इमेज समझना अभी ऑनलाइन Vision पर निर्भर है; Offline Vision उपलब्ध नहीं।\n• आवाज़ की पहचान फोन के speech provider पर निर्भर है।\n• स्रोत जुटाना और AI रिपोर्ट बनाना उपलब्ध है, पर स्वतः निर्णायक सत्यापन नहीं।\n• Action Core अभी सुरक्षित planning/workspace स्तर पर है; कोई संदेश, भुगतान या फोन-सेटिंग बिना स्पष्ट अनुमति नहीं की जाती।\n• Quantum Learning अभी शैक्षिक classical simulation है; वास्तविक QPU के लिए IBM credentials और अलग पुष्टि चाहिए।", color = muted, fontSize = 11.sp, lineHeight = 18.sp)
             }
             "Home" -> {
                 Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp)) {
