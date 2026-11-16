@@ -126,6 +126,37 @@ async function generate(input) {
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
+    // If Groq's Responses endpoint is temporarily unavailable, try the
+    // compatible Chat Completions endpoint before returning an error.
+    if (response.status >= 500) {
+      const fallbackResponse = await requestWithRetry("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "authorization": `Bearer ${API_KEY}`
+        },
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: ASTRA_INSTRUCTIONS },
+            { role: "user", content: prompt }
+          ],
+          max_tokens: 2048
+        })
+      });
+      const fallbackData = await fallbackResponse.json().catch(() => ({}));
+      if (fallbackResponse.ok) {
+        const fallbackContent = fallbackData?.choices?.[0]?.message?.content;
+        const fallbackText = typeof fallbackContent === "string"
+          ? fallbackContent.trim()
+          : Array.isArray(fallbackContent)
+            ? fallbackContent.map(part => part?.text || "").join("").trim()
+            : "";
+        if (fallbackText) return fallbackText;
+      }
+      const fallbackMessage = fallbackData?.error?.message || `Groq Chat Completions returned HTTP ${fallbackResponse.status}`;
+      throw new Error(`Groq Responses API HTTP ${response.status}; fallback failed: ${fallbackMessage}`);
+    }
     const message = data?.error?.message || `Groq API returned HTTP ${response.status}`;
     throw new Error(`Groq API HTTP ${response.status}: ${message}`);
   }
