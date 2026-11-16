@@ -88,6 +88,42 @@ object AstraQuantumSimulator {
         return out
     }
 
+
+    /** Bell |Phi+> = (|00> + |11>)/sqrt(2), with Q0 as control. */
+    fun bellPhiPlus(): List<QuantumOp> = listOf(
+        QuantumOp("H", target = 0),
+        QuantumOp("CNOT", target = 1, control = 0)
+    )
+
+    /** Two-qubit Grover search for marked basis state |11>, one optimal iteration. */
+    fun groverSearch11(): List<QuantumOp> = buildList {
+        add(QuantumOp("H", 0)); add(QuantumOp("H", 1))
+        add(QuantumOp("CZ", 1, 0)) // oracle: phase flip only on |11>
+        add(QuantumOp("H", 0)); add(QuantumOp("H", 1))
+        add(QuantumOp("X", 0)); add(QuantumOp("X", 1))
+        add(QuantumOp("CZ", 1, 0)) // diffuser reflection about |++>
+        add(QuantumOp("X", 0)); add(QuantumOp("X", 1))
+        add(QuantumOp("H", 0)); add(QuantumOp("H", 1))
+    }
+
+    fun verifyBellPhiPlus(run: QuantumRun, tolerance: Double = 1e-9): Boolean {
+        if (run.amplitudes.size != 4 || kotlin.math.abs(run.norm - 1.0) > tolerance) return false
+        val a = run.amplitudes
+        return kotlin.math.abs(a[0].re - invSqrt2) < tolerance &&
+            kotlin.math.abs(a[0].im) < tolerance &&
+            kotlin.math.abs(a[3].re - invSqrt2) < tolerance &&
+            kotlin.math.abs(a[3].im) < tolerance &&
+            a[1].probability() < tolerance && a[2].probability() < tolerance
+    }
+
+    fun verifyGroverSearch11(run: QuantumRun, tolerance: Double = 1e-9): Boolean {
+        if (run.amplitudes.size != 4 || kotlin.math.abs(run.norm - 1.0) > tolerance) return false
+        return run.amplitudes[3].probability() > 1.0 - tolerance &&
+            run.amplitudes[0].probability() < tolerance &&
+            run.amplitudes[1].probability() < tolerance &&
+            run.amplitudes[2].probability() < tolerance
+    }
+
     fun sample(run: QuantumRun, shots: Int): Map<String, Int> {
         require(shots in 1..10000)
         val cumulative = DoubleArray(run.amplitudes.size)
