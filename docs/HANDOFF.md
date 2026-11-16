@@ -51,7 +51,7 @@ The Groq API key and any other live environment values are intentionally NOT sto
 - Online Groq text chat and image analysis are implemented in source.
 - Voice input and text-to-speech use Android/device speech services.
 - The Research screen calls /v1/research, which retrieves Wikipedia overview text and Crossref scholarly metadata, then returns a Groq-generated report with a source list. This is a first research layer; it is not exhaustive web search, and source retrieval does not by itself prove a claim. Browser search shortcuts remain available.
-- Local notes, projects and chat history are stored in app-private local storage/preferences.
+- Local notes, projects and chat history are stored in app-private local storage/preferences. Personal Memory supports user-authored notes and an explicit opt-in switch before notes are sent with AI prompts; semantic retrieval, automatic memory proposals and cross-device sync are not implemented.
 - The local Quantum Lab is an educational classical independent-product-state model, not quantum hardware or a general entanglement-capable circuit simulator. A separate IBM Quantum REST connector is now in source for backend listing, a confirmation-gated one-qubit sampler job and job status; it is not active until IBM API key and instance CRN are added as Render secrets and tested against an accessible backend.
 - Offline Qwen3-0.6B model download, LiteRT-LM initialization, and text fallback are present in source but must pass CI and a real airplane-mode phone test before being described as verified.
 - Offline vision is not implemented.
