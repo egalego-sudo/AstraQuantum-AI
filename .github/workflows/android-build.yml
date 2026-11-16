@@ -14,6 +14,11 @@ on:
 permissions:
   contents: write
 
+# Keep only one APK pipeline active; a newer fix supersedes a stuck run.
+concurrency:
+  group: astra-android-build
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build ASTRA APKs
@@ -177,7 +182,7 @@ jobs:
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 90
-      # Create a separately verified binary patch for each of the 20 most recent compatible release APKs.
+      # Create separately verified binary patches for the 5 most recent compatible release APKs to keep CI bounded.
       - name: Download recent signed base APKs
         if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
         env:
@@ -193,7 +198,7 @@ jobs:
               m=re.fullmatch(r"astra-build-(\d+)",r.get("tagName",""))
               if m and int(m.group(1))<target: tags.append((int(m.group(1)),r["tagName"]))
           tags.sort(reverse=True)
-          open("delta-bases/tags.txt","w").writelines(f"{n} {t}\n" for n,t in tags[:20])
+          open("delta-bases/tags.txt","w").writelines(f"{n} {t}\n" for n,t in tags[:5])
           PY
           while read -r N TAG; do
             mkdir -p "delta-bases/$N"
@@ -249,7 +254,8 @@ jobs:
           for p in patches: p["patchUrl"]=base+p["patchFile"]
           apk=glob.glob("app/build/outputs/apk/release/**/*.apk",recursive=True)[0]
           cert=subprocess.check_output(["openssl","x509","-in","app/src/main/assets/update_signer.pem","-outform","DER"])
-          data={"packageName":"com.bittupandit.astraquantumai","targetVersionCode":int(os.environ["GITHUB_RUN_NUMBER"]),"targetVersionName":"1.0."+os.environ["GITHUB_RUN_NUMBER"],"targetApkSha256":hashlib.sha256(open(apk,"rb").read()).hexdigest(),"signerCertificateSha256":hashlib.sha256(cert).hexdigest(),"apkUrl":base+"ASTRA-QUANTUM-AI.apk","patches":patches}
+          legacy=next((p for p in patches if p["baseBuild"]==194),patches[0])
+data={"packageName":"com.bittupandit.astraquantumai","targetVersionCode":int(os.environ["GITHUB_RUN_NUMBER"]),"targetVersionName":"1.0."+os.environ["GITHUB_RUN_NUMBER"],"targetApkSha256":hashlib.sha256(open(apk,"rb").read()).hexdigest(),"signerCertificateSha256":hashlib.sha256(cert).hexdigest(),"apkUrl":base+"ASTRA-QUANTUM-AI.apk","patches":patches,"baseApkSha256":legacy["baseApkSha256"],"patchUrl":legacy["patchUrl"]}
           json.dump(data,open("delta-output/UPDATE-METADATA.json","w"),separators=(",",":"),sort_keys=True)
           PY
           cat > "$RUNNER_TEMP/SignUpdateMetadata.java" <<'JAVA'
