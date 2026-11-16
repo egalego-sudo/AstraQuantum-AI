@@ -276,11 +276,11 @@ jobs:
           TAG="astra-build-${GITHUB_RUN_NUMBER}"
           gh release create "$TAG" delta-output/*.patch delta-output/UPDATE-METADATA.json delta-output/UPDATE-METADATA.sig delta-output/ASTRA-QUANTUM-AI.apk --repo "$GITHUB_REPOSITORY" --title "ASTRA QUANTUM AI PLUS Build ${GITHUB_RUN_NUMBER}" --notes "Signed per-build delta patches for the 20 most recent compatible releases. Full APK fallback only." --latest --target "$GITHUB_SHA"
 
-            - name: Upload verified APK binary delta
+      - name: Upload verified APK binary delta
         if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
         uses: actions/upload-artifact@v4
         with:
-          name: ASTRA-QUANTUM-AI-APK-DELTA-build150
+          name: ASTRA-QUANTUM-AI-APK-DELTA-multi-base
           path: |
             delta-output/*.patch
             delta-output/UPDATE-METADATA.json
