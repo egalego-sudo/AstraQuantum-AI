@@ -220,19 +220,29 @@ async function research(input) {
   }).toString();
   const crossrefUrl = new URL("https://api.crossref.org/works");
   crossrefUrl.search = new URLSearchParams({ "query.bibliographic": query, rows: "5", select: "title,author,published,DOI,URL,container-title,abstract" }).toString();
+  const openAlexUrl = new URL("https://api.openalex.org/works");
+  openAlexUrl.search = new URLSearchParams({
+    search: query, "per-page": "5",
+    select: "id,doi,title,publication_year,authorships,primary_location,abstract_inverted_index"
+  }).toString();
 
-  const [wikiResponse, crossrefResponse] = await Promise.all([
-    fetch(wikiUrl, { headers: { "user-agent": "ASTRA-Quantum-AI/1.0 (research assistant)" }, signal: AbortSignal.timeout(15000) }),
-    fetch(crossrefUrl, { headers: { "user-agent": "ASTRA-Quantum-AI/1.0 (mailto:research@astraquantum-ai.invalid)" }, signal: AbortSignal.timeout(15000) })
+  const [wikiResponse, crossrefResponse, openAlexResponse] = await Promise.all([
+    fetch(wikiUrl, { headers: { "user-agent": "ASTRA-Quantum-AI/1.0 (research assistant)" }, signal: AbortSignal.timeout(15000) }).catch(() => null),
+    fetch(crossrefUrl, { headers: { "user-agent": "ASTRA-Quantum-AI/1.0 (research assistant)" }, signal: AbortSignal.timeout(15000) }).catch(() => null),
+    fetch(openAlexUrl, { headers: { "user-agent": "ASTRA-Quantum-AI/1.0 (research assistant)" }, signal: AbortSignal.timeout(15000) }).catch(() => null)
   ]);
-  if (!wikiResponse.ok && !crossrefResponse.ok) throw new Error("Research sources are temporarily unavailable.");
-  const wikiData = wikiResponse.ok ? await wikiResponse.json() : {};
-  const crossrefData = crossrefResponse.ok ? await crossrefResponse.json() : {};
+  const successfulResponses = [wikiResponse, crossrefResponse, openAlexResponse].filter(r => r?.ok);
+  if (!successfulResponses.length) throw new Error("Research sources are temporarily unavailable.");
+  const [wikiData, crossrefData, openAlexData] = await Promise.all([
+    wikiResponse?.ok ? wikiResponse.json() : {},
+    crossrefResponse?.ok ? crossrefResponse.json() : {},
+    openAlexResponse?.ok ? openAlexResponse.json() : {}
+  ]);
   const wikiPages = Object.values(wikiData?.query?.pages || {}).map(page => ({
     title: page.title, extract: String(page.extract || "").slice(0, 3500),
     url: "https://en.wikipedia.org/?curid=" + page.pageid
   })).filter(x => x.extract);
-  const papers = (crossrefData?.message?.items || []).map(item => ({
+  const crossrefPapers = (crossrefData?.message?.items || []).map(item => ({
     title: Array.isArray(item.title) ? item.title[0] : "",
     authors: (item.author || []).slice(0, 4).map(a => [a.given, a.family].filter(Boolean).join(" ")).join(", "),
     year: item.published?.["date-parts"]?.[0]?.[0] || "",
@@ -240,14 +250,44 @@ async function research(input) {
     doi: item.DOI || "", url: item.URL || (item.DOI ? "https://doi.org/" + item.DOI : ""),
     abstract: String(item.abstract || "").replace(/<[^>]*>/g, "").slice(0, 1800)
   })).filter(x => x.title);
+  const openAlexPapers = (openAlexData?.results || []).map(item => {
+    const inverted = item.abstract_inverted_index || {};
+    const words = [];
+    for (const [word, positions] of Object.entries(inverted)) {
+      for (const position of positions || []) words[position] = word;
+    }
+    const doi = String(item.doi || "").replace(/^https?:\/\/doi\.org\//i, "");
+    return {
+      title: item.title || "",
+      authors: (item.authorships || []).slice(0, 4).map(a => a.author?.display_name).filter(Boolean).join(", "),
+      year: item.publication_year || "",
+      journal: item.primary_location?.source?.display_name || "",
+      doi,
+      url: item.doi || item.id || "",
+      abstract: words.filter(Boolean).join(" ").slice(0, 1800)
+    };
+  }).filter(x => x.title);
   const sources = [
     ...wikiPages.map(x => ({ type: "encyclopedia", ...x })),
-    ...papers.map(x => ({ type: "research-paper", ...x }))
+    ...crossrefPapers.map(x => ({ type: "crossref-record", ...x })),
+    ...openAlexPapers.map(x => ({ type: "openalex-record", ...x }))
   ];
-  if (!sources.length) throw new Error("इस विषय के लिए अभी कोई उपयोगी स्रोत नहीं मिला।");
-  const evidence = sources.map((source, i) =>
-    "[" + (i + 1) + "] " + source.type + " | " + source.title + " | " + (source.year || "") +
-    "\nURL: " + source.url + "\n" + (source.extract || source.abstract || "")
+  const seenSources = new Set();
+  const uniqueSources = sources.filter(source => {
+    const key = (source.doi ? "doi:" + source.doi.toLowerCase() :
+      source.url ? "url:" + source.url.toLowerCase() :
+      "title:" + source.title.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim());
+    if (seenSources.has(key)) return false;
+    seenSources.add(key);
+    return true;
+  }).slice(0, 12);
+  if (!uniqueSources.length) throw new Error("इस विषय के लिए अभी कोई उपयोगी स्रोत नहीं मिला।");
+  const sourcesWithIds = uniqueSources.map((source, index) => ({ ...source, id: index + 1 }));
+  const evidence = sourcesWithIds.map(source =>
+    "[" + source.id + "] " + source.type + " | " + source.title + " | " + (source.year || "") +
+    (source.authors ? " | " + source.authors : "") +
+    (source.journal ? " | " + source.journal : "") +
+    "\nURL: " + source.url + "\n" + (source.extract || source.abstract || "केवल bibliographic metadata उपलब्ध; abstract/full text उपलब्ध नहीं।")
   ).join("\n\n");
   const answer = await generate({
     prompt: "इस शोध प्रश्न का हिंदी में प्रमाण-आधारित विश्लेषण करें: " + query +
@@ -262,11 +302,11 @@ async function research(input) {
   });
   return {
     text: answer,
-    sources: sources.map((source, i) => ({ id: i + 1, type: source.type, title: source.title, url: source.url, year: source.year || "" })),
+    sources: sourcesWithIds.map(source => ({ id: source.id, type: source.type, title: source.title, url: source.url, year: source.year || "", doi: source.doi || "" })),
     evidence_policy: {
       source_count: sources.length,
-      source_types: [...new Set(sources.map(source => source.type))],
-      limitations: ["सीमित Wikipedia और Crossref खोज", "स्रोतों की पूर्ण-पाठ स्वतंत्र जाँच नहीं", "AI द्वारा तैयार विश्लेषण; निर्णायक सत्यापन नहीं"]
+      source_types: [...new Set(sourcesWithIds.map(source => source.type))],
+      limitations: ["सीमित Wikipedia, Crossref और OpenAlex खोज; विषय के अनुसार उपलब्धता बदल सकती है", "सभी स्रोतों की पूर्ण-पाठ स्वतंत्र जाँच नहीं; bibliographic metadata को दावे का प्रमाण नहीं माना जा सकता", "AI द्वारा तैयार विश्लेषण; निर्णायक सत्यापन नहीं"]
     }
   };
 }
