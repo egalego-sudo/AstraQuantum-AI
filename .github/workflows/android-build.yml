@@ -119,6 +119,9 @@ jobs:
           test -s app/src/main/assets/update_signer.pem
           echo "Embedded public update-verification certificate exported."
 
+      - name: Run Android unit tests
+        run: gradle --no-daemon testDebugUnitTest
+
       - name: Build debug APK
         run: gradle --no-daemon assembleDebug
 
