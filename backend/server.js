@@ -140,7 +140,7 @@ async function generate(input) {
     model,
     instructions: ASTRA_INSTRUCTIONS,
     input: [{ role: "user", content }],
-    max_output_tokens: 2048
+    max_output_tokens: Math.min(8192, Math.max(2048, Number(input.maxOutputTokens) || 2048))
   };
   const response = await requestWithRetry("https://api.groq.com/openai/v1/responses", {
     method: "POST",
@@ -167,7 +167,7 @@ async function generate(input) {
             { role: "system", content: ASTRA_INSTRUCTIONS },
             { role: "user", content: prompt }
           ],
-          max_tokens: 2048
+          max_tokens: Math.min(8192, Math.max(2048, Number(input.maxOutputTokens) || 2048))
         })
       });
       const fallbackData = await fallbackResponse.json().catch(() => ({}));
@@ -210,7 +210,7 @@ async function generate(input) {
           { role: "system", content: ASTRA_INSTRUCTIONS },
           { role: "user", content: prompt }
         ],
-        max_tokens: 2048
+        max_tokens: Math.min(8192, Math.max(2048, Number(input.maxOutputTokens) || 2048))
       })
     });
     const fallbackData = await fallbackResponse.json().catch(() => ({}));
@@ -328,100 +328,177 @@ async function quantumJob(jobId) {
 async function research(input) {
   const query = String(input.query || "").trim();
   if (!query || query.length > 500) throw new Error("Research query is empty or too long.");
-  const wikiUrl = new URL("https://en.wikipedia.org/w/api.php");
-  wikiUrl.search = new URLSearchParams({
-    action: "query", generator: "search", gsrsearch: query, gsrlimit: "5",
-    prop: "extracts", exintro: "1", explaintext: "1", format: "json"
-  }).toString();
-  const crossrefUrl = new URL("https://api.crossref.org/works");
-  crossrefUrl.search = new URLSearchParams({ "query.bibliographic": query, rows: "5", select: "title,author,published,DOI,URL,container-title,abstract" }).toString();
-  const openAlexUrl = new URL("https://api.openalex.org/works");
-  openAlexUrl.search = new URLSearchParams({
-    search: query, "per-page": "5",
-    select: "id,doi,title,publication_year,authorships,primary_location,abstract_inverted_index"
-  }).toString();
-
-  const [wikiResponse, crossrefResponse, openAlexResponse] = await Promise.all([
-    fetch(wikiUrl, { headers: { "user-agent": "ASTRA-Quantum-AI/1.0 (research assistant)" }, signal: AbortSignal.timeout(15000) }).catch(() => null),
-    fetch(crossrefUrl, { headers: { "user-agent": "ASTRA-Quantum-AI/1.0 (research assistant)" }, signal: AbortSignal.timeout(15000) }).catch(() => null),
-    fetch(openAlexUrl, { headers: { "user-agent": "ASTRA-Quantum-AI/1.0 (research assistant)" }, signal: AbortSignal.timeout(15000) }).catch(() => null)
+  const headers = { "user-agent": "ASTRA-Quantum-AI/2.0 (evidence research assistant)" };
+  const fetchJson = async (url, timeout = 18000) => {
+    try {
+      const response = await fetch(url, { headers, signal: AbortSignal.timeout(timeout) });
+      if (!response.ok) return null;
+      return await response.json();
+    } catch { return null; }
+  };
+  const fetchText = async (url, timeout = 18000) => {
+    try {
+      const response = await fetch(url, { headers, signal: AbortSignal.timeout(timeout) });
+      if (!response.ok) return "";
+      return await response.text();
+    } catch { return ""; }
+  };
+  const xmlText = value => String(value || "")
+    .replace(/<[^>]*>/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCharCode(parseInt(code, 16)))
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/\s+/g, " ").trim();
+  const [wikiData, crossrefData, openAlexData, europeData, arxivXml] = await Promise.all([
+    fetchJson("https://en.wikipedia.org/w/api.php?" + new URLSearchParams({
+      action: "query", generator: "search", gsrsearch: query, gsrlimit: "6",
+      prop: "extracts", exintro: "1", explaintext: "1", format: "json"
+    })),
+    fetchJson("https://api.crossref.org/works?" + new URLSearchParams({
+      "query.bibliographic": query, rows: "10",
+      select: "title,author,published,DOI,URL,container-title,abstract,type"
+    })),
+    fetchJson("https://api.openalex.org/works?" + new URLSearchParams({
+      search: query, "per-page": "10",
+      select: "id,doi,title,publication_year,authorships,primary_location,abstract_inverted_index,open_access"
+    })),
+    fetchJson("https://www.ebi.ac.uk/europepmc/webservices/rest/search?" + new URLSearchParams({
+      query, format: "json", pageSize: "10", resultType: "core", sort: "RELEVANCE"
+    })),
+    fetchText("https://export.arxiv.org/api/query?" + new URLSearchParams({
+      search_query: "all:" + query, start: "0", max_results: "8", sortBy: "relevance"
+    }))
   ]);
-  const successfulResponses = [wikiResponse, crossrefResponse, openAlexResponse].filter(r => r?.ok);
-  if (!successfulResponses.length) throw new Error("Research sources are temporarily unavailable.");
-  const [wikiData, crossrefData, openAlexData] = await Promise.all([
-    wikiResponse?.ok ? wikiResponse.json() : {},
-    crossrefResponse?.ok ? crossrefResponse.json() : {},
-    openAlexResponse?.ok ? openAlexResponse.json() : {}
-  ]);
-  const wikiPages = Object.values(wikiData?.query?.pages || {}).map(page => ({
-    title: page.title, extract: String(page.extract || "").slice(0, 3500),
-    url: "https://en.wikipedia.org/?curid=" + page.pageid
-  })).filter(x => x.extract);
-  const crossrefPapers = (crossrefData?.message?.items || []).map(item => ({
-    title: Array.isArray(item.title) ? item.title[0] : "",
-    authors: (item.author || []).slice(0, 4).map(a => [a.given, a.family].filter(Boolean).join(" ")).join(", "),
-    year: item.published?.["date-parts"]?.[0]?.[0] || "",
-    journal: Array.isArray(item["container-title"]) ? item["container-title"][0] : "",
-    doi: item.DOI || "", url: item.URL || (item.DOI ? "https://doi.org/" + item.DOI : ""),
-    abstract: String(item.abstract || "").replace(/<[^>]*>/g, "").slice(0, 1800)
-  })).filter(x => x.title);
-  const openAlexPapers = (openAlexData?.results || []).map(item => {
+  const sources = [];
+  for (const page of Object.values(wikiData?.query?.pages || {})) {
+    const extract = String(page.extract || "").slice(0, 3000);
+    if (extract) sources.push({ type: "encyclopedia", title: page.title, year: "", url: "https://en.wikipedia.org/?curid=" + page.pageid, abstract: extract, quality: "tertiary reference" });
+  }
+  for (const item of crossrefData?.message?.items || []) {
+    const title = Array.isArray(item.title) ? item.title[0] : "";
+    if (!title) continue;
+    sources.push({
+      type: "crossref-metadata", title,
+      authors: (item.author || []).slice(0, 5).map(a => [a.given, a.family].filter(Boolean).join(" ")).join(", "),
+      year: item.published?.["date-parts"]?.[0]?.[0] || "",
+      journal: Array.isArray(item["container-title"]) ? item["container-title"][0] : "",
+      doi: item.DOI || "", url: item.URL || (item.DOI ? "https://doi.org/" + item.DOI : ""),
+      abstract: xmlText(item.abstract || "").slice(0, 2200),
+      quality: "bibliographic metadata; abstract may be absent"
+    });
+  }
+  for (const item of openAlexData?.results || []) {
     const inverted = item.abstract_inverted_index || {};
     const words = [];
-    for (const [word, positions] of Object.entries(inverted)) {
-      for (const position of positions || []) words[position] = word;
-    }
+    for (const [word, positions] of Object.entries(inverted)) for (const position of positions || []) words[position] = word;
     const doi = String(item.doi || "").replace(/^https?:\/\/doi\.org\//i, "");
-    return {
-      title: item.title || "",
-      authors: (item.authorships || []).slice(0, 4).map(a => a.author?.display_name).filter(Boolean).join(", "),
+    sources.push({
+      type: "openalex-index", title: item.title || "",
+      authors: (item.authorships || []).slice(0, 5).map(a => a.author?.display_name).filter(Boolean).join(", "),
       year: item.publication_year || "",
       journal: item.primary_location?.source?.display_name || "",
-      doi,
-      url: item.doi || item.id || "",
-      abstract: words.filter(Boolean).join(" ").slice(0, 1800)
-    };
-  }).filter(x => x.title);
-  const sources = [
-    ...wikiPages.map(x => ({ type: "encyclopedia", ...x })),
-    ...crossrefPapers.map(x => ({ type: "crossref-record", ...x })),
-    ...openAlexPapers.map(x => ({ type: "openalex-record", ...x }))
-  ];
-  const seenSources = new Set();
+      doi, url: item.doi || item.id || "",
+      abstract: words.filter(Boolean).join(" ").slice(0, 2200),
+      openAccess: Boolean(item.open_access?.is_oa),
+      quality: item.open_access?.is_oa ? "indexed record; open-access location reported" : "indexed record"
+    });
+  }
+  for (const item of europeData?.resultList?.result || []) {
+    const pmcid = String(item.pmcid || "").replace(/^PMC/i, "");
+    sources.push({
+      type: "europe-pmc", title: item.title || "",
+      authors: item.authorString || "",
+      year: item.firstPublicationDate || item.pubYear || "",
+      journal: item.journalTitle || "",
+      doi: item.doi || "", pmcid,
+      url: item.doi ? "https://doi.org/" + item.doi : (pmcid ? "https://europepmc.org/articles/PMC" + pmcid : item.id ? "https://europepmc.org/article/MED/" + item.id : ""),
+      abstract: String(item.abstractText || "").slice(0, 3500),
+      openAccess: Boolean(pmcid && item.isOpenAccess === "Y"),
+      quality: item.isOpenAccess === "Y" ? "indexed biomedical record; open full text may be available" : "indexed biomedical record"
+    });
+  }
+  const atomEntries = arxivXml.match(/<entry[\s\S]*?<\/entry>/g) || [];
+  for (const entry of atomEntries) {
+    const getTag = tag => xmlText(entry.match(new RegExp("<" + tag + "(?:\\s[^>]*)?>([\\s\\S]*?)<\\/" + tag + ">","i"))?.[1] || "");
+    const id = getTag("id");
+    const title = getTag("title").replace(/\s+/g, " ");
+    if (!title || !id) continue;
+    sources.push({
+      type: "arxiv-preprint", title, authors: (entry.match(/<author>[\s\S]*?<\/author>/g) || []).slice(0, 5).map(a => xmlText(a.match(/<name>([\s\S]*?)<\/name>/)?.[1] || "")).filter(Boolean).join(", "),
+      year: getTag("published").slice(0, 4), url: id, abstract: getTag("summary").slice(0, 3000),
+      quality: "preprint; may not be peer reviewed"
+    });
+  }
+  const sourcePriority = { "europe-pmc": 0, "arxiv-preprint": 1, "openalex-index": 2, "crossref-metadata": 3, "encyclopedia": 4 };
+  sources.sort((a, b) => (sourcePriority[a.type] ?? 9) - (sourcePriority[b.type] ?? 9));
+  const seen = new Set();
   const uniqueSources = sources.filter(source => {
-    const key = (source.doi ? "doi:" + source.doi.toLowerCase() :
+    if (!source.title) return false;
+    const key = source.doi ? "doi:" + source.doi.toLowerCase() :
       source.url ? "url:" + source.url.toLowerCase() :
-      "title:" + source.title.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim());
-    if (seenSources.has(key)) return false;
-    seenSources.add(key);
+      "title:" + source.title.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    if (seen.has(key)) return false;
+    seen.add(key);
     return true;
-  }).slice(0, 12);
-  if (!uniqueSources.length) throw new Error("इस विषय के लिए अभी कोई उपयोगी स्रोत नहीं मिला।");
-  const sourcesWithIds = uniqueSources.map((source, index) => ({ ...source, id: index + 1 }));
+  }).slice(0, 24);
+  if (!uniqueSources.length) throw new Error("इस विषय के लिए पाँच शोध स्रोतों में कोई उपयोगी रिकॉर्ड नहीं मिला।");
+  // Attempt a small, bounded number of open full-text fetches where Europe PMC explicitly reports OA.
+  const oaCandidates = uniqueSources.filter(s => s.type === "europe-pmc" && s.openAccess && s.pmcid).slice(0, 3);
+  const fullTextResults = await Promise.all(oaCandidates.map(async source => {
+    const xml = await fetchText("https://www.ebi.ac.uk/europepmc/webservices/rest/PMC" + encodeURIComponent(source.pmcid) + "/fullTextXML", 22000);
+    const plain = xmlText(xml).slice(0, 9000);
+    return plain.length > 500 ? { ...source, fullText: plain, fullTextFetched: true, quality: "open-access full text retrieved from Europe PMC" } : null;
+  }));
+  const fullTextByDoi = new Map(fullTextResults.filter(Boolean).map(s => [s.doi || s.pmcid, s]));
+  const enrichedSources = uniqueSources.map(source => fullTextByDoi.get(source.doi || source.pmcid) || source);
+  const sourcesWithIds = enrichedSources.map((source, index) => ({ ...source, id: index + 1 }));
   const evidence = sourcesWithIds.map(source =>
-    "[" + source.id + "] " + source.type + " | " + source.title + " | " + (source.year || "") +
+    "[" + source.id + "] " + source.type + " | " + source.title + " | " + (source.year || "date unavailable") +
     (source.authors ? " | " + source.authors : "") +
     (source.journal ? " | " + source.journal : "") +
-    "\nURL: " + source.url + "\n" + (source.extract || source.abstract || "केवल bibliographic metadata उपलब्ध; abstract/full text उपलब्ध नहीं।")
+    " | source quality: " + source.quality +
+    "\nURL: " + source.url +
+    "\n" + (source.fullText || source.abstract || "केवल bibliographic metadata उपलब्ध; abstract/full text उपलब्ध नहीं।")
   ).join("\n\n");
+  const sourceTypes = [...new Set(sourcesWithIds.map(source => source.type))];
   const answer = await generate({
-    prompt: "इस शोध प्रश्न का प्रमाण-आधारित विश्लेषण उसी भाषा में करें जिसमें प्रश्न पूछा गया है: हिंदी प्रश्न पर हिंदी, English question पर English, और मिश्रित प्रश्न पर स्वाभाविक द्विभाषी उत्तर दें: " + query +
-      "\n\nनीचे live retrieved sources दिए गए हैं। यह source set सीमित है; इसे पूरे इंटरनेट या पूर्ण literature review का प्रतिनिधि न बताएं। हर महत्वपूर्ण दावे के बाद केवल उन्हीं स्रोतों के [संख्या] citations दें जो वास्तव में उसका समर्थन करते हैं। स्रोत का शीर्षक/वर्ष/DOI metadata है, स्वयं प्रमाण नहीं। Wikipedia को अकेले निर्णायक प्रमाण न मानें; Crossref record का abstract उपलब्ध हो तो निष्कर्ष उससे आगे न बढ़ाएं।" +
-      "\n\nरिपोर्ट में ये अलग-अलग headings अनिवार्य रखें:" +
-      "\n1. समर्थित तथ्य — हर बिंदु के साथ [source id] और प्रमाण का संक्षिप्त आधार।" +
-      "\n2. विरोधाभास/असहमति — केवल तभी लिखें जब उपलब्ध स्रोत वास्तव में अलग दावे करें; अन्यथा 'इस सीमित स्रोत-समूह में स्पष्ट विरोधाभास नहीं मिला' लिखें।" +
-      "\n3. अनिश्चितता और कमी — कौन-सी बात स्रोतों से सिद्ध नहीं होती, स्रोत की तारीख/गुणवत्ता/सीमा क्या है, और क्या अतिरिक्त जाँच चाहिए।" +
-      "\n4. निष्कर्ष — confidence को उच्च/मध्यम/कम में बताएँ और उसका कारण दें; इसे गणितीय probability न कहें।" +
-      "\n5. स्रोत सूची — प्रयुक्त URLs और स्रोत प्रकार। कोई citation, तथ्य, स्रोत-पठन या स्वतंत्र सत्यापन गढ़ें नहीं।" +
-      "\n\nRetrieved source material:\n" + evidence
+    maxOutputTokens: 6000,
+    prompt: "आप ASTRA Deep Research Engine हैं। इस प्रश्न पर गहन, संतुलित और प्रमाण-आधारित रिपोर्ट तैयार करें: " + query +
+      "\n\nस्रोतों का सीमित live retrieval किया गया है। यह पूरा इंटरनेट, exhaustive literature review या सभी प्रकाशित/अप्रकाशित सामग्री नहीं है। केवल नीचे उपलब्ध सामग्री पर दावे करें।" +
+      "\nहर तथ्यात्मक दावे के तुरंत बाद संबंधित [source id] दें। स्रोत metadata स्वयं दावे का प्रमाण नहीं है। abstract या indexed summary को full-text पढ़ा हुआ न बताएं। arXiv को preprint कहें। Wikipedia को tertiary source मानें।" +
+      "\nरिपोर्ट की संरचना अनिवार्य है:" +
+      "\n1. कार्यकारी सारांश" +
+      "\n2. शोध का दायरा और खोज में प्रयुक्त स्रोत" +
+      "\n3. प्रमाणित/समर्थित तथ्य — हर दावे के साथ स्रोत और उसका वास्तविक समर्थन" +
+      "\n4. स्रोतों की तुलना — सहमति, मतभेद, अध्ययन-प्रकार, तारीख और सीमाएँ; मतभेद न मिले तो साफ कहें" +
+      "\n5. विरोधाभास और संभावित कारण" +
+      "\n6. क्या अभी सिद्ध नहीं है / अज्ञात बातें" +
+      "\n7. निष्कर्ष — उच्च/मध्यम/कम भरोसा और उसका कारण; प्रतिशत confidence न गढ़ें" +
+      "\n8. आगे की जाँच के लिए सबसे उपयोगी प्रश्न/प्रयोग" +
+      "\n9. स्रोत सूची — दिए गए URLs, वर्ष, DOI और स्रोत प्रकार" +
+      "\nकोई स्रोत, citation, पढ़ा हुआ full text, तथ्य या स्वतंत्र सत्यापन गढ़ें नहीं। स्रोत कम हों तो निष्कर्ष सीमित रखें।" +
+      "\n\nRetrieved evidence:\n" + evidence
   });
   return {
     text: answer,
-    sources: sourcesWithIds.map(source => ({ id: source.id, type: source.type, title: source.title, url: source.url, year: source.year || "", doi: source.doi || "" })),
-    evidence_policy: {
-      source_count: sources.length,
-      source_types: [...new Set(sourcesWithIds.map(source => source.type))],
-      limitations: ["सीमित Wikipedia, Crossref और OpenAlex खोज; विषय के अनुसार उपलब्धता बदल सकती है", "सभी स्रोतों की पूर्ण-पाठ स्वतंत्र जाँच नहीं; bibliographic metadata को दावे का प्रमाण नहीं माना जा सकता", "AI द्वारा तैयार विश्लेषण; निर्णायक सत्यापन नहीं"]
+    sources: sourcesWithIds.map(source => ({
+      id: source.id, type: source.type, title: source.title, url: source.url,
+      year: source.year || "", doi: source.doi || "",
+      fullTextFetched: Boolean(source.fullTextFetched), quality: source.quality
+    })),
+    research_meta: {
+      unique_source_count: sourcesWithIds.length,
+      source_types: sourceTypes,
+      open_full_texts_fetched: fullTextResults.filter(Boolean).length,
+      sources_with_abstract_or_full_text: sourcesWithIds.filter(s => s.abstract || s.fullText).length,
+      coverage_note: "यह पाँच सार्वजनिक scholarly/knowledge indexes की सीमित खोज है; पूरे इंटरनेट की exhaustive खोज नहीं।",
+      limitations: [
+        "Search results relevance ranking और provider coverage पर निर्भर हैं",
+        "सभी स्रोतों का full text उपलब्ध या पढ़ा नहीं गया; अधिकतर indexed abstracts/metadata हैं",
+        "Open-access full text केवल अधिकतम तीन Europe PMC records के लिए प्रयास किया गया",
+        "AI synthesis स्वयं peer review या स्वतंत्र वैज्ञानिक सत्यापन नहीं है",
+        "स्रोतों की गुणवत्ता, bias और retraction status पर अतिरिक्त मानवीय जाँच आवश्यक हो सकती है"
+      ]
     }
   };
 }
