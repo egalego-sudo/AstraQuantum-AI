@@ -40,9 +40,13 @@ The `/v1/analyze` route is also accepted by the server and uses the same request
 
 - `POST /v1/research`
 - JSON body: `{"query":"research topic"}`
-- Retrieves up to five Wikipedia overview pages and five Crossref scholarly records, then synthesizes a Hindi/English report through Groq.
-- Response includes `text` and a `sources` list with IDs, source types, titles, URLs and years.
-- This is an initial, limited source set. It is not exhaustive web search, primary-source review, or guaranteed fact verification. Users should open and assess the cited sources.
+- Searches five public knowledge/scholarly sources in parallel: Europe PMC, arXiv, OpenAlex, Crossref and Wikipedia.
+- Deduplicates indexed records and supplies up to 24 records to the synthesis stage.
+- Attempts full-text retrieval for up to three Europe PMC Open Access records and up to two arXiv HTML records, subject to availability and timeouts. A failed or unavailable full-text fetch remains labeled as abstract/metadata only.
+- The report asks for claim-level evidence classification: `SUPPORTED`, `PARTLY SUPPORTED`, `CONTRADICTED`, or `UNVERIFIED`, with source IDs and evidence level. This is model-assisted classification, not independent peer review or a guarantee of correctness.
+- Response fields include `text`, `sources`, and `research_meta`. Metadata reports source counts/types, which source types returned full text, coverage limitations, and how many records include an abstract or full text.
+- The Android client allows up to 150 seconds for this research request.
+- This is a bounded indexed-source search, not exhaustive internet search or a guarantee that every source, paper, or claim has been found. arXiv records are preprints unless their publication status is independently confirmed; Wikipedia is a tertiary source. Users should inspect primary sources and cited evidence.
 
 ## IBM Quantum hardware connector
 
