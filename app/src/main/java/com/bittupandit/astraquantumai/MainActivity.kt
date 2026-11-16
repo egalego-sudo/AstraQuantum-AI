@@ -186,6 +186,10 @@ private fun AstraApp(
     var offlineTestAnswer by remember { mutableStateOf("") }
     var researchResult by remember { mutableStateOf("") }
     var researchBusy by remember { mutableStateOf(false) }
+    var actionRequest by remember { mutableStateOf("") }
+    var actionPlan by remember { mutableStateOf("") }
+    var actionBusy by remember { mutableStateOf(false) }
+    var confirmSaveActionPlan by remember { mutableStateOf(false) }
 
     LaunchedEffect(speechText) { if (speechText.isNotBlank()) { prompt = speechText; page = "AI Chat" } }
     LaunchedEffect(chat) { prefs.edit().putString("chat_history", encodeChatHistory(chat)).apply() }
@@ -238,7 +242,7 @@ private fun AstraApp(
             }
             Spacer(Modifier.height(14.dp))
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                listOf("Home", "Cores", "AI Chat", "Offline AI", "Research", "Memory", "Voice", "Files", "Quantum", "Projects", "Settings").forEach { item ->
+                listOf("Home", "Cores", "AI Chat", "Offline AI", "Research", "Action", "Memory", "Voice", "Files", "Quantum", "Projects", "Settings").forEach { item ->
                     val selected = page == item
                     Surface(
                         onClick = { page = item },
@@ -757,6 +761,67 @@ private fun AstraApp(
                     SelectionContainer { Text(offlineTestAnswer, color = white, lineHeight = 21.sp) }
                 }
                 Text("मॉडल लाइसेंस: Apache 2.0 · Qwen3-0.6B. लाइव इंटरनेट खोज और वर्तमान समाचार ऑफलाइन उपलब्ध नहीं होंगे।", color = muted, fontSize = 11.sp)
+                Text("Creator by Bittu Pandit", color = mint, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            }
+            "Action" -> SimplePage("ASTRA ACTION INTELLIGENCE", "यह मॉड्यूल आपके काम को चरणों में बाँटकर समीक्षा योग्य योजना बनाता है। अभी यह फोन/बाहरी ऐप पर स्वतः बदलाव नहीं करता; योजना सेव करने से पहले आपकी पुष्टि आवश्यक है।") {
+                OutlinedTextField(
+                    value = actionRequest,
+                    onValueChange = { actionRequest = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("कौन-सा काम पूरा करना है?") },
+                    minLines = 3
+                )
+                Button(
+                    enabled = actionRequest.isNotBlank() && !actionBusy,
+                    onClick = {
+                        actionBusy = true
+                        actionPlan = "ASTRA सुरक्षित कार्य-योजना बना रहा है…"
+                        val request = actionRequest.trim()
+                        activity.lifecycleScope.launch {
+                            actionPlan = withContext(Dispatchers.IO) {
+                                askBackend(
+                                    backend,
+                                    "इस काम के लिए हिंदी में स्पष्ट, क्रमबद्ध और व्यावहारिक कार्य-योजना बनाइए: " + request +
+                                        "\\n\\nआउटपुट में लक्ष्य, आवश्यक सामग्री/पूर्वशर्तें, क्रमांकित चरण, प्रत्येक चरण का अपेक्षित परिणाम, जोखिम/सुरक्षा जाँच, और अंतिम सत्यापन शामिल करें।" +
+                                        " किसी बाहरी ऐप में कार्रवाई करने, संदेश भेजने, भुगतान करने, फ़ाइल मिटाने या सेटिंग बदलने का दावा न करें। केवल योजना दें; उपयोगकर्ता स्वयं समीक्षा करेगा।"
+                                )
+                            }
+                            actionBusy = false
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = violet, contentColor = Color.White)
+                ) { Text(if (actionBusy) "योजना बन रही है…" else "कार्य-योजना तैयार करें") }
+                if (actionPlan.isNotBlank()) {
+                    Card(colors = CardDefaults.cardColors(containerColor = graphite), modifier = Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("समीक्षा के लिए योजना", color = mint, fontWeight = FontWeight.Bold)
+                            SelectionContainer { Text(actionPlan, color = white, lineHeight = 20.sp) }
+                            Button(
+                                enabled = !actionBusy && !actionPlan.startsWith("ASTRA सुरक्षित"),
+                                onClick = { confirmSaveActionPlan = true },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)
+                            ) { Text("मेरी पुष्टि से Project checkpoint में सेव करें") }
+                        }
+                    }
+                }
+                if (confirmSaveActionPlan) {
+                    AlertDialog(
+                        onDismissRequest = { confirmSaveActionPlan = false },
+                        title = { Text("योजना सेव करने की पुष्टि") },
+                        text = { Text("यह योजना आपके फोन के ASTRA Projects में स्थानीय checkpoint के रूप में सेव होगी। कोई बाहरी कार्रवाई नहीं होगी। क्या सेव करें?") },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                addProject("ACTION PLAN · " + actionRequest.trim() + "\\n" + actionPlan)
+                                confirmSaveActionPlan = false
+                                Toast.makeText(context, "कार्य-योजना स्थानीय Projects में सेव हुई", Toast.LENGTH_SHORT).show()
+                            }) { Text("हाँ, सेव करें") }
+                        },
+                        dismissButton = { TextButton(onClick = { confirmSaveActionPlan = false }) { Text("रद्द करें") } }
+                    )
+                }
+                Text("अगला स्तर: फाइल/कनेक्टेड ऐप पर वास्तविक कार्य, पहले preview और स्पष्ट अनुमति के साथ।", color = muted, fontSize = 11.sp)
                 Text("Creator by Bittu Pandit", color = mint, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             }
             "Projects" -> SimplePage("PROJECT WORKSPACE", "अपने प्रोजेक्ट के नोट्स सेव करें। ये इसी फोन में रहेंगे और ऐप दोबारा खोलने पर वापस मिलेंगे।") {
