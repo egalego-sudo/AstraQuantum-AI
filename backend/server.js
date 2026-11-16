@@ -328,7 +328,7 @@ async function quantumJob(jobId) {
 async function research(input) {
   const query = String(input.query || "").trim();
   if (!query || query.length > 500) throw new Error("Research query is empty or too long.");
-  const headers = { "user-agent": "ASTRA-Quantum-AI/2.0 (evidence research assistant; contact: support@astraquantum.ai)" };
+  const headers = { "user-agent": "ASTRA-Quantum-AI/2.0 (evidence research assistant)" };
   const fetchJson = async (url, timeout = 18000) => {
     try {
       const response = await fetch(url, { headers, signal: AbortSignal.timeout(timeout) });
@@ -429,6 +429,8 @@ async function research(input) {
       quality: "preprint; may not be peer reviewed"
     });
   }
+  const sourcePriority = { "europe-pmc": 0, "arxiv-preprint": 1, "openalex-index": 2, "crossref-metadata": 3, "encyclopedia": 4 };
+  sources.sort((a, b) => (sourcePriority[a.type] ?? 9) - (sourcePriority[b.type] ?? 9));
   const seen = new Set();
   const uniqueSources = sources.filter(source => {
     if (!source.title) return false;
