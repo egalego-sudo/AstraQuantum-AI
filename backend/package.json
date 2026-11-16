@@ -7,9 +7,9 @@
     "start": "node server.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20.16.0"
   },
   "dependencies": {
-    "pdf-parse": "1.1.1"
+    "pdf-parse": "2.4.5"
   }
 }
