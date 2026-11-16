@@ -90,6 +90,9 @@ jobs:
       - name: Check backend JavaScript syntax
         run: node --check backend/server.js
 
+      - name: Set up Android SDK command-line tools
+        uses: android-actions/setup-android@v3
+
       - name: Install Android NDK and CMake for BSDIFF engine
         run: yes | sdkmanager --install "ndk;29.0.14206865" "cmake;3.31.6"
 
