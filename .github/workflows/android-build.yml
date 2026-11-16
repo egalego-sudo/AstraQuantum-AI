@@ -18,6 +18,11 @@ jobs:
   build:
     name: Build ASTRA APKs
     runs-on: ubuntu-latest
+    env:
+      ASTRA_KEYSTORE_BASE64: ${{ secrets.ASTRA_KEYSTORE_BASE64 }}
+      ASTRA_KEYSTORE_PASSWORD: ${{ secrets.ASTRA_KEYSTORE_PASSWORD }}
+      ASTRA_KEY_ALIAS: ${{ secrets.ASTRA_KEY_ALIAS }}
+      ASTRA_KEY_PASSWORD: ${{ secrets.ASTRA_KEY_PASSWORD }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -45,9 +50,7 @@ jobs:
         run: gradle --no-daemon assembleDebug
 
       - name: Prepare persistent release signing key
-        if: ${{ secrets.ASTRA_KEYSTORE_BASE64 != '' && secrets.ASTRA_KEYSTORE_PASSWORD != '' && secrets.ASTRA_KEY_ALIAS != '' && secrets.ASTRA_KEY_PASSWORD != '' }}
-        env:
-          ASTRA_KEYSTORE_BASE64: ${{ secrets.ASTRA_KEYSTORE_BASE64 }}
+        if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_ALIAS != '' && env.ASTRA_KEY_PASSWORD != ''
         run: |
           mkdir -p "$RUNNER_TEMP/keystore"
           echo "$ASTRA_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/keystore/astra-upload.jks"
@@ -57,9 +60,6 @@ jobs:
         if: ${{ secrets.ASTRA_KEYSTORE_BASE64 != '' && secrets.ASTRA_KEYSTORE_PASSWORD != '' && secrets.ASTRA_KEY_ALIAS != '' && secrets.ASTRA_KEY_PASSWORD != '' }}
         env:
           ASTRA_KEYSTORE_PATH: ${{ runner.temp }}/keystore/astra-upload.jks
-          ASTRA_KEYSTORE_PASSWORD: ${{ secrets.ASTRA_KEYSTORE_PASSWORD }}
-          ASTRA_KEY_ALIAS: ${{ secrets.ASTRA_KEY_ALIAS }}
-          ASTRA_KEY_PASSWORD: ${{ secrets.ASTRA_KEY_PASSWORD }}
         run: gradle --no-daemon assembleRelease
 
       - name: Upload debug APK
