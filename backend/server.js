@@ -492,7 +492,8 @@ async function research(input) {
     "[" + source.id + "] " + source.type + " | " + source.title + " | " + (source.year || "date unavailable") +
     (source.authors ? " | " + source.authors : "") +
     (source.journal ? " | " + source.journal : "") +
-    " | relevance score: " + source.relevance.score + " | matched terms: " + source.relevance.matched_terms.join(", ") +\n    " | source quality: " + source.quality +
+    " | relevance score: " + source.relevance.score + " | matched terms: " + source.relevance.matched_terms.join(", ") +
+    " | source quality: " + source.quality +
     "\nURL: " + source.url +
     "\n" + (source.fullText || source.abstract || "केवल bibliographic metadata उपलब्ध; abstract/full text उपलब्ध नहीं।")
   ).join("\n\n");
