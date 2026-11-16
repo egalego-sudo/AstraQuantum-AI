@@ -210,7 +210,7 @@ async function generate(input) {
           { role: "system", content: ASTRA_INSTRUCTIONS },
           { role: "user", content: prompt }
         ],
-        max_tokens: 2048
+        max_tokens: Math.min(8192, Math.max(2048, Number(input.maxOutputTokens) || 2048))
       })
     });
     const fallbackData = await fallbackResponse.json().catch(() => ({}));
