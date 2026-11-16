@@ -124,6 +124,41 @@ object AstraQuantumSimulator {
             run.amplitudes[2].probability() < tolerance
     }
 
+
+    /** Discrete Quantum Fourier Transform over the full 2^n-dimensional state vector. */
+    fun fourierTransform(run: QuantumRun, inverse: Boolean = false): QuantumRun {
+        val n = run.amplitudes.size
+        require(n in 2..(1 shl MAX_QUBITS) && (n and (n - 1)) == 0) { "QFT के लिए 1 से 10 Qubits चाहिए।" }
+        val sign = if (inverse) -1.0 else 1.0
+        val scale = 1.0 / kotlin.math.sqrt(n.toDouble())
+        val output = MutableList(n) { ComplexAmp(0.0, 0.0) }
+        for (y in 0 until n) {
+            var sum = ComplexAmp(0.0, 0.0)
+            for (x in 0 until n) {
+                val angle = sign * 2.0 * PI * x.toDouble() * y.toDouble() / n.toDouble()
+                val phase = ComplexAmp(cos(angle), sin(angle))
+                sum += run.amplitudes[x] * phase
+            }
+            output[y] = ComplexAmp(sum.re * scale, sum.im * scale)
+        }
+        val norm = output.sumOf { it.probability() }
+        return QuantumRun(output, norm, run.operations + QuantumOp(if (inverse) "IQFT" else "QFT", -1))
+    }
+
+    fun qftBasisDemo(): QuantumRun {
+        val basisOne = run(3, listOf(QuantumOp("X", 0)))
+        return fourierTransform(basisOne)
+    }
+
+    fun verifyQftRoundTrip(tolerance: Double = 1e-9): Boolean {
+        val original = run(3, listOf(QuantumOp("X", 0)))
+        val restored = fourierTransform(fourierTransform(original), inverse = true)
+        return restored.amplitudes.indices.all { i ->
+            kotlin.math.abs(restored.amplitudes[i].re - original.amplitudes[i].re) < tolerance &&
+                kotlin.math.abs(restored.amplitudes[i].im - original.amplitudes[i].im) < tolerance
+        }
+    }
+
     fun sample(run: QuantumRun, shots: Int): Map<String, Int> {
         require(shots in 1..10000)
         val cumulative = DoubleArray(run.amplitudes.size)
