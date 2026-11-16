@@ -32,8 +32,9 @@ object ElementaryMathSolver {
         return when {
             d > tolerance -> {
                 val sqrtD = kotlin.math.sqrt(d)
-                // Stable form avoids cancellation for one of the roots.
-                val q = -0.5 * (b + kotlin.math.copySign(sqrtD, b))
+                // Stable quadratic formula without relying on Java-only copySign APIs.
+                val signedSqrt = if (b >= 0.0) sqrtD else -sqrtD
+                val q = -0.5 * (b + signedSqrt)
                 val r1 = q / a
                 val r2 = c / q
                 PolynomialSolution(2, listOf(r1, r2).sorted(), d, "TWO_DISTINCT_REAL_ROOTS",
