@@ -282,7 +282,7 @@ jobs:
         with:
           name: ASTRA-QUANTUM-AI-APK-DELTA-build150
           path: |
-            delta-output/ASTRA-build150-to-current.patch
+            delta-output/*.patch
             delta-output/UPDATE-METADATA.json
             delta-output/UPDATE-METADATA.sig
             delta-output/ASTRA-QUANTUM-AI.apk
