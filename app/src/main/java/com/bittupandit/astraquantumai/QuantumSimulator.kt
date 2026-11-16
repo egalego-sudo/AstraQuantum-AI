@@ -159,6 +159,95 @@ object AstraQuantumSimulator {
         }
     }
 
+
+    data class ShorDemoResult(
+        val run: QuantumRun,
+        val number: Int,
+        val base: Int,
+        val period: Int,
+        val factors: Pair<Int, Int>,
+        val phasePeaks: List<Pair<Int, Double>>,
+        val exponentQubits: Int
+    )
+
+    /**
+     * Educational 2-register order-finding simulation for small N.
+     * The modular-function oracle is evaluated directly in the simulator;
+     * it is not a compiled gate-by-gate reversible oracle or hardware run.
+     */
+    fun shorFactorDemo15(): ShorDemoResult {
+        val number = 15
+        val base = 2
+        val exponentQubits = 4
+        val workQubits = 4
+        val m = 1 shl exponentQubits
+        val workSize = 1 shl workQubits
+        val total = m * workSize
+        val amplitudes = MutableList(total) { ComplexAmp(0.0, 0.0) }
+        val initialAmp = 1.0 / kotlin.math.sqrt(m.toDouble())
+        var value = 1
+        for (x in 0 until m) {
+            amplitudes[x or (value shl exponentQubits)] = ComplexAmp(initialAmp, 0.0)
+            value = (value * base) % number
+        }
+
+        // Apply inverse QFT only to the exponent register, independently in each work-register slice.
+        val transformed = MutableList(total) { ComplexAmp(0.0, 0.0) }
+        for (work in 0 until workSize) {
+            for (outX in 0 until m) {
+                var sum = ComplexAmp(0.0, 0.0)
+                for (inX in 0 until m) {
+                    val input = amplitudes[inX or (work shl exponentQubits)]
+                    val angle = -2.0 * PI * inX.toDouble() * outX.toDouble() / m.toDouble()
+                    sum += input * ComplexAmp(cos(angle), sin(angle))
+                }
+                transformed[outX or (work shl exponentQubits)] =
+                    ComplexAmp(sum.re / kotlin.math.sqrt(m.toDouble()), sum.im / kotlin.math.sqrt(m.toDouble()))
+            }
+        }
+        val norm = transformed.sumOf { it.probability() }
+        val phaseProbabilities = DoubleArray(m)
+        transformed.forEachIndexed { index, amp -> phaseProbabilities[index and (m - 1)] += amp.probability() }
+        val peaks = phaseProbabilities.indices
+            .filter { phaseProbabilities[it] > 1e-8 }
+            .sortedByDescending { phaseProbabilities[it] }
+            .take(8)
+            .map { it to phaseProbabilities[it] }
+
+        val bestPhase = peaks.firstOrNull { it.first != 0 }?.first ?: 0
+        val candidateOrder = if (bestPhase == 0) 0 else {
+            (1..number).minByOrNull { q ->
+                kotlin.math.abs(bestPhase.toDouble() / m.toDouble() - (bestPhase.toDouble() / m.toDouble() * q).let { kotlin.math.round(it) / q })
+            } ?: 0
+        }
+        val period = if (candidateOrder > 0 && modularPower(base, candidateOrder, number) == 1) {
+            candidateOrder
+        } else {
+            (1..number).firstOrNull { modularPower(base, it, number) == 1 } ?: 0
+        }
+        require(period > 0 && period % 2 == 0) { "इस demo से उपयोगी even period नहीं मिला।" }
+        val halfPower = modularPower(base, period / 2, number)
+        require(halfPower != 1) { "चुना हुआ period trivial है; दूसरा run चाहिए।" }
+        val factorA = gcd(halfPower - 1, number)
+        val factorB = gcd(halfPower + 1, number)
+        require(factorA > 1 && factorB > 1 && factorA * factorB == number) { "Factor extraction सफल नहीं हुआ।" }
+        val run = QuantumRun(transformed, norm, listOf(QuantumOp("MOD_EXP", -1), QuantumOp("IQFT", -1)))
+        return ShorDemoResult(run, number, base, period, factorA to factorB, peaks, exponentQubits)
+    }
+
+    private fun modularPower(base: Int, exponent: Int, modulus: Int): Int {
+        var result = 1
+        repeat(exponent) { result = (result * base) % modulus }
+        return result
+    }
+
+    private fun gcd(aValue: Int, bValue: Int): Int {
+        var a = kotlin.math.abs(aValue)
+        var b = kotlin.math.abs(bValue)
+        while (b != 0) { val t = a % b; a = b; b = t }
+        return a
+    }
+
     fun sample(run: QuantumRun, shots: Int): Map<String, Int> {
         require(shots in 1..10000)
         val cumulative = DoubleArray(run.amplitudes.size)
