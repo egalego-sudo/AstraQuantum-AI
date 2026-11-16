@@ -49,6 +49,15 @@ jobs:
       - name: Build debug APK
         run: gradle --no-daemon assembleDebug
 
+      # Keep a usable debug build available even if release signing needs repair.
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ASTRA-QUANTUM-AI-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Prepare persistent release signing key
         if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_ALIAS != '' && env.ASTRA_KEY_PASSWORD != ''
         run: |
@@ -60,12 +69,12 @@ jobs:
         if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_ALIAS != '' && env.ASTRA_KEY_PASSWORD != ''
         run: |
           if ! keytool -list -keystore "$RUNNER_TEMP/keystore/astra-upload.jks" -storepass "$ASTRA_KEYSTORE_PASSWORD" -alias "$ASTRA_KEY_ALIAS" >/dev/null 2>&1; then
-            echo "::error::ASTRA_KEYSTORE_PASSWORD or ASTRA_KEY_ALIAS is incorrect for the uploaded keystore."
+            echo "::error::The keystore password or alias does not match the uploaded keystore."
             exit 1
           fi
           cp "$RUNNER_TEMP/keystore/astra-upload.jks" "$RUNNER_TEMP/keystore/credential-check.jks"
           if ! keytool -keypasswd -alias "$ASTRA_KEY_ALIAS" -keystore "$RUNNER_TEMP/keystore/credential-check.jks" -storepass "$ASTRA_KEYSTORE_PASSWORD" -keypass "$ASTRA_KEY_PASSWORD" -new "$ASTRA_KEY_PASSWORD" >/dev/null 2>&1; then
-            echo "::error::ASTRA_KEY_PASSWORD is incorrect for the selected key alias."
+            echo "::error::The key password does not match the selected alias."
             exit 1
           fi
           rm -f "$RUNNER_TEMP/keystore/credential-check.jks"
@@ -76,14 +85,6 @@ jobs:
         env:
           ASTRA_KEYSTORE_PATH: ${{ runner.temp }}/keystore/astra-upload.jks
         run: gradle --no-daemon assembleRelease
-
-      - name: Upload debug APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: ASTRA-QUANTUM-AI-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
-          retention-days: 14
 
       - name: Upload signed update APK
         if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_ALIAS != '' && env.ASTRA_KEY_PASSWORD != ''
