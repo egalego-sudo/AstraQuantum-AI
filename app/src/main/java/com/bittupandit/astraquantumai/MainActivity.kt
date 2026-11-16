@@ -52,16 +52,16 @@ import java.net.URL
 import java.net.URLEncoder
 import java.util.Locale
 
-// ASTRA QUANTUM COSMIC GLASS palette — approved deep-space identity.
-private val ink = Color(0xFF070B1B)
-private val charcoal = Color(0xCC101A31)
-private val graphite = Color(0xFF1A2B4D)
-private val paper = Color(0xFF0B1226)
-private val white = Color(0xFFEAF4FF)
-private val muted = Color(0xFFA9B9D6)
-private val line = Color(0xFF263B63)
-private val violet = Color(0xFF9B8CFF)
-private val mint = Color(0xFF6CF2D5)
+// ASTRA ChatGPT-inspired neutral charcoal palette.
+private val ink = Color(0xFF212121)
+private val charcoal = Color(0xFF2F2F2F)
+private val graphite = Color(0xFF3A3A3A)
+private val paper = Color(0xFF212121)
+private val white = Color(0xFFECECEC)
+private val muted = Color(0xFFB4B4B4)
+private val line = Color(0xFF454545)
+private val violet = Color(0xFF8E8EA0)
+private val mint = Color(0xFFD6D6D6)
 
 class MainActivity : ComponentActivity() {
     private var speechText by mutableStateOf("")
@@ -222,10 +222,9 @@ private fun AstraApp(
         projectInput = ""
     }
 
-    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF02030D), Color(0xFF080D27), Color(0xFF170A32), Color(0xFF050B1B))))) {
-        CosmicNebulaBackground(Modifier.fillMaxSize())
+    Box(Modifier.fillMaxSize().background(ink)) {
         Column(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(Color(0xC9101834), Color(0xB30A1025), Color.Transparent))).padding(horizontal = 20.dp, vertical = 16.dp)) {
+        Column(Modifier.fillMaxWidth().background(Color(0xFF2F2F2F)).padding(horizontal = 20.dp, vertical = 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(white), contentAlignment = Alignment.Center) {
                     Text("✦", color = ink, fontWeight = FontWeight.Black, fontSize = 24.sp)
@@ -236,7 +235,7 @@ private fun AstraApp(
                     Text("QUANTUM AI PLUS", color = muted, fontSize = 10.sp, letterSpacing = 2.sp)
                     Text("Creator by Bittu Pandit", color = mint, fontSize = 9.sp, fontWeight = FontWeight.SemiBold)
                 }
-                Surface(color = Color(0xAA152448), shape = CircleShape) {
+                Surface(color = Color(0xFF383838), shape = CircleShape) {
                     Text("✦ GROQ", color = mint, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp))
                 }
             }
@@ -264,7 +263,7 @@ private fun AstraApp(
                     Triple("04 · ACTION CORE", "योजना • कार्य-सूची • अनुमति", "Action" to "समीक्षा योग्य योजना और अनुमति-आधारित स्थानीय checkpoint"),
                     Triple("05 · QUANTUM LEARNING CORE", "क्वांटम सिद्धांत • गणित • सिमुलेशन", "Quantum" to "क्लासिकल product-state simulator; IBM connector अलग")
                 )
-                val coreTints = listOf(Color(0xFF176BCE), Color(0xFF653CC6), Color(0xFF087F86), Color(0xFFB05A27), Color(0xFF7043B8))
+                val coreTints = listOf(Color(0xFF383838), Color(0xFF414141), Color(0xFF343434), Color(0xFF454545), Color(0xFF3B3B3B))
                 coreCards.forEachIndexed { index, core ->
                     Card(
                         onClick = { page = core.third.first },
@@ -283,7 +282,7 @@ private fun AstraApp(
                 Text("ईमानदार क्षमता स्थिति", color = mint, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 Text("• इमेज समझना अभी ऑनलाइन Vision पर निर्भर है; Offline Vision उपलब्ध नहीं।\n• आवाज़ की पहचान फोन के speech provider पर निर्भर है।\n• स्रोत जुटाना और AI रिपोर्ट बनाना उपलब्ध है, पर स्वतः निर्णायक सत्यापन नहीं।\n• Action Core अभी सुरक्षित planning/workspace स्तर पर है; कोई संदेश, भुगतान या फोन-सेटिंग बिना स्पष्ट अनुमति नहीं की जाती।\n• Quantum Learning अभी शैक्षिक classical simulation है; वास्तविक QPU के लिए IBM credentials और अलग पुष्टि चाहिए।", color = muted, fontSize = 11.sp, lineHeight = 18.sp)
                 Spacer(Modifier.height(8.dp))
-                Text("ASTRA INTELLIGENCE LAYER", color = Color(0xFFFFD86B), fontSize = 14.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
+                Text("ASTRA INTELLIGENCE LAYER", color = Color(0xFFD6D6D6), fontSize = 14.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
                 val intelligenceCards = listOf(
                     "EVIDENCE INTELLIGENCE" to "रिपोर्ट में समर्थित तथ्य, स्रोत-संदर्भ, संभावित विरोधाभास और अनिश्चितता अलग दिखाने का नियम। स्रोत-जाँच अभी सीमित Wikipedia/Crossref डेटा पर आधारित है।",
                     "LONG-TERM PERSONAL INTELLIGENCE" to "आपकी अनुमति पर Saved Memory, Projects और हाल की बातचीत का संदर्भ AI को दिया जाता है; इससे पिछला काम आगे बढ़ाने में मदद मिलती है।",
@@ -292,7 +291,7 @@ private fun AstraApp(
                     "MULTIMODAL INTELLIGENCE" to "Voice-to-text, image + prompt, और PDF text analysis उपलब्ध हैं; एक ही संयुक्त multi-file multimodal session अभी सीमित है।"
                 )
                 intelligenceCards.forEach { item ->
-                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xAA101A34)), shape = RoundedCornerShape(15.dp), modifier = Modifier.fillMaxWidth()) {
+                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF303030)), shape = RoundedCornerShape(15.dp), modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(13.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                             Text(item.first, color = mint, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = .6.sp)
                             Text(item.second, color = Color(0xFFE1E7FF), fontSize = 11.sp, lineHeight = 17.sp)
@@ -316,9 +315,9 @@ private fun AstraApp(
                         }
                     }
                     Spacer(Modifier.height(14.dp))
-                    Card(colors = CardDefaults.cardColors(containerColor = Color(0x99101A3A)), shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
+                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF2F2F2F)), shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
                         Box(Modifier.fillMaxWidth().height(194.dp)) {
-                            HomeCosmicArtwork(Modifier.fillMaxSize())
+                            Box(Modifier.fillMaxSize().background(Color(0xFF303030)))
                             Column(Modifier.align(Alignment.TopStart).padding(16.dp)) {
                                 Text("WELCOME TO", color = mint, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                                 Text("YOUR UNIVERSE", color = white, fontSize = 22.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
@@ -327,7 +326,7 @@ private fun AstraApp(
                         }
                     }
                     Spacer(Modifier.height(14.dp))
-                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xE5101A34)), shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
+                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF2F2F2F)), shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(12.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text("⌕", color = white, fontSize = 25.sp, fontWeight = FontWeight.Bold)
@@ -343,11 +342,11 @@ private fun AstraApp(
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedTextColor = white, unfocusedTextColor = white,
                                     focusedBorderColor = mint, unfocusedBorderColor = line,
-                                    cursorColor = mint, focusedContainerColor = Color(0x66101834), unfocusedContainerColor = Color(0x66101834)
+                                    cursorColor = mint, focusedContainerColor = Color(0xFF303030), unfocusedContainerColor = Color(0x66101834)
                                 )
                             )
                             Spacer(Modifier.height(8.dp))
-                            Button(enabled = prompt.isNotBlank(), onClick = { page = "AI Chat" }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF176BFF), contentColor = Color.White), shape = RoundedCornerShape(13.dp)) {
+                            Button(enabled = prompt.isNotBlank(), onClick = { page = "AI Chat" }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A4A4A), contentColor = Color.White), shape = RoundedCornerShape(13.dp)) {
                                 Text("ASK ASTRA  →", fontWeight = FontWeight.ExtraBold)
                             }
                         }
@@ -363,7 +362,7 @@ private fun AstraApp(
                         AstraModule("Quantum Lab", "Quantum learning", "⚛"),
                         AstraModule("More Tools", "Your AI workspace", "✦")
                     )
-                    val tileColors = listOf(Color(0xFF135DCE), Color(0xFF6336C8), Color(0xFF087E9A), Color(0xFF16845E), Color(0xFF6636A8), Color(0xFF9B4A20))
+                    val tileColors = listOf(Color(0xFF303030), Color(0xFF383838), Color(0xFF414141), Color(0xFF343434), Color(0xFF454545), Color(0xFF3A3A3A))
                     modules.chunked(2).forEachIndexed { rowIndex, pair ->
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             pair.forEachIndexed { colIndex, module ->
@@ -822,7 +821,7 @@ private fun AstraApp(
             }
         }
         if (page != "Home") {
-            Text("Creator by Bittu Pandit", color = mint, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.fillMaxWidth().background(Color(0xCC080F23)).padding(12.dp))
+            Text("Creator by Bittu Pandit", color = mint, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.fillMaxWidth().background(Color(0xFF2F2F2F)).padding(12.dp))
         }
         }
         if (showSplash) SplashScreen(Modifier.fillMaxSize())
@@ -831,8 +830,7 @@ private fun AstraApp(
 
 @Composable
 private fun SplashScreen(modifier: Modifier = Modifier) {
-    Box(modifier.background(Brush.verticalGradient(listOf(Color(0xFF02030D), Color(0xFF10103A), Color(0xFF050B1B)))), contentAlignment = Alignment.Center) {
-        CosmicNebulaBackground(Modifier.fillMaxSize())
+    Box(modifier.background(ink), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(Modifier.size(112.dp).clip(RoundedCornerShape(34.dp)).background(Brush.linearGradient(listOf(white, violet, mint))), contentAlignment = Alignment.Center) {
                 Text("A", color = ink, fontSize = 76.sp, fontWeight = FontWeight.Black)
@@ -920,7 +918,7 @@ private fun HomeCosmicArtwork(modifier: Modifier = Modifier) {
 
 @Composable
 private fun ColumnScope.SimplePage(title: String, description: String, content: @Composable ColumnScope.() -> Unit) {
-    Column(Modifier.weight(1f).fillMaxWidth().background(Color(0x78101834)).verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
+    Column(Modifier.weight(1f).fillMaxWidth().background(ink).verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(13.dp)) {
         Text(title, color = white, fontSize = 18.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         Text(description, color = muted, fontSize = 13.sp)
         content()
