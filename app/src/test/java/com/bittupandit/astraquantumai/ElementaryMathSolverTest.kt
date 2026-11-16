@@ -24,6 +24,7 @@ class ElementaryMathSolverTest {
         assertTrue(result.roots.isEmpty())
     }
     @Test fun evaluatesPolynomialByHornerRule() {
-        assertEquals(17.0, ElementaryMathSolver.evaluatePolynomial(listOf(2.0, 3.0, 1.0), 2.0), 1e-10)
+        // 2x^2 + 3x + 1 at x=2 is 15.
+        assertEquals(15.0, ElementaryMathSolver.evaluatePolynomial(listOf(2.0, 3.0, 1.0), 2.0), 1e-10)
     }
 }
