@@ -250,10 +250,25 @@ async function research(input) {
     "\nURL: " + source.url + "\n" + (source.extract || source.abstract || "")
   ).join("\n\n");
   const answer = await generate({
-    prompt: "इस शोध प्रश्न का हिंदी में विश्लेषण करें: " + query +
-      "\n\nनीचे live retrieved sources दिए गए हैं। हर महत्वपूर्ण तथ्य के बाद [संख्या] citation लगाएँ। Wikipedia को अकेले निर्णायक प्रमाण न मानें। शोध-पत्र के शीर्षक/वर्ष/DOI को source metadata कहें, उसके निष्कर्ष को abstract से आगे न बढ़ाएँ। जहाँ स्रोत आपस में सहमत न हों या पर्याप्त प्रमाण न हो, स्पष्ट लिखें। अंत में 'स्रोत और सीमाएँ' शीर्षक में प्रयुक्त URLs दें।\n\n" + evidence
+    prompt: "इस शोध प्रश्न का हिंदी में प्रमाण-आधारित विश्लेषण करें: " + query +
+      "\n\nनीचे live retrieved sources दिए गए हैं। यह source set सीमित है; इसे पूरे इंटरनेट या पूर्ण literature review का प्रतिनिधि न बताएं। हर महत्वपूर्ण दावे के बाद केवल उन्हीं स्रोतों के [संख्या] citations दें जो वास्तव में उसका समर्थन करते हैं। स्रोत का शीर्षक/वर्ष/DOI metadata है, स्वयं प्रमाण नहीं। Wikipedia को अकेले निर्णायक प्रमाण न मानें; Crossref record का abstract उपलब्ध हो तो निष्कर्ष उससे आगे न बढ़ाएं।" +
+      "\n\nरिपोर्ट में ये अलग-अलग headings अनिवार्य रखें:" +
+      "\n1. समर्थित तथ्य — हर बिंदु के साथ [source id] और प्रमाण का संक्षिप्त आधार।" +
+      "\n2. विरोधाभास/असहमति — केवल तभी लिखें जब उपलब्ध स्रोत वास्तव में अलग दावे करें; अन्यथा 'इस सीमित स्रोत-समूह में स्पष्ट विरोधाभास नहीं मिला' लिखें।" +
+      "\n3. अनिश्चितता और कमी — कौन-सी बात स्रोतों से सिद्ध नहीं होती, स्रोत की तारीख/गुणवत्ता/सीमा क्या है, और क्या अतिरिक्त जाँच चाहिए।" +
+      "\n4. निष्कर्ष — confidence को उच्च/मध्यम/कम में बताएँ और उसका कारण दें; इसे गणितीय probability न कहें।" +
+      "\n5. स्रोत सूची — प्रयुक्त URLs और स्रोत प्रकार। कोई citation, तथ्य, स्रोत-पठन या स्वतंत्र सत्यापन गढ़ें नहीं।" +
+      "\n\nRetrieved source material:\n" + evidence
   });
-  return { text: answer, sources: sources.map((source, i) => ({ id: i + 1, type: source.type, title: source.title, url: source.url, year: source.year || "" })) };
+  return {
+    text: answer,
+    sources: sources.map((source, i) => ({ id: i + 1, type: source.type, title: source.title, url: source.url, year: source.year || "" })),
+    evidence_policy: {
+      source_count: sources.length,
+      source_types: [...new Set(sources.map(source => source.type))],
+      limitations: ["सीमित Wikipedia और Crossref खोज", "स्रोतों की पूर्ण-पाठ स्वतंत्र जाँच नहीं", "AI द्वारा तैयार विश्लेषण; निर्णायक सत्यापन नहीं"]
+    }
+  };
 }
 
 const server = http.createServer(async (req, res) => {
