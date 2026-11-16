@@ -108,7 +108,7 @@ class MainActivity : ComponentActivity() {
                         }
                         runCatching { speechLauncher.launch(intent) }
                     },
-                    onPickFile = { fileLauncher.launch(arrayOf("application/pdf", "image/jpeg", "image/png", "image/webp")) }
+                    onPickFile = { fileLauncher.launch(arrayOf("image/jpeg", "image/png", "image/webp")) }
                 )
             }
         }
@@ -427,7 +427,7 @@ private fun AstraApp(
                 SelectionContainer { Text("पहचाना गया: $speechText", color = white) }
                 Button(enabled = speechText.isNotBlank(), onClick = { onSpeak(speechText) }, colors = ButtonDefaults.buttonColors(containerColor = graphite, contentColor = white)) { Text("आवाज़ में सुनें") }
             }
-            "Files" -> SimplePage("IMAGE & PDF ANALYSIS", "JPG, PNG या WEBP चुनें और Groq AI से उसका विश्लेषण कराएँ। PDF सपोर्ट जल्द जोड़ा जाएगा।") {
+            "Files" -> SimplePage("ASTRA IMAGE ANALYSIS", "JPG, PNG या WEBP फोटो चुनें और Groq Vision AI से उसका विश्लेषण कराएँ।") {
                 Button(onClick = onPickFile, colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("फोन से फ़ाइल चुनें") }
                 Text("चुनी गई फ़ाइल: $pickedFile", color = white)
                 Text("प्रकार: $pickedMime", color = muted, fontSize = 12.sp)
