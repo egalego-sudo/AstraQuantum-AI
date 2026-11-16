@@ -248,7 +248,7 @@ private fun AstraApp(
             }
             Spacer(Modifier.height(14.dp))
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                listOf("Home", "AI Chat", "App Builder", "Website Builder", "Quantum", "Cores", "Science QA", "Offline AI", "Research", "Action", "Memory", "Voice", "Files", "Projects", "Settings").forEach { item ->
+                listOf("Home", "AI Chat", "App Builder", "Website Builder", "Quantum", "Cores", "Science QA", "Offline AI", "Research", "Action", "Memory", "Voice", "Files", "Projects", "Updates", "Settings").forEach { item ->
                     val selected = page == item
                     Surface(
                         onClick = { page = item },
@@ -857,6 +857,7 @@ private fun AstraApp(
                 Text("नोट फोन के निजी ऐप स्टोरेज में सेव हैं; ऐप डेटा हटाने या ऐप uninstall करने पर मिट सकते हैं।", color = muted, fontSize = 11.sp)
                 TextButton(onClick = { projects = ""; prefs.edit().remove("projects").apply() }) { Text("सभी प्रोजेक्ट नोट मिटाएँ", color = muted) }
             }
+            "Updates" -> SimplePage("APP UPDATE & VERSION", "इंस्टॉल APK की पहचान और सुरक्षित अपडेट की तैयारी।") { AppBuildInfoScreen() }
             "Settings" -> SimplePage("CONNECTION SETTINGS", "Groq AI की API key ऐप में नहीं, Render के सुरक्षित Environment में रहती है।") {
                 OutlinedTextField(backend, { backend = it }, Modifier.fillMaxWidth(), label = { Text("Backend HTTPS URL") })
                 Button(onClick = {
