@@ -16,7 +16,7 @@ Android-first personal AI assistant.
 - Local notes/projects and chat history stored in app-private preferences.
 - User-authored personal memory with an explicit opt-in switch before saved notes are included in AI prompts; memory stays local unless the user enables this.
 - PDF document analysis through the backend using the maintained pdf-parse parser.
-- Quantum Lab educational model for up to 32 independent Qubits, probability calculation and classical measurement sampling.
+- Quantum Lab educational pure-state state-vector simulator for up to 10 Qubits, with H/X/Y/Z/S/T/RX/RY/RZ, CNOT and CZ gates, Bell-state and two-qubit Grover presets, QFT/inverse-QFT and a limited Shor order-finding demonstration for N=15. This is classical simulation, not a physical QPU. The Shor demo applies the modular-function oracle mathematically rather than compiling a full reversible gate-by-gate circuit.
 - IBM Quantum hardware connector code with server-side IAM token exchange, backend listing, confirmation-gated one-qubit sampler submission and job-status lookup; it requires IBM API key and instance CRN secrets before it can connect to a real QPU.
 - Backend health-check screen.
 
@@ -46,7 +46,7 @@ The app's Cores dashboard describes these boundaries instead of presenting plann
 
 ## Quantum Lab scope and limits
 
-The 32-Qubit Learning Engine calculates independent product-state probabilities on demand and samples measurements without allocating the full state vector. It is a classical educational simulator, not quantum hardware and not a general entanglement-capable quantum circuit simulator. A dense 32-Qubit complex-double state vector would require about 64 GiB for amplitudes alone.
+The current Quantum Lab uses a dense pure-state state-vector simulator for 1–10 Qubits (up to 1,024 complex amplitudes). It supports single-qubit H/X/Y/Z/S/T/RX/RY/RZ gates and two-qubit CNOT/CZ operations, plus Bell-state and two-qubit Grover demonstrations, QFT/inverse-QFT, and an educational Shor order-finding demonstration for N=15. These are classical calculations, not execution on quantum hardware. The Shor demonstration applies its modular-function oracle mathematically and is not a full reversible gate-by-gate Shor circuit. A separate IBM Quantum REST connector is present but requires server-side credentials, explicit submission enablement, and a verified IBM job before a real QPU connection can be claimed.
 
 ## Build
 
