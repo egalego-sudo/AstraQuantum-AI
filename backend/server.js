@@ -8,7 +8,27 @@ const VISION_MODEL = process.env.GROQ_VISION_MODEL || "qwen/qwen3.8-27b";
 const ORIGIN = process.env.ALLOWED_ORIGIN || "*";
 const WINDOW_MS = 60_000;
 const MAX_REQUESTS = 20;
+const MAX_TRACKED_CLIENTS = 10_000;
 const hits = new Map();
+
+function isRateLimited(clientKey, now = Date.now()) {
+  const recent = (hits.get(clientKey) || []).filter(timestamp => now - timestamp < WINDOW_MS);
+  if (recent.length >= MAX_REQUESTS) {
+    hits.set(clientKey, recent);
+    return true;
+  }
+  recent.push(now);
+  hits.set(clientKey, recent);
+  // Bound memory when requests arrive from many distinct addresses.
+  if (hits.size > MAX_TRACKED_CLIENTS) {
+    for (const [key, timestamps] of hits) {
+      if (!timestamps.length || now - timestamps[timestamps.length - 1] >= WINDOW_MS) hits.delete(key);
+      if (hits.size <= MAX_TRACKED_CLIENTS) break;
+    }
+    while (hits.size > MAX_TRACKED_CLIENTS) hits.delete(hits.keys().next().value);
+  }
+  return false;
+}
 
 const ASTRA_INSTRUCTIONS = `You are ASTRA QUANTUM AI, a helpful, thoughtful AI assistant.
 Reply in the same language as the user; when the user writes Hindi or Hinglish, respond naturally in Hindi/Hinglish.
@@ -24,7 +44,10 @@ function send(res, status, data) {
     "access-control-allow-origin": ORIGIN,
     "access-control-allow-methods": "POST, GET, OPTIONS",
     "access-control-allow-headers": "content-type",
-    "cache-control": "no-store"
+    "cache-control": "no-store",
+    "x-content-type-options": "nosniff",
+    "x-frame-options": "DENY",
+    "referrer-policy": "no-referrer"
   });
   res.end(JSON.stringify(data));
 }
@@ -32,12 +55,15 @@ function send(res, status, data) {
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let body = "";
+    let bodyBytes = 0;
     req.on("data", chunk => {
-      body += chunk;
-      if (body.length > 12 * 1024 * 1024) {
+      bodyBytes += chunk.length;
+      if (bodyBytes > 12 * 1024 * 1024) {
         reject(new Error("Request too large"));
         req.destroy();
+        return;
       }
+      body += chunk.toString("utf8");
     });
     req.on("end", () => {
       try { resolve(JSON.parse(body || "{}")); }
@@ -412,7 +438,9 @@ const server = http.createServer(async (req, res) => {
       service: "ASTRA AI backend",
       provider: "Groq",
       model: MODEL,
-      vision_model: VISION_MODEL
+      vision_model: VISION_MODEL,
+      ibm_quantum_configured: Boolean(IBM_API_KEY && IBM_SERVICE_CRN),
+      ibm_quantum_submissions_enabled: process.env.IBM_QUANTUM_SUBMISSIONS_ENABLED === "true"
     });
   }
   const isQuantumRoute = pathname === "/v1/quantum/backends" ||
@@ -425,10 +453,7 @@ const server = http.createServer(async (req, res) => {
     (req.method === "POST" && pathname === "/v1/quantum/demo")
   )) return send(res, 405, { error: "Method not allowed" });
   const ip = req.socket.remoteAddress || "unknown";
-  const now = Date.now();
-  const recent = (hits.get(ip) || []).filter(t => now - t < WINDOW_MS);
-  if (recent.length >= MAX_REQUESTS) return send(res, 429, { error: "Rate limit reached. Try again in a minute." });
-  recent.push(now); hits.set(ip, recent);
+  if (isRateLimited(ip)) return send(res, 429, { error: "Rate limit reached. Try again in a minute." });
   try {
     if (req.method === "GET" && pathname === "/v1/quantum/backends") {
       return send(res, 200, await quantumBackends());
