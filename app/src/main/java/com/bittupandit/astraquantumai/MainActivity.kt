@@ -257,7 +257,7 @@ private fun AstraApp(
             }
             Spacer(Modifier.height(14.dp))
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                listOf("Home", "AI Chat", "Benchmark", "App Builder", "Website Builder", "Quantum", "Cores", "Science QA", "Offline AI", "Research", "Action", "Memory", "Voice", "Files", "Projects", "Updates", "Settings").forEach { item ->
+                listOf("Home", "AI Chat", "Benchmark", "App Builder", "Website Builder", "Quantum", "Cores", "Science Lab", "Science QA", "Offline AI", "Research", "Action", "Memory", "Voice", "Files", "Projects", "Updates", "Settings").forEach { item ->
                     val selected = page == item
                     Surface(
                         onClick = { page = item },
@@ -564,6 +564,7 @@ private fun AstraApp(
                     }
                 }
             }
+            "Science Lab" -> ScienceLabScreen()
             "Science QA" -> SimplePage("SEVEN-LAYER ADVANCED REASONING", "सात तर्क-गुणवत्ता परतें मौजूदा AI मॉडल को निर्देश देती हैं। ये नया foundation model, मानव IQ स्कोर या स्वतंत्र सत्यापन सेवा नहीं हैं।") {
                 val modules = listOf(
                     "01 · DEEP REASONING" to "वास्तविक प्रश्न, लक्ष्य, बाधाएँ और मूल कारण पहचानना; तथ्य, मान्यताएँ और अज्ञात अलग रखना।",
@@ -1213,5 +1214,117 @@ internal fun askBackend(baseUrl: String, prompt: String, mimeType: String? = nul
         }
     } catch (e: Exception) {
         "ASTRA सर्वर से कनेक्शन नहीं हो पाया: ${e.message ?: "नेटवर्क त्रुटि"}"
+    }
+}
+
+@Composable
+private fun ScienceLabScreen() {
+    var reaction by remember { mutableStateOf("H2 + O2 -> H2O") }
+    var reactionResult by remember { mutableStateOf("") }
+    var linearA by remember { mutableStateOf("2") }
+    var linearB by remember { mutableStateOf("-8") }
+    var quadraticA by remember { mutableStateOf("1") }
+    var quadraticB by remember { mutableStateOf("-3") }
+    var quadraticC by remember { mutableStateOf("2") }
+    var mathResult by remember { mutableStateOf("") }
+    var forceMass by remember { mutableStateOf("5") }
+    var forceAcceleration by remember { mutableStateOf("9.8") }
+    var physicsResult by remember { mutableStateOf("") }
+    var elementQuery by remember { mutableStateOf("") }
+    val elements = remember(elementQuery) {
+        PeriodicTableCatalog.elements.filter {
+            it.name.contains(elementQuery, ignoreCase = true) ||
+                it.symbol.contains(elementQuery, ignoreCase = true) ||
+                it.atomicNumber.toString() == elementQuery.trim()
+        }.take(30)
+    }
+    Column(
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text("ASTRA UNIVERSAL SCIENCE LAB", color = white, fontSize = 18.sp, fontWeight = FontWeight.Black)
+        Text("सूत्र, गणना और जाँच योग्य परिणाम। यह शुरुआती वैज्ञानिक टूलकिट है, सभी विज्ञानों का पूर्ण डेटाबेस नहीं।", color = muted, fontSize = 12.sp)
+        Card(colors = CardDefaults.cardColors(containerColor = charcoal)) {
+            Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("CHEMISTRY · REACTION BALANCER", color = mint, fontWeight = FontWeight.Bold)
+                OutlinedTextField(reaction, { reaction = it }, Modifier.fillMaxWidth(), label = { Text("Reaction (उदा. H2 + O2 -> H2O)") })
+                Button(onClick = {
+                    reactionResult = runCatching { ChemicalEquationBalancer.balance(reaction).equation }
+                        .getOrElse { "हल नहीं मिला: " + (it.message ?: "असमर्थित समीकरण") }
+                }, modifier = Modifier.fillMaxWidth()) { Text("समीकरण संतुलित करें") }
+                if (reactionResult.isNotBlank()) Text(reactionResult, color = white, fontWeight = FontWeight.SemiBold)
+                Text("सीमा: सामान्य neutral formula, parentheses और 2–6 पदार्थ; hydrates, ionic charge और redox half-reactions अभी समर्थित नहीं।", color = muted, fontSize = 10.sp)
+            }
+        }
+        Card(colors = CardDefaults.cardColors(containerColor = charcoal)) {
+            Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("MATHEMATICS · EQUATION SOLVER", color = mint, fontWeight = FontWeight.Bold)
+                Text("Linear: ax + b = 0", color = white, fontSize = 12.sp)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(linearA, { linearA = it }, Modifier.weight(1f), label = { Text("a") })
+                    OutlinedTextField(linearB, { linearB = it }, Modifier.weight(1f), label = { Text("b") })
+                }
+                Text("Quadratic: ax² + bx + c = 0", color = white, fontSize = 12.sp)
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    OutlinedTextField(quadraticA, { quadraticA = it }, Modifier.weight(1f), label = { Text("a") })
+                    OutlinedTextField(quadraticB, { quadraticB = it }, Modifier.weight(1f), label = { Text("b") })
+                    OutlinedTextField(quadraticC, { quadraticC = it }, Modifier.weight(1f), label = { Text("c") })
+                }
+                Button(onClick = {
+                    mathResult = runCatching {
+                        val linear = ElementaryMathSolver.solveLinear(linearA.toDouble(), linearB.toDouble())
+                        val quad = ElementaryMathSolver.solveQuadratic(quadraticA.toDouble(), quadraticB.toDouble(), quadraticC.toDouble())
+                        "Linear: x = " + linear.roots.joinToString() + "\nQuadratic: " + quad.classification +
+                            "\nRoots: " + if (quad.roots.isEmpty()) "कोई वास्तविक root नहीं" else quad.roots.joinToString()
+                    }.getOrElse { "इनपुट जाँचें: " + (it.message ?: "गणना नहीं हो सकी") }
+                }, modifier = Modifier.fillMaxWidth()) { Text("गणना करें") }
+                if (mathResult.isNotBlank()) Text(mathResult, color = white, fontSize = 12.sp)
+            }
+        }
+        Card(colors = CardDefaults.cardColors(containerColor = charcoal)) {
+            Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("PHYSICS · NEWTON'S SECOND LAW", color = mint, fontWeight = FontWeight.Bold)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(forceMass, { forceMass = it }, Modifier.weight(1f), label = { Text("Mass (kg)") })
+                    OutlinedTextField(forceAcceleration, { forceAcceleration = it }, Modifier.weight(1f), label = { Text("Acceleration (m/s²)") })
+                }
+                Button(onClick = {
+                    physicsResult = runCatching {
+                        val result = ScienceCalculator.netForce(forceMass.toDouble(), forceAcceleration.toDouble())
+                        result.name + ": " + result.value + " " + result.unit + "\n" + result.working +
+                            "\nमान्यता: " + result.assumptions
+                    }.getOrElse { "इनपुट जाँचें: " + (it.message ?: "गणना नहीं हो सकी") }
+                }, modifier = Modifier.fillMaxWidth()) { Text("बल की गणना करें") }
+                if (physicsResult.isNotBlank()) Text(physicsResult, color = white, fontSize = 12.sp)
+            }
+        }
+        Card(colors = CardDefaults.cardColors(containerColor = charcoal)) {
+            Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("PERIODIC TABLE · 118 ELEMENTS", color = mint, fontWeight = FontWeight.Bold)
+                OutlinedTextField(elementQuery, { elementQuery = it }, Modifier.fillMaxWidth(), label = { Text("तत्व खोजें: नाम, Symbol या Atomic Number") })
+                elements.forEach { element ->
+                    Text(
+                        element.atomicNumber.toString() + " · " + element.symbol + " · " + element.name +
+                            " · " + (element.abridgedAtomicMass?.toString() ?: "मानक atomic mass नहीं") +
+                            " · " + element.category,
+                        color = white, fontSize = 11.sp
+                    )
+                }
+                Text("पहले 30 matching परिणाम दिखाए जाते हैं।", color = muted, fontSize = 10.sp)
+            }
+        }
+        Card(colors = CardDefaults.cardColors(containerColor = charcoal)) {
+            Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                Text("FORMULA LIBRARY · " + ScienceFormulaCatalog.VERSION, color = mint, fontWeight = FontWeight.Bold)
+                ScienceFormulaCatalog.formulas.forEach { formula ->
+                    Text(formula.discipline + " · " + formula.topic + " · " + formula.name, color = white, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                    Text(formula.equation, color = mint, fontSize = 13.sp)
+                    Text("मान्यताएँ: " + formula.assumptions + "\nसीमा: " + formula.validity, color = muted, fontSize = 10.sp)
+                    Text("स्रोत: " + formula.sourceName + " · " + formula.sourceUrl, color = muted, fontSize = 9.sp)
+                    HorizontalDivider(color = line)
+                }
+            }
+        }
+        Text("Creator by Bittu Pandit", color = mint, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
     }
 }
