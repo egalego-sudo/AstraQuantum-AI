@@ -22,7 +22,7 @@ import java.io.File
 import java.util.UUID
 import kotlin.math.abs
 
-private data class BQuestion(val id: String, val module: String, val prompt: String, val rubric: String, val version: Int = 1)
+internal data class BQuestion(val id: String, val module: String, val prompt: String, val rubric: String, val version: Int = 1)
 internal data class BRecord(
     val id: String, val questionId: String, val module: String, val answer: String,
     val confidence: Double?, val humanScore: Int?, val timestamp: Long, val model: String = "Groq (server-configured)"
