@@ -444,7 +444,7 @@ async function research(input) {
   if (!uniqueSources.length) throw new Error("इस विषय के लिए पाँच शोध स्रोतों में कोई उपयोगी रिकॉर्ड नहीं मिला।");
   // Attempt a small, bounded number of open full-text fetches where Europe PMC explicitly reports OA.
   const oaCandidates = uniqueSources.filter(s => s.type === "europe-pmc" && s.openAccess && s.pmcid).slice(0, 3);
-  const arxivCandidates = uniqueSources.filter(s => s.type === "arxiv-preprint" && /arxiv\\.org\\/abs\\//i.test(s.url || "")).slice(0, 2);
+  const arxivCandidates = uniqueSources.filter(s => s.type === "arxiv-preprint" && /arxiv\.org\/abs\//i.test(s.url || "")).slice(0, 2);
   const fullTextResults = await Promise.all([
     ...oaCandidates.map(async source => {
       const xml = await fetchText("https://www.ebi.ac.uk/europepmc/webservices/rest/PMC" + encodeURIComponent(source.pmcid) + "/fullTextXML", 22000);
@@ -452,14 +452,14 @@ async function research(input) {
       return plain.length > 500 ? { ...source, fullText: plain, fullTextFetched: true, quality: "open-access full text retrieved from Europe PMC" } : null;
     }),
     ...arxivCandidates.map(async source => {
-      const arxivId = (source.url.match(/arxiv\\.org\\/abs\\/([^?#]+)/i) || [])[1];
+      const arxivId = (source.url.match(/arxiv\.org\/abs\/([^?#]+)/i) || [])[1];
       if (!arxivId) return null;
       const html = await fetchText("https://arxiv.org/html/" + encodeURIComponent(arxivId), 22000);
-      const plain = html.replace(/<(script|style|nav|header|footer)[^>]*>[\\s\\S]*?<\\/\\1>/gi, " ")
-        .replace(/<\\/(p|div|section|h[1-6]|li|tr)>/gi, "\\n")
+      const plain = html.replace(/<(script|style|nav|header|footer)[^>]*>[\s\S]*?<\/\1>/gi, " ")
+        .replace(/<\/(p|div|section|h[1-6]|li|tr)>/gi, "\n")
         .replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&")
-        .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#\\d+;/g, " ")
-        .replace(/\\s+/g, " ").trim().slice(0, 9000);
+        .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#\d+;/g, " ")
+        .replace(/\s+/g, " ").trim().slice(0, 9000);
       return plain.length > 700 ? { ...source, fullText: plain, fullTextFetched: true, quality: "arXiv HTML full text retrieved; preprint, not necessarily peer reviewed" } : null;
     })
   ]);
@@ -510,7 +510,7 @@ async function research(input) {
       limitations: [
         "Search results relevance ranking और provider coverage पर निर्भर हैं",
         "सभी स्रोतों का full text उपलब्ध या पढ़ा नहीं गया; अधिकतर indexed abstracts/metadata हैं",
-        "Open-access full text केवल अधिकतम तीन Europe PMC records के लिए प्रयास किया गया",
+        "Open-access full text के लिए अधिकतम तीन Europe PMC और दो arXiv HTML records का प्रयास किया गया",
         "AI synthesis स्वयं peer review या स्वतंत्र वैज्ञानिक सत्यापन नहीं है",
         "स्रोतों की गुणवत्ता, bias और retraction status पर अतिरिक्त मानवीय जाँच आवश्यक हो सकती है"
       ]
