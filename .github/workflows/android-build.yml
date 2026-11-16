@@ -159,3 +159,71 @@ jobs:
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 90
+      # Build a delta only against the exact previous signed APK artifact.
+      # This patch targets build #122; devices on other builds must not apply it.
+      - name: Download previous signed APK (build 122)
+        if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: ASTRA-QUANTUM-AI-signed-update-apk
+          path: previous-release
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: 43888830737
+
+      - name: Create and verify APK binary delta
+        if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y bsdiff
+          OLD_APK="$(find previous-release -type f -name '*.apk' -print -quit)"
+          NEW_APK="$(find app/build/outputs/apk/release -type f -name '*.apk' -print -quit)"
+          test -n "$OLD_APK" && test -n "$NEW_APK"
+          TOOLS="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -x "$TOOLS"
+          "$TOOLS" verify --print-certs "$OLD_APK" > old-cert.txt
+          "$TOOLS" verify --print-certs "$NEW_APK" > new-cert.txt
+          OLD_CERT="$(sed -n 's/Signer #1 certificate SHA-256 digest: //p' old-cert.txt | head -n 1)"
+          NEW_CERT="$(sed -n 's/Signer #1 certificate SHA-256 digest: //p' new-cert.txt | head -n 1)"
+          test -n "$OLD_CERT" && test "$OLD_CERT" = "$NEW_CERT"
+          mkdir -p delta-output
+          bsdiff "$OLD_APK" "$NEW_APK" delta-output/ASTRA-build122-to-current.patch
+          bspatch "$OLD_APK" delta-output/reconstructed.apk delta-output/ASTRA-build122-to-current.patch
+          cmp "$NEW_APK" delta-output/reconstructed.apk
+          OLD_HASH="$(sha256sum "$OLD_APK" | cut -d ' ' -f 1)"
+          NEW_HASH="$(sha256sum "$NEW_APK" | cut -d ' ' -f 1)"
+          REBUILT_HASH="$(sha256sum delta-output/reconstructed.apk | cut -d ' ' -f 1)"
+          test "$NEW_HASH" = "$REBUILT_HASH"
+          python3 - "$OLD_HASH" "$NEW_HASH" "$OLD_CERT" "$OLD_APK" "$NEW_APK" <<'PY'
+          import json, os, sys
+          old_hash, new_hash, signer, old_path, new_path = sys.argv[1:]
+          metadata = {
+            "packageName": "com.bittupandit.astraquantumai",
+            "baseBuild": 122,
+            "targetBuild": int(os.environ.get("GITHUB_RUN_NUMBER", "0")),
+            "baseApkSha256": old_hash,
+            "targetApkSha256": new_hash,
+            "signerCertificateSha256": signer,
+            "patchFile": "ASTRA-build122-to-current.patch",
+            "note": "Targets only the exact build-122 APK whose SHA-256 matches baseApkSha256."
+          }
+          with open("delta-output/UPDATE-METADATA.json", "w") as f:
+            json.dump(metadata, f, indent=2)
+          print("Old APK bytes:", os.path.getsize(old_path))
+          print("New APK bytes:", os.path.getsize(new_path))
+          print("Delta bytes:", os.path.getsize("delta-output/ASTRA-build122-to-current.patch"))
+          print("Round-trip SHA-256 verified:", new_hash)
+          PY
+
+      - name: Upload verified APK binary delta
+        if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: ASTRA-QUANTUM-AI-APK-DELTA-build122
+          path: |
+            delta-output/ASTRA-build122-to-current.patch
+            delta-output/UPDATE-METADATA.json
+          if-no-files-found: error
+          retention-days: 90
