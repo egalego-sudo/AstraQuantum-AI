@@ -9,7 +9,7 @@ internal data class ContextTurn(val role: String, val text: String)
 internal object ContextIntelligence {
     private const val MAX_TURNS = 24
     private const val MAX_TOTAL_CHARS = 14000
-    private const val MAX_TURN_CHARS = 1800
+    private const val MAX_TURN_CHARS = 520
     private const val MAX_PERSONAL_CHARS = 5000
 
     private val stopWords = setOf(
