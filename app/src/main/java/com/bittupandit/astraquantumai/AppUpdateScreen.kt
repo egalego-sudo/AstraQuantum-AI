@@ -44,7 +44,7 @@ internal fun AppUpdateScreen() {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("SECURE APP UPDATER", color = Color(0xFFECECEC), fontSize = 16.sp, fontWeight = FontWeight.Bold)
         Text(
-            "पहले अपडेट की डिजिटल हस्ताक्षर जाँच होगी। आपके फोन का APK पैच के आधार से मेल खाए तो छोटा पैच डाउनलोड होगा; अन्यथा पूरा APK लिया जाएगा।",
+            "पहले अपडेट की डिजिटल हस्ताक्षर जाँच होगी। आपके फोन का APK पैच के आधार से मेल खाए तो छोटा पैच डाउनलोड होगा; अन्यथा पूरा APK लिया जाएगा। गलत या पुराने आधार पर पैच कभी लागू नहीं होगा।",
             color = Color(0xFFB4B4B4), fontSize = 12.sp
         )
         Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color(0xFF303030))) {
