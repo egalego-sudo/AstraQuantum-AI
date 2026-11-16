@@ -1,6 +1,7 @@
 import http from "node:http";
 import { PDFParse } from "pdf-parse";
 import { searchKnowledge, validateKnowledgeCitations } from "./knowledge.js";
+import { buildResearchQueries, rankResearchSources } from "./research-quality.js";
 
 const PORT = Number(process.env.PORT || 8080);
 const API_KEY = process.env.GROQ_API_KEY;
@@ -358,27 +359,36 @@ async function research(input) {
     .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCharCode(parseInt(code, 16)))
     .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
     .replace(/\s+/g, " ").trim();
-  const [wikiData, crossrefData, openAlexData, europeData, arxivXml] = await Promise.all([
-    fetchJson("https://en.wikipedia.org/w/api.php?" + new URLSearchParams({
-      action: "query", generator: "search", gsrsearch: query, gsrlimit: "6",
-      prop: "extracts", exintro: "1", explaintext: "1", format: "json"
-    })),
-    fetchJson("https://api.crossref.org/works?" + new URLSearchParams({
-      "query.bibliographic": query, rows: "10",
-      select: "title,author,published,DOI,URL,container-title,abstract,type"
-    })),
-    fetchJson("https://api.openalex.org/works?" + new URLSearchParams({
-      search: query, "per-page": "10",
-      select: "id,doi,title,publication_year,authorships,primary_location,abstract_inverted_index,open_access"
-    })),
-    fetchJson("https://www.ebi.ac.uk/europepmc/webservices/rest/search?" + new URLSearchParams({
-      query, format: "json", pageSize: "10", resultType: "core", sort: "RELEVANCE"
-    })),
-    fetchText("https://export.arxiv.org/api/query?" + new URLSearchParams({
-      search_query: "all:" + query, start: "0", max_results: "8", sortBy: "relevance"
-    }))
-  ]);
+  const researchQueries = buildResearchQueries(query);
+  const queryResults = [];
+  // Run a small number of focused query variants in bounded batches. This avoids
+  // allowing one broad, ambiguous query to dominate every provider's results.
+  for (const searchQuery of researchQueries) {
+    const [wikiData, crossrefData, openAlexData, europeData, arxivXml] = await Promise.all([
+      fetchJson("https://en.wikipedia.org/w/api.php?" + new URLSearchParams({
+        action: "query", generator: "search", gsrsearch: searchQuery, gsrlimit: "6",
+        prop: "extracts", exintro: "1", explaintext: "1", format: "json"
+      })),
+      fetchJson("https://api.crossref.org/works?" + new URLSearchParams({
+        "query.bibliographic": searchQuery, rows: "10",
+        select: "title,author,published,DOI,URL,container-title,abstract,type"
+      })),
+      fetchJson("https://api.openalex.org/works?" + new URLSearchParams({
+        search: searchQuery, "per-page": "10",
+        select: "id,doi,title,publication_year,authorships,primary_location,abstract_inverted_index,open_access"
+      })),
+      fetchJson("https://www.ebi.ac.uk/europepmc/webservices/rest/search?" + new URLSearchParams({
+        query: searchQuery, format: "json", pageSize: "10", resultType: "core", sort: "RELEVANCE"
+      })),
+      fetchText("https://export.arxiv.org/api/query?" + new URLSearchParams({
+        search_query: "all:" + searchQuery, start: "0", max_results: "8", sortBy: "relevance"
+      }))
+    ]);
+    queryResults.push({ wikiData, crossrefData, openAlexData, europeData, arxivXml });
+  }
   const sources = [];
+  for (const { wikiData, crossrefData, openAlexData, europeData, arxivXml } of queryResults) {
+
   for (const page of Object.values(wikiData?.query?.pages || {})) {
     const extract = String(page.extract || "").slice(0, 3000);
     if (extract) sources.push({ type: "encyclopedia", title: page.title, year: "", url: "https://en.wikipedia.org/?curid=" + page.pageid, abstract: extract, quality: "tertiary reference" });
@@ -438,10 +448,13 @@ async function research(input) {
       quality: "preprint; may not be peer reviewed"
     });
   }
+  }
+  const rankedSources = rankResearchSources(sources, researchQueries, 0.12);
+  const rejectedIrrelevantCount = sources.length - rankedSources.length;
   const sourcePriority = { "europe-pmc": 0, "arxiv-preprint": 1, "openalex-index": 2, "crossref-metadata": 3, "encyclopedia": 4 };
-  sources.sort((a, b) => (sourcePriority[a.type] ?? 9) - (sourcePriority[b.type] ?? 9));
+  rankedSources.sort((a, b) => b.relevance.score - a.relevance.score || (sourcePriority[a.type] ?? 9) - (sourcePriority[b.type] ?? 9));
   const seen = new Set();
-  const uniqueSources = sources.filter(source => {
+  const uniqueSources = rankedSources.filter(source => {
     if (!source.title) return false;
     const key = source.doi ? "doi:" + source.doi.toLowerCase() :
       source.url ? "url:" + source.url.toLowerCase() :
@@ -450,7 +463,7 @@ async function research(input) {
     seen.add(key);
     return true;
   }).slice(0, 24);
-  if (!uniqueSources.length) throw new Error("इस विषय के लिए पाँच शोध स्रोतों में कोई उपयोगी रिकॉर्ड नहीं मिला।");
+  if (!uniqueSources.length) throw new Error("इस प्रश्न के लिए खोज में पर्याप्त विषय-संगत स्रोत नहीं मिले। कृपया अधिक विशिष्ट प्रश्न दें या बाद में पुनः प्रयास करें; अप्रासंगिक स्रोतों से शोध रिपोर्ट नहीं बनाई गई।");
   // Attempt a small, bounded number of open full-text fetches where Europe PMC explicitly reports OA.
   const oaCandidates = uniqueSources.filter(s => s.type === "europe-pmc" && s.openAccess && s.pmcid).slice(0, 3);
   const arxivCandidates = uniqueSources.filter(s => s.type === "arxiv-preprint" && /arxiv\.org\/abs\//i.test(s.url || "")).slice(0, 2);
@@ -479,7 +492,7 @@ async function research(input) {
     "[" + source.id + "] " + source.type + " | " + source.title + " | " + (source.year || "date unavailable") +
     (source.authors ? " | " + source.authors : "") +
     (source.journal ? " | " + source.journal : "") +
-    " | source quality: " + source.quality +
+    " | relevance score: " + source.relevance.score + " | matched terms: " + source.relevance.matched_terms.join(", ") +\n    " | source quality: " + source.quality +
     "\nURL: " + source.url +
     "\n" + (source.fullText || source.abstract || "केवल bibliographic metadata उपलब्ध; abstract/full text उपलब्ध नहीं।")
   ).join("\n\n");
@@ -509,12 +522,12 @@ async function research(input) {
   return {
     text: answer,
     sources: sourcesWithIds.map(source => ({
-      id: source.id, type: source.type, title: source.title, url: source.url,
+      id: source.id, type: source.type, title: source.title, url: source.url,\n      relevance_score: source.relevance.score, matched_terms: source.relevance.matched_terms,
       year: source.year || "", doi: source.doi || "",
       fullTextFetched: Boolean(source.fullTextFetched), quality: source.quality
     })),
     research_meta: {
-      unique_source_count: sourcesWithIds.length,
+      unique_source_count: sourcesWithIds.length,\n      search_queries_used: researchQueries,\n      rejected_irrelevant_source_count: rejectedIrrelevantCount,
       source_types: sourceTypes,
       open_full_texts_fetched: fullTextResults.filter(Boolean).length,
       full_text_types: [...new Set(fullTextResults.filter(Boolean).map(s => s.type))],
