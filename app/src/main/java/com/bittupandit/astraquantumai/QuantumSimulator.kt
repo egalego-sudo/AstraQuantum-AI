@@ -48,6 +48,7 @@ object AstraQuantumSimulator {
             "Y" -> listOf(ComplexAmp(0.0,0.0), ComplexAmp(0.0,-1.0), ComplexAmp(0.0,1.0), ComplexAmp(0.0,0.0))
             "Z" -> listOf(ComplexAmp(1.0,0.0), ComplexAmp(0.0,0.0), ComplexAmp(0.0,0.0), ComplexAmp(-1.0,0.0))
             "S" -> listOf(ComplexAmp(1.0,0.0), ComplexAmp(0.0,0.0), ComplexAmp(0.0,0.0), ComplexAmp(0.0,1.0))
+            "SDG" -> listOf(ComplexAmp(1.0,0.0), ComplexAmp(0.0,0.0), ComplexAmp(0.0,0.0), ComplexAmp(0.0,-1.0))
             "T" -> listOf(ComplexAmp(1.0,0.0), ComplexAmp(0.0,0.0), ComplexAmp(0.0,0.0), ComplexAmp(invSqrt2,invSqrt2))
             "RX90" -> listOf(ComplexAmp(invSqrt2,0.0), ComplexAmp(0.0,-invSqrt2), ComplexAmp(0.0,-invSqrt2), ComplexAmp(invSqrt2,0.0))
             "RY90" -> listOf(ComplexAmp(invSqrt2,0.0), ComplexAmp(-invSqrt2,0.0), ComplexAmp(invSqrt2,0.0), ComplexAmp(invSqrt2,0.0))
