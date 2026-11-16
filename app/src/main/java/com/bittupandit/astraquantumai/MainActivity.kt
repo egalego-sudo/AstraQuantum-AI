@@ -104,7 +104,8 @@ class MainActivity : ComponentActivity() {
                         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "hi-IN")
-                            putExtra(RecognizerIntent.EXTRA_PROMPT, "ASTRA से बोलकर पूछें")
+                            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
+                            putExtra(RecognizerIntent.EXTRA_PROMPT, "ASTRA से बोलकर पूछें (ऑफलाइन पहचान उपलब्ध हो तो)")
                         }
                         runCatching { speechLauncher.launch(intent) }
                     },
@@ -490,7 +491,7 @@ private fun AstraApp(
                     prefs.edit().remove("memories").putBoolean("use_memory_in_chat", false).apply()
                 }) { Text("सभी Memory मिटाएँ और उपयोग बंद करें", color = muted) }
             }
-            "Voice" -> SimplePage("VOICE ASSISTANT", "हिंदी में बोलें। पहचाना गया टेक्स्ट AI Chat में भेज सकते हैं।") {
+            "Voice" -> SimplePage("VOICE ASSISTANT", "हिंदी में बोलें। Android speech service से offline recognition को प्राथमिकता दी जाती है; यह सुविधा आपके फोन में उपलब्ध भाषा-पैक और speech provider पर निर्भर है।") {
                 Button(onClick = onListen, colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("🎙 बोलकर पूछें") }
                 SelectionContainer { Text("पहचाना गया: $speechText", color = white) }
                 Button(enabled = speechText.isNotBlank(), onClick = { onSpeak(speechText) }, colors = ButtonDefaults.buttonColors(containerColor = graphite, contentColor = white)) { Text("आवाज़ में सुनें") }
