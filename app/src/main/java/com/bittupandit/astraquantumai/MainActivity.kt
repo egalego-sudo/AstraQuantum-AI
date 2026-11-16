@@ -1118,7 +1118,7 @@ private fun askResearch(baseUrl: String, query: String): String {
         val connection = (URL(clean + "/v1/research").openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
             connectTimeout = 20000
-            readTimeout = 90000
+            readTimeout = 150000
             doOutput = true
             setRequestProperty("Content-Type", "application/json; charset=utf-8")
         }
@@ -1149,7 +1149,8 @@ private fun askResearch(baseUrl: String, query: String): String {
                 if (meta != null) {
                     append("\n\nशोध कवरेज: ")
                     append(meta.optInt("unique_source_count")).append(" अलग स्रोत; ")
-                    append(meta.optInt("open_full_texts_fetched")).append(" Open Access full-text दस्तावेज़ प्राप्त।")
+                    append(meta.optInt("open_full_texts_fetched")).append(" पूरे टेक्स्ट दस्तावेज़ प्राप्त।")
+                    append("\nपूरे टेक्स्ट के प्रकार: ").append(meta.optJSONArray("full_text_types")?.let { arr -> if (arr.length() == 0) "कोई नहीं" else (0 until arr.length()).joinToString(", ") { arr.optString(it) } } ?: "जानकारी उपलब्ध नहीं")
                     append("\nस्रोत प्रकार: ").append(meta.optJSONArray("source_types")?.let { arr -> (0 until arr.length()).joinToString(", ") { arr.optString(it) } } ?: "उपलब्ध")
                     append("\nसीमा: ").append(meta.optString("coverage_note"))
                 }
