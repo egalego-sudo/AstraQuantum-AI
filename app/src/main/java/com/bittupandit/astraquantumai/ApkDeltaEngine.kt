@@ -83,6 +83,37 @@ internal object ApkDeltaEngine {
         return VerifiedApk(output, archiveVersion, targetHash, targetSigner)
     }
 
+    fun verifyFullApk(
+        context: Context,
+        apkFile: File,
+        expectedTargetSha256: String,
+        expectedPackageName: String,
+        expectedVersionCode: Long,
+        expectedSignerSha256: String
+    ): VerifiedApk {
+        require(apkFile.isFile && apkFile.length() > 0L) { "Downloaded APK is missing or empty." }
+        check(sha256(apkFile).equals(expectedTargetSha256, ignoreCase = true)) {
+            "Downloaded APK integrity check failed."
+        }
+        val packageManager = context.packageManager
+        val installed = packageManager.getPackageInfoCompat(context.packageName)
+        val archive = packageManager.getPackageArchiveInfoCompat(apkFile.absolutePath)
+            ?: error("Downloaded file is not a valid Android APK.")
+        val version = archive.versionCodeCompat()
+        check(archive.packageName == expectedPackageName && expectedPackageName == context.packageName) {
+            "Downloaded APK package ID mismatch."
+        }
+        check(version == expectedVersionCode && version > installed.versionCodeCompat()) {
+            "Downloaded APK version is invalid or not newer."
+        }
+        val signer = signerSha256(archive)
+        val installedSigner = signerSha256(installed)
+        check(signer.equals(expectedSignerSha256, true) && signer.equals(installedSigner, true)) {
+            "Downloaded APK signing certificate does not match this installed app."
+        }
+        return VerifiedApk(apkFile, version, expectedTargetSha256.lowercase(), signer)
+    }
+
     private fun sha256(file: File): String {
         val digest = MessageDigest.getInstance("SHA-256")
         FileInputStream(file).use { input ->
