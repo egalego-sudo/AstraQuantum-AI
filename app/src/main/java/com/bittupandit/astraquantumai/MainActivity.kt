@@ -563,12 +563,12 @@ private fun AstraApp(
                 }
                 Text("स्थिति: पाँचों निर्देश AI Chat के प्रत्येक ऑनलाइन/ऑफलाइन प्रश्न के साथ जोड़े जाते हैं। यह गुणवत्ता-सुधार परत है, पूर्ण स्वतंत्र सत्यापन की गारंटी नहीं।", color = mint, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             }
-            "Research" -> SimplePage("DEEP RESEARCH", "Wikipedia, Crossref और OpenAlex से उपलब्ध स्रोत खोजें। स्रोतों की संख्या और गुणवत्ता विषय के अनुसार बदल सकती है; यह निर्णायक fact-check नहीं है।") {
+            "Research" -> SimplePage("DEEP RESEARCH ENGINE", "Wikipedia, Crossref, OpenAlex, Europe PMC और arXiv में समानांतर शोध खोज। उपलब्ध Open Access full text पढ़ने का प्रयास, स्रोतों की तुलना और प्रमाण-सहित रिपोर्ट। यह पूरे इंटरनेट की exhaustive खोज या 100% सत्यता की गारंटी नहीं है।") {
                 OutlinedTextField(prompt, { prompt = it }, Modifier.fillMaxWidth(), label = { Text("किस विषय या दावे की जाँच करें?") })
                 Text("खोज के स्रोत", color = mint, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 Button(enabled = prompt.isNotBlank() && !researchBusy, onClick = {
                     researchBusy = true
-                    researchResult = "Wikipedia, Crossref और OpenAlex पर स्रोत खोजे जा रहे हैं…"
+                    researchResult = "पाँच सार्वजनिक शोध-स्रोतों में खोज, रिकॉर्ड मिलान और उपलब्ध Open Access full text की जाँच जारी है… यह कुछ समय ले सकता है।"
                     val query = prompt.trim()
                     activity.lifecycleScope.launch {
                         researchResult = withContext(Dispatchers.IO) { askResearch(backend, query) }
@@ -1088,7 +1088,7 @@ private fun quantumApiRequest(baseUrl: String, path: String, method: String, pay
         val connection = (URL(clean + path).openConnection() as HttpURLConnection).apply {
             requestMethod = method
             connectTimeout = 20000
-            readTimeout = 90000
+            readTimeout = 150000
             doOutput = method == "POST"
             setRequestProperty("Content-Type", "application/json; charset=utf-8")
         }
@@ -1134,6 +1134,7 @@ private fun askResearch(baseUrl: String, query: String): String {
         } else {
             val json = JSONObject(body)
             val report = json.optString("text")
+            val meta = json.optJSONObject("research_meta")
             val sources = json.optJSONArray("sources") ?: JSONArray()
             val sourceText = buildString {
                 for (index in 0 until sources.length()) {
@@ -1143,7 +1144,7 @@ private fun askResearch(baseUrl: String, query: String): String {
                     append("\n").append(item.optString("url")).append("\n")
                 }
             }
-            report + if (sourceText.isNotBlank()) "\n\nस्रोत सूची\n" + sourceText else ""
+            buildString {\n                append(report)\n                if (meta != null) {\n                    append("\\n\\nशोध कवरेज: ")\n                    append(meta.optInt("unique_source_count")).append(" अलग स्रोत; ")\n                    append(meta.optInt("open_full_texts_fetched")).append(" Open Access full-text दस्तावेज़ प्राप्त।")\n                    append("\\nस्रोत प्रकार: ").append(meta.optJSONArray("source_types")?.let { arr -> (0 until arr.length()).joinToString(", ") { arr.optString(it) } } ?: "उपलब्ध")\n                    append("\\nसीमा: ").append(meta.optString("coverage_note"))\n                }\n                if (sourceText.isNotBlank()) append("\\n\\nस्रोत सूची\\n").append(sourceText)\n            }
         }
     } catch (error: Exception) {
         "Deep Research कनेक्शन विफल: " + (error.message ?: "नेटवर्क त्रुटि")
