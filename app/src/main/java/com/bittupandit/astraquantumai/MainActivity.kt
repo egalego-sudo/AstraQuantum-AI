@@ -252,8 +252,8 @@ private fun AstraApp(
                 }
                 Spacer(Modifier.width(11.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("ASTRA", color = white, fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
-                    Text("QUANTUM AI PLUS", color = muted, fontSize = 10.sp, letterSpacing = 2.sp)
+                    Text("QUANTUM", color = white, fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
+                    Text("AI", color = muted, fontSize = 10.sp, letterSpacing = 2.sp)
                     Text("Creator by Bittu Pandit", color = mint, fontSize = 9.sp, fontWeight = FontWeight.SemiBold)
                 }
                 Surface(color = Color(0xFF383838), shape = CircleShape) {
@@ -331,8 +331,8 @@ private fun AstraApp(
                         }
                         Spacer(Modifier.width(11.dp))
                         Column(Modifier.weight(1f)) {
-                            Text("ASTRA", color = white, fontSize = 20.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
-                            Text("QUANTUM AI", color = Color(0xFFFFD86B), fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 2.sp)
+                            Text("QUANTUM", color = white, fontSize = 20.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
+                            Text("AI", color = Color(0xFFFFD86B), fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 2.sp)
                         }
                         Surface(color = Color(0xAA152448), shape = CircleShape) {
                             Text("✦ AI", color = mint, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))

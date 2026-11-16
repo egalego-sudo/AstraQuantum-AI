@@ -1,4 +1,4 @@
-# ASTRA QUANTUM AI PLUS
+# Quantum AI
 
 Android-first personal AI assistant.
 
@@ -7,7 +7,7 @@ Android-first personal AI assistant.
 ## Implemented in the current Android app
 
 - Kotlin + Jetpack Compose Android application.
-- Hindi/English AI chat through the ASTRA backend.
+- Hindi/English AI chat through the Quantum AI backend.
 - Groq text model and image-analysis model, configured on the server.
 - Voice input and text-to-speech output (device speech services required).
 - Image selection and image analysis for JPEG, PNG and WEBP.
