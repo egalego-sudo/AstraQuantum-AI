@@ -1,5 +1,5 @@
 import http from "node:http";
-import pdfParse from "pdf-parse";
+import { PDFParse } from "pdf-parse";
 
 const PORT = Number(process.env.PORT || 8080);
 const API_KEY = process.env.GROQ_API_KEY;
@@ -50,7 +50,7 @@ function readBody(req) {
 async function generate(input) {
   if (!API_KEY) throw new Error("Server is missing GROQ_API_KEY secret.");
   const prompt = String(input.prompt || "").trim();
-  if (!prompt || prompt.length > 12000) throw new Error("Prompt is empty or too long.");
+  if (!prompt || prompt.length > 100000) throw new Error("Prompt is empty or too long.");
 
   const content = [];
   let model = MODEL;
@@ -63,13 +63,16 @@ async function generate(input) {
       if (pdfBytes.length < 8 || pdfBytes.subarray(0, 5).toString("ascii") !== "%PDF-") {
         throw new Error("यह वैध PDF फ़ाइल नहीं लगती।");
       }
-      let parsed;
+      let extracted = "";
+      const parser = new PDFParse({ data: pdfBytes });
       try {
-        parsed = await pdfParse(pdfBytes, { max: 60 });
+        const parsed = await parser.getText({ first: 60 });
+        extracted = String(parsed.text || "").replace(/\u0000/g, "").trim();
       } catch {
         throw new Error("PDF का टेक्स्ट नहीं पढ़ा जा सका। स्कैन की हुई PDF के लिए OCR सुविधा अभी उपलब्ध नहीं है।");
+      } finally {
+        await parser.destroy();
       }
-      const extracted = String(parsed.text || "").replace(/\u0000/g, "").trim();
       if (!extracted) throw new Error("इस PDF में पढ़ने योग्य टेक्स्ट नहीं मिला। स्कैन की हुई PDF के लिए OCR आवश्यक है।");
       const clipped = extracted.slice(0, 80000);
       content.push({ type: "input_text", text: (extracted.length > 80000 ? "PDF का टेक्स्ट 80,000 अक्षरों तक सीमित किया गया है; विश्लेषण इसी उपलब्ध अंश पर आधारित रखें।\n\n" : "PDF दस्तावेज़ से निकाला गया टेक्स्ट:\n\n") + clipped });
