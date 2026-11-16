@@ -15,9 +15,9 @@ import java.util.Locale
 
 @Composable
 fun QuantumCircuitLab() {
-    val white = Color(0xFF55D6FF)
-    val muted = Color(0xFFA9B9D6)
-    val panel = Color(0xFF1A2B4D)
+    val white = Color(0xFFECECEC)
+    val muted = Color(0xFFB4B4B4)
+    val panel = Color(0xFF2F2F2F)
     var qubits by remember { mutableIntStateOf(2) }
     var gate by remember { mutableStateOf("H") }
     var target by remember { mutableIntStateOf(0) }
@@ -28,11 +28,11 @@ fun QuantumCircuitLab() {
     var shots by remember { mutableIntStateOf(1000) }
     var sampleText by remember { mutableStateOf("") }
     var shorResult by remember { mutableStateOf<AstraQuantumSimulator.ShorDemoResult?>(null) }
-    val gates = listOf("H", "X", "Y", "Z", "S", "T", "RX90", "RY90", "RZ90", "CNOT", "CZ")
+    val gates = listOf("H", "X", "Y", "Z", "S", "SDG", "T", "RX90", "RY90", "RZ90", "CNOT", "CZ")
     val isControlled = gate == "CNOT" || gate == "CZ"
 
     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("EXACT STATE-VECTOR SIMULATOR", color = Color(0xFF6CF2D5), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+        Text("EXACT STATE-VECTOR SIMULATOR", color = Color(0xFF8E8EA0), fontWeight = FontWeight.Bold, fontSize = 12.sp)
         Text("Qubits: ${qubits}  •  ${1 shl qubits} complex amplitudes", color = white, fontWeight = FontWeight.Bold)
         Slider(value = qubits.toFloat(), onValueChange = { qubits = it.toInt().coerceIn(1, 10); ops = emptyList(); result = null; target = 0; control = if (qubits > 1) 1 else 0 }, valueRange = 1f..10f, steps = 8)
 
@@ -113,7 +113,7 @@ fun QuantumCircuitLab() {
 
         Text("एक gate चुनें", color = muted)
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-            gates.take(6).forEach { g -> FilterChip(selected = gate == g, onClick = { gate = g }, label = { Text(g) }) }
+            gates.take(6).forEach { g -> FilterChip(selected = gate == g, onClick = { gate = g }, label = { Text(if (g == "SDG") "S†" else g) }) }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
             gates.drop(6).forEach { g -> FilterChip(selected = gate == g, onClick = { gate = g }, label = { Text(g) }) }
