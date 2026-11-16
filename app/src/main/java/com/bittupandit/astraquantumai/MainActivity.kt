@@ -238,7 +238,7 @@ private fun AstraApp(
             }
             Spacer(Modifier.height(14.dp))
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                listOf("Home", "AI Chat", "Offline AI", "Research", "Memory", "Voice", "Files", "Quantum", "Projects", "Settings").forEach { item ->
+                listOf("Home", "Cores", "AI Chat", "Offline AI", "Research", "Memory", "Voice", "Files", "Quantum", "Projects", "Settings").forEach { item ->
                     val selected = page == item
                     Surface(
                         onClick = { page = item },
@@ -252,6 +252,33 @@ private fun AstraApp(
         }
         HorizontalDivider(color = line)
         when (page) {
+            "Cores" -> SimplePage("ASTRA FIVE CORE ARCHITECTURE", "पाँचों Core मिलकर ASTRA का काम बाँटते हैं। किसी सुविधा की उपलब्धता उसके वास्तविक मॉड्यूल और डिवाइस/सर्वर समर्थन पर निर्भर है।") {
+                val coreCards = listOf(
+                    Triple("01 · PERCEPTION CORE", "देखना • सुनना • दस्तावेज़ समझना", "Files" to "इमेज/PDF विश्लेषण और Voice इनपुट"),
+                    Triple("02 · REASONING CORE", "तर्क • विश्लेषण • समस्या समाधान", "AI Chat" to "ऑनलाइन AI; स्थानीय मॉडल अलग Offline AI स्क्रीन में"),
+                    Triple("03 · KNOWLEDGE CORE", "स्मृति • शोध • स्रोत जाँच", "Research" to "Wikipedia/Crossref शोध और फोन में निजी Memory"),
+                    Triple("04 · ACTION CORE", "योजना • कार्य-सूची • अनुमति", "Projects" to "अभी योजना/नोट workspace; बाहरी actions अभी सीमित"),
+                    Triple("05 · QUANTUM LEARNING CORE", "क्वांटम सिद्धांत • गणित • सिमुलेशन", "Quantum" to "क्लासिकल product-state simulator; IBM connector अलग")
+                )
+                val coreTints = listOf(Color(0xFF176BCE), Color(0xFF653CC6), Color(0xFF087F86), Color(0xFFB05A27), Color(0xFF7043B8))
+                coreCards.forEachIndexed { index, core ->
+                    Card(
+                        onClick = { page = core.third.first },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = coreTints[index].copy(alpha = .92f)),
+                        shape = RoundedCornerShape(18.dp)
+                    ) {
+                        Column(Modifier.fillMaxWidth().padding(15.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(core.first, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
+                            Text(core.second, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            Text(core.third.second, color = Color.White.copy(alpha = .88f), fontSize = 11.sp)
+                            Text("खोलें  →", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+                Text("ईमानदार क्षमता स्थिति", color = mint, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                Text("• इमेज समझना अभी ऑनलाइन Vision पर निर्भर है; Offline Vision उपलब्ध नहीं।\\n• आवाज़ की पहचान फोन के speech provider पर निर्भर है।\\n• स्रोत जुटाना और AI रिपोर्ट बनाना उपलब्ध है, पर स्वतः निर्णायक सत्यापन नहीं।\\n• Action Core अभी सुरक्षित planning/workspace स्तर पर है; कोई संदेश, भुगतान या फोन-सेटिंग बिना स्पष्ट अनुमति नहीं की जाती।\\n• Quantum Learning अभी शैक्षिक classical simulation है; वास्तविक QPU के लिए IBM credentials और अलग पुष्टि चाहिए।", color = muted, fontSize = 11.sp, lineHeight = 18.sp)
+            }
             "Home" -> {
                 Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
