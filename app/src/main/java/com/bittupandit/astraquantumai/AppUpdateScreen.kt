@@ -121,7 +121,6 @@ internal fun AppUpdateScreen() {
             }
         }
         AppBuildInfoScreen()
-        Text("Creator by Bittu Pandit", color = Color(0xFFD6D6D6), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 
