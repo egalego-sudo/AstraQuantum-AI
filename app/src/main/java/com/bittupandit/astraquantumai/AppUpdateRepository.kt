@@ -53,7 +53,10 @@ internal object AppUpdateRepository {
         return AvailableUpdate(
             verified, patchUrl, apkUrl,
             json.getLong("targetVersionCode"),
-            json.getString("targetVersionName")
+            json.getString("targetVersionName"),
+            sizes["ASTRA-build150-to-current.patch"] ?: 0L,
+            sizes["ASTRA-QUANTUM-AI.apk"] ?: 0L,
+            sha256(File(context.applicationInfo.sourceDir)).equals(json.getString("baseApkSha256"), true)
         )
     }
 
