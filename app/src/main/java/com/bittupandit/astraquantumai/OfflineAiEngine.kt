@@ -5,6 +5,7 @@ import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.Conversation
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
@@ -79,21 +80,36 @@ class OfflineAiEngine(context: Context) {
     suspend fun initialize(): String = withContext(Dispatchers.IO) {
         check(isModelInstalled) { "पहले Offline AI पेज से मॉडल डाउनलोड करें।" }
         if (conversation != null) return@withContext "स्थानीय Qwen मॉडल तैयार है।"
+
+        // Re-check the file at first load, not just at download time. App-private
+        // files can still be corrupted by storage faults or incomplete restores.
+        if (!OfflineModelIntegrity.matches(modelFile, MODEL_SHA256)) {
+            modelFile.delete()
+            error("स्थापित मॉडल की SHA-256 जाँच विफल हुई। सुरक्षा के लिए खराब फ़ाइल हटाई गई; मॉडल दोबारा डाउनलोड करें।")
+        }
+
+        val gpuEngine = Engine(EngineConfig(modelPath = modelFile.absolutePath, backend = Backend.GPU()))
         try {
-            val gpuEngine = Engine(EngineConfig(modelPath = modelFile.absolutePath, backend = Backend.GPU()))
             gpuEngine.initialize()
+            val gpuConversation = gpuEngine.createConversation()
             engine = gpuEngine
-            conversation = gpuEngine.createConversation()
+            conversation = gpuConversation
             "Qwen3-0.6B तैयार · GPU"
-        } catch (_: Throwable) {
-            runCatching { engine?.close() }
-            engine = null
-            conversation = null
+        } catch (gpuError: Exception) {
+            runCatching { gpuEngine.close() }
+            if (gpuError is CancellationException) throw gpuError
+
             val cpuEngine = Engine(EngineConfig(modelPath = modelFile.absolutePath, backend = Backend.CPU()))
-            cpuEngine.initialize()
-            engine = cpuEngine
-            conversation = cpuEngine.createConversation()
-            "Qwen3-0.6B तैयार · CPU fallback"
+            try {
+                cpuEngine.initialize()
+                val cpuConversation = cpuEngine.createConversation()
+                engine = cpuEngine
+                conversation = cpuConversation
+                "Qwen3-0.6B तैयार · CPU fallback"
+            } catch (cpuError: Exception) {
+                runCatching { cpuEngine.close() }
+                throw cpuError
+            }
         }
     }
 
