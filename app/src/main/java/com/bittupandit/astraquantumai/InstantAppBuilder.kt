@@ -6,6 +6,9 @@ import android.content.Context
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -59,6 +62,8 @@ fun InstantAppBuilderScreen(backendUrl: String) {
     var busy by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("ऐप या वेबसाइट चुनें और अपना आइडिया लिखें।") }
     var showPreview by remember { mutableStateOf(true) }
+    var previewDevice by remember { mutableStateOf("मोबाइल") }
+    var previewWebView by remember { mutableStateOf<WebView?>(null) }
 
     Column(
         Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
@@ -134,36 +139,48 @@ fun InstantAppBuilderScreen(backendUrl: String) {
         Text(status, color = builderMuted, fontSize = 12.sp)
         if (html.isNotBlank()) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { showPreview = true }, colors = ButtonDefaults.buttonColors(containerColor = builderCard)) { Text("Live Preview") }
+                Button(onClick = { showPreview = true }, colors = ButtonDefaults.buttonColors(containerColor = builderCard)) { Text("▶ चलाकर देखें") }
                 OutlinedButton(onClick = {
                     copyGeneratedCode(context, html, websiteMode)
                     status = if (websiteMode) "वेबसाइट का HTML कोड कॉपी हो गया।" else "ऐप का HTML कोड कॉपी हो गया।"
                 }) { Text("कोड कॉपी करें") }
             }
             if (showPreview) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    AndroidView(
-                        modifier = Modifier.fillMaxWidth().height(560.dp),
-                        factory = { ctx ->
-                            WebView(ctx).apply {
-                                webViewClient = WebViewClient()
-                                settings.javaScriptEnabled = true
-                                settings.domStorageEnabled = true
-                                setBackgroundColor(android.graphics.Color.WHITE)
-                                tag = ""
+                Text("PREVIEW DEVICE", color = builderAccent, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { previewDevice = "मोबाइल" }) { Text("मोबाइल") }
+                    OutlinedButton(onClick = { previewDevice = "डेस्कटॉप" }) { Text("डेस्कटॉप") }
+                    OutlinedButton(onClick = { previewWebView?.reload() }) { Text("↻ Refresh") }
+                }
+                Text(if (previewDevice == "मोबाइल") "फोन स्क्रीन Preview" else "बड़ी स्क्रीन Preview", color = builderMuted, fontSize = 11.sp)
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().widthIn(max = if (previewDevice == "मोबाइल") 390.dp else 900.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        AndroidView(
+                            modifier = Modifier.fillMaxWidth().height(if (previewDevice == "मोबाइल") 620.dp else 560.dp),
+                            factory = { ctx ->
+                                WebView(ctx).apply {
+                                    webViewClient = WebViewClient()
+                                    settings.javaScriptEnabled = true
+                                    settings.domStorageEnabled = true
+                                    settings.loadsImagesAutomatically = true
+                                    setBackgroundColor(android.graphics.Color.WHITE)
+                                    tag = ""
+                                    previewWebView = this
+                                }
+                            },
+                            update = { webView ->
+                                previewWebView = webView
+                                if (webView.tag != html) {
+                                    webView.tag = html
+                                    webView.loadDataWithBaseURL("https://astra.local/", html, "text/html", "UTF-8", null)
+                                }
                             }
-                        },
-                        update = { webView ->
-                            if (webView.tag != html) {
-                                webView.tag = html
-                                webView.loadDataWithBaseURL("https://astra.local/", html, "text/html", "UTF-8", null)
-                            }
-                        }
-                    )
+                        )
+                    }
                 }
             }
             Text(
