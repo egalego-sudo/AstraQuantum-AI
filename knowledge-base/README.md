@@ -19,7 +19,11 @@ This directory is the versioned foundation for QUANTUM AI's source-attributed kn
 - `schema/knowledge-record.schema.json`: record contract.
 - `sources/source-registry.json`: initial public-source registry and intended use.
 - `seed/foundations.jsonl`: 22 starter records in English and Hindi, with source links.
-- Future ingested material should be placed in domain-specific partitions (for example `science/`, `math/`, `computing/`, `history/`) with provenance retained.
+- The inbox file `inbox/research-metadata.jsonl` holds unreviewed bibliographic candidates only. Future reviewed material should be placed in domain-specific partitions (for example `science/`, `math/`, `computing/`, `history/`) with provenance retained.
+
+## Metadata-only scholarly discovery (implemented)
+
+Run `npm run knowledge:collect -- --query "quantum mechanics"` from `backend/` to query OpenAlex, Crossref and Europe PMC. The collector stores bibliographic metadata only in `knowledge-base/inbox/research-metadata.jsonl`; it does not download abstracts or full text and never inserts candidates into the searchable seed corpus. Candidates remain `unreviewed`, are deduplicated by DOI, and require source/license review before a separate knowledge record is authored. Provider failures are reported independently so one unavailable API does not discard results from the others. The collector is opt-in and is not run automatically in CI or on user requests.
 
 ## Retrieval pipeline (implementation plan)
 
