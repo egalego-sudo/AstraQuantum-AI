@@ -261,7 +261,7 @@ private fun AstraApp(
                     Triple("01 · PERCEPTION CORE", "देखना • सुनना • दस्तावेज़ समझना", "Files" to "इमेज/PDF विश्लेषण और Voice इनपुट"),
                     Triple("02 · REASONING CORE", "तर्क • विश्लेषण • समस्या समाधान", "AI Chat" to "ऑनलाइन AI; स्थानीय मॉडल अलग Offline AI स्क्रीन में"),
                     Triple("03 · KNOWLEDGE CORE", "स्मृति • शोध • स्रोत जाँच", "Research" to "Wikipedia/Crossref शोध और फोन में निजी Memory"),
-                    Triple("04 · ACTION CORE", "योजना • कार्य-सूची • अनुमति", "Projects" to "अभी योजना/नोट workspace; बाहरी actions अभी सीमित"),
+                    Triple("04 · ACTION CORE", "योजना • कार्य-सूची • अनुमति", "Action" to "समीक्षा योग्य योजना और अनुमति-आधारित स्थानीय checkpoint"),
                     Triple("05 · QUANTUM LEARNING CORE", "क्वांटम सिद्धांत • गणित • सिमुलेशन", "Quantum" to "क्लासिकल product-state simulator; IBM connector अलग")
                 )
                 val coreTints = listOf(Color(0xFF176BCE), Color(0xFF653CC6), Color(0xFF087F86), Color(0xFFB05A27), Color(0xFF7043B8))
@@ -484,12 +484,12 @@ private fun AstraApp(
                     }
                 }
             }
-            "Research" -> SimplePage("DEEP RESEARCH", "एक ही विषय को अलग-अलग स्रोतों पर खोजें। दावों को कम-से-कम दो स्वतंत्र स्रोतों से मिलाएँ।") {
+            "Research" -> SimplePage("DEEP RESEARCH", "Wikipedia, Crossref और OpenAlex से उपलब्ध स्रोत खोजें। स्रोतों की संख्या और गुणवत्ता विषय के अनुसार बदल सकती है; यह निर्णायक fact-check नहीं है।") {
                 OutlinedTextField(prompt, { prompt = it }, Modifier.fillMaxWidth(), label = { Text("किस विषय या दावे की जाँच करें?") })
                 Text("खोज के स्रोत", color = mint, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 Button(enabled = prompt.isNotBlank() && !researchBusy, onClick = {
                     researchBusy = true
-                    researchResult = "Wikipedia और Crossref पर स्रोत खोजे जा रहे हैं…"
+                    researchResult = "Wikipedia, Crossref और OpenAlex पर स्रोत खोजे जा रहे हैं…"
                     val query = prompt.trim()
                     activity.lifecycleScope.launch {
                         researchResult = withContext(Dispatchers.IO) { askResearch(backend, query) }
@@ -782,7 +782,7 @@ private fun AstraApp(
                                 askBackend(
                                     backend,
                                     "इस काम के लिए हिंदी में स्पष्ट, क्रमबद्ध और व्यावहारिक कार्य-योजना बनाइए: " + request +
-                                        "\\n\\nआउटपुट में लक्ष्य, आवश्यक सामग्री/पूर्वशर्तें, क्रमांकित चरण, प्रत्येक चरण का अपेक्षित परिणाम, जोखिम/सुरक्षा जाँच, और अंतिम सत्यापन शामिल करें।" +
+                                        "\n\nआउटपुट में लक्ष्य, आवश्यक सामग्री/पूर्वशर्तें, क्रमांकित चरण, प्रत्येक चरण का अपेक्षित परिणाम, जोखिम/सुरक्षा जाँच, और अंतिम सत्यापन शामिल करें।" +
                                         " किसी बाहरी ऐप में कार्रवाई करने, संदेश भेजने, भुगतान करने, फ़ाइल मिटाने या सेटिंग बदलने का दावा न करें। केवल योजना दें; उपयोगकर्ता स्वयं समीक्षा करेगा।"
                                 )
                             }
@@ -813,7 +813,7 @@ private fun AstraApp(
                         text = { Text("यह योजना आपके फोन के ASTRA Projects में स्थानीय checkpoint के रूप में सेव होगी। कोई बाहरी कार्रवाई नहीं होगी। क्या सेव करें?") },
                         confirmButton = {
                             TextButton(onClick = {
-                                addProject("ACTION PLAN · " + actionRequest.trim() + "\\n" + actionPlan)
+                                addProject("ACTION PLAN · " + actionRequest.trim() + "\n" + actionPlan)
                                 confirmSaveActionPlan = false
                                 Toast.makeText(context, "कार्य-योजना स्थानीय Projects में सेव हुई", Toast.LENGTH_SHORT).show()
                             }) { Text("हाँ, सेव करें") }
