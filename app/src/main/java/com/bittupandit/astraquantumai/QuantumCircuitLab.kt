@@ -34,6 +34,33 @@ fun QuantumCircuitLab() {
         Text("EXACT STATE-VECTOR SIMULATOR", color = Color(0xFF6CF2D5), fontWeight = FontWeight.Bold, fontSize = 12.sp)
         Text("Qubits: ${qubits}  •  ${1 shl qubits} complex amplitudes", color = white, fontWeight = FontWeight.Bold)
         Slider(value = qubits.toFloat(), onValueChange = { qubits = it.toInt().coerceIn(1, 10); ops = emptyList(); result = null; target = 0; control = if (qubits > 1) 1 else 0 }, valueRange = 1f..10f, steps = 8)
+
+        Text("तैयार Quantum प्रयोग", color = white, fontWeight = FontWeight.Bold)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            Button(onClick = {
+                qubits = 2
+                target = 0
+                control = 1
+                gate = "H"
+                ops = AstraQuantumSimulator.bellPhiPlus()
+                val r = AstraQuantumSimulator.run(2, ops)
+                result = r
+                sampleText = ""
+                message = if (AstraQuantumSimulator.verifyBellPhiPlus(r)) "Bell |Φ+⟩ परीक्षण PASS: |00⟩ और |11⟩ entangled state में हैं।" else "Bell state verification असफल।"
+            }, modifier = Modifier.weight(1f)) { Text("Bell State") }
+            Button(onClick = {
+                qubits = 2
+                target = 0
+                control = 1
+                gate = "H"
+                ops = AstraQuantumSimulator.groverSearch11()
+                val r = AstraQuantumSimulator.run(2, ops)
+                result = r
+                sampleText = ""
+                message = if (AstraQuantumSimulator.verifyGroverSearch11(r)) "Grover परीक्षण PASS: 1 iteration में |11⟩ मिला।" else "Grover verification असफल।"
+            }, modifier = Modifier.weight(1f)) { Text("Grover 2-Qubit") }
+        }
+
         Text("एक gate चुनें", color = muted)
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
             gates.take(6).forEach { g -> FilterChip(selected = gate == g, onClick = { gate = g }, label = { Text(g) }) }
