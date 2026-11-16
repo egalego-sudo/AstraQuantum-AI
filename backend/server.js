@@ -1,6 +1,6 @@
 import http from "node:http";
 import { PDFParse } from "pdf-parse";
-import { searchKnowledge } from "./knowledge.js";
+import { searchKnowledge, validateKnowledgeCitations } from "./knowledge.js";
 
 const PORT = Number(process.env.PORT || 8080);
 const API_KEY = process.env.GROQ_API_KEY;
@@ -187,7 +187,7 @@ async function generate(input) {
           : Array.isArray(fallbackContent)
             ? fallbackContent.map(part => part?.text || "").join("").trim()
             : "";
-        if (fallbackText) return fallbackText;
+        if (fallbackText) return validateKnowledgeCitations(fallbackText, knowledgeHits);
       }
       const fallbackMessage = fallbackData?.error?.message || `Groq Chat Completions returned HTTP ${fallbackResponse.status}`;
       throw new Error(`Groq Responses API HTTP ${response.status}; fallback failed: ${fallbackMessage}`);
