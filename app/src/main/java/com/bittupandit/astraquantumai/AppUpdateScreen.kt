@@ -64,12 +64,12 @@ internal fun AppUpdateScreen() {
                             result.onSuccess {
                                 update = it
                                 status = buildString {
-                                    append("अपडेट उपलब्ध: ${it.versionName} (Build ${it.versionCode})\\n")
+                                    append("अपडेट उपलब्ध: ${it.versionName} (Build ${it.versionCode})\n")
                                     if (it.deltaCompatible) {
-                                        append("✓ आपका इंस्टॉल किया APK पैच के आधार से मेल खाता है।\\n")
+                                        append("✓ आपका इंस्टॉल किया APK पैच के आधार से मेल खाता है।\n")
                                         append("डाउनलोड होगा: छोटा पैच (${formatBytes(it.patchSizeBytes)})")
                                     } else {
-                                        append("आपका इंस्टॉल किया APK इस पैच के आधार से मेल नहीं खाता।\\n")
+                                        append("आपका इंस्टॉल किया APK इस पैच के आधार से मेल नहीं खाता।\n")
                                         append("डाउनलोड होगा: पूरा APK (${formatBytes(it.apkSizeBytes)})")
                                     }
                                 }
