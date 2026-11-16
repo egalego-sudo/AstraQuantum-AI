@@ -16,6 +16,29 @@ android {
         versionName = "1.0.0"
     }
 
+    signingConfigs {
+        create("release") {
+            val keystorePath = System.getenv("ASTRA_KEYSTORE_PATH")
+            val keystorePasswordValue = System.getenv("ASTRA_KEYSTORE_PASSWORD")
+            val keyAliasValue = System.getenv("ASTRA_KEY_ALIAS")
+            val keyPasswordValue = System.getenv("ASTRA_KEY_PASSWORD")
+
+            if (!keystorePath.isNullOrBlank()) {
+                storeFile = file(keystorePath)
+                storePassword = keystorePasswordValue
+                keyAlias = keyAliasValue
+                keyPassword = keyPasswordValue
+            }
+        }
+    }
+
+    buildTypes {
+        getByName("release") {
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = false
+        }
+    }
+
     buildFeatures {
         compose = true
     }
