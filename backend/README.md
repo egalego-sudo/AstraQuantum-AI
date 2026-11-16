@@ -58,3 +58,8 @@ The `/v1/analyze` route is also accepted by the server and uses the same request
 - Encoded file limit: 10 MiB in the backend; the Android app currently applies a smaller 7 MiB source-file limit.
 - Basic rate limit: 20 requests per IP per minute.
 - Apply provider-level access controls, stronger abuse protection, monitoring and operational review before public production use.
+
+
+### IBM Quantum job submission safety
+
+IBM Quantum hardware job submission is disabled by default. The backend may list available backends when IBM credentials are configured, but it will reject actual job submissions unless the operator explicitly sets `IBM_QUANTUM_SUBMISSIONS_ENABLED=true` in the server environment. Enable this only after reviewing the selected IBM Quantum plan, instance allocation, and usage quota. Keep `IBM_QUANTUM_API_KEY` and `IBM_QUANTUM_SERVICE_CRN` server-side; never place them in the Android app or source repository.
