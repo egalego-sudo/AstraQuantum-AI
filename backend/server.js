@@ -182,6 +182,9 @@ async function quantumBackends() {
 }
 
 async function submitQuantumDemo(input) {
+  if (process.env.IBM_QUANTUM_SUBMISSIONS_ENABLED !== "true") {
+    throw new Error("IBM Quantum job submission is disabled by default. Enable IBM_QUANTUM_SUBMISSIONS_ENABLED=true on the server only after reviewing provider quota and costs.");
+  }
   const backend = String(input.backend || "").trim();
   if (!/^[A-Za-z0-9_-]{2,80}$/.test(backend)) throw new Error("मान्य IBM backend नाम लिखें।");
   const qasm = 'OPENQASM 3.0; include "stdgates.inc"; bit[1] c; x $0; c[0] = measure $0;';
@@ -303,6 +306,7 @@ const server = http.createServer(async (req, res) => {
   } catch (error) {
     const message = error?.message || "Internal server error";
     const status = message === "Request too large" ? 413 :
+      message.includes("job submission is disabled") ? 403 :
       message === "Invalid JSON" || message.startsWith("Prompt") || message.startsWith("Only ") || message.startsWith("File ") || message.startsWith("PDF ") ? 400 : 502;
     console.error("ASTRA request failed:", message);
     return send(res, status, { error: message });
