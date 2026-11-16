@@ -202,6 +202,7 @@ private fun AstraApp(
     var offlineTestAnswer by remember { mutableStateOf("") }
     var researchResult by remember { mutableStateOf("") }
     var researchBusy by remember { mutableStateOf(false) }
+    var useDeepResearchInChat by remember { mutableStateOf(false) }
     var scienceQuestion by remember { mutableStateOf("") }
     var scienceAnswer by remember { mutableStateOf("") }
     var scienceBusy by remember { mutableStateOf(false) }
@@ -461,6 +462,20 @@ private fun AstraApp(
                             TextButton(onClick = { chat = listOf(ChatLine("ASTRA", "नई बातचीत शुरू हुई। अपना सवाल पूछिए।")) }) { Text("नई चैट", color = muted) }
                         }
                     }
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(
+                            onClick = { useDeepResearchInChat = !useDeepResearchInChat },
+                            enabled = !busy,
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 5.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = if (useDeepResearchInChat) mint else muted)
+                        ) {
+                            Text(if (useDeepResearchInChat) "✓ गहन शोध चालू" else "गहन शोध मोड", fontSize = 11.sp)
+                        }
+                        Text(
+                            if (useDeepResearchInChat) "5 सार्वजनिक स्रोतों में सीमित खोज" else "सामान्य AI बातचीत",
+                            color = muted, fontSize = 9.sp
+                        )
+                    }
                     LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(vertical = 10.dp)) {
                         items(chat) { item ->
                             val isAi = item.from == "ASTRA"
@@ -519,6 +534,7 @@ private fun AstraApp(
                             enabled = (prompt.isNotBlank() || (pickedUri != null && pickedMime.startsWith("image/"))) && !busy,
                             onClick = {
                                 val imageUri = pickedUri?.takeIf { pickedMime in listOf("image/jpeg", "image/png", "image/webp") }
+                                val deepResearchMode = useDeepResearchInChat && imageUri == null
                                 val question = prompt.trim().ifBlank { "इस फोटो में क्या दिखाई दे रहा है? विस्तार से हिंदी में विश्लेषण करें।" }
                                 val rawQuestionWithMemory = ContextIntelligence.buildPrompt(
                                     question = question,
@@ -531,7 +547,11 @@ private fun AstraApp(
                                 chat = chat + ChatLine("You", question + if (imageUri != null) "  [फोटो: $pickedFile]" else "")
                                 prompt = ""
                                 busy = true
-                                status = if (imageUri != null) "VISION AI फोटो का विश्लेषण कर रहा है…" else "HYBRID ROUTER · ONLINE/OFFLINE"
+                                status = when {
+                                    imageUri != null -> "VISION AI फोटो का विश्लेषण कर रहा है…"
+                                    deepResearchMode -> "DEEP RESEARCH · 5 PUBLIC SOURCES"
+                                    else -> "HYBRID ROUTER · ONLINE/OFFLINE"
+                                }
                                 activity.lifecycleScope.launch {
                                     val answer = withContext(Dispatchers.IO) {
                                         val onlineResult = if (imageUri != null) {
@@ -541,13 +561,17 @@ private fun AstraApp(
                                                 val encoded = Base64.encodeToString(bytes, Base64.NO_WRAP)
                                                 askBackend(backend, questionWithMemory, pickedMime, encoded)
                                             }.getOrElse { "फोटो विश्लेषण विफल: ${it.message}" }
+                                        } else if (deepResearchMode) {
+                                            askResearch(backend, question.take(500))
                                         } else {
                                             askBackend(backend, questionWithMemory)
                                         }
                                         val remoteFailed = onlineResult.startsWith("ASTRA सर्वर से कनेक्शन नहीं हो पाया") ||
                                             onlineResult.startsWith("ASTRA से जुड़ने के लिए Backend HTTPS URL") ||
                                             onlineResult.startsWith("Groq सेवा में त्रुटि") ||
-                                            onlineResult.startsWith("सुरक्षा के लिए backend URL")
+                                            onlineResult.startsWith("सुरक्षा के लिए backend URL") ||
+                                            onlineResult.startsWith("Deep Research कनेक्शन विफल") ||
+                                            onlineResult.startsWith("Deep Research त्रुटि")
                                         if (remoteFailed && imageUri == null && offlineEngine.isModelInstalled) {
                                             runCatching { "ON-DEVICE · QWEN3-0.6B\n" + offlineEngine.answer(questionWithMemory) }
                                                 .getOrElse { "ऑनलाइन सेवा और स्थानीय मॉडल दोनों उपलब्ध नहीं हुए: ${it.message}" }
@@ -555,6 +579,8 @@ private fun AstraApp(
                                             onlineResult + "\n\nOFFLINE VISION अभी ASTRA में उपलब्ध नहीं है।"
                                         } else if (imageUri != null) {
                                             "ONLINE · GROQ VISION\n" + onlineResult
+                                        } else if (deepResearchMode) {
+                                            "ONLINE · GROQ DEEP RESEARCH\n" + onlineResult
                                         } else {
                                             "ONLINE · GROQ\n" + onlineResult
                                         }
