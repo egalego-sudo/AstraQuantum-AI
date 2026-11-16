@@ -672,7 +672,7 @@ private fun AstraApp(
                 Quantum64SparseLab()
                 HorizontalDivider(color = line, modifier = Modifier.padding(vertical = 10.dp))
                 Text("REAL QUANTUM HARDWARE · IBM QUANTUM", color = mint, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                Text("यह हिस्सा IBM के असली quantum compute service से जुड़ेगा। इसके लिए server पर IBM API key और Quantum instance CRN सुरक्षित रूप से configure होना जरूरी है।", color = muted, fontSize = 11.sp)
+                Text("यह हिस्सा IBM के असली quantum compute service से जुड़ेगा। इसके लिए server पर IBM API key और Quantum instance CRN सुरक्षित रूप से configure होना जरूरी है। Build 162 backend health response में केवल configuration readiness बताता है—किसी key या secret को ऐप में नहीं दिखाता।", color = muted, fontSize = 11.sp)
                 OutlinedTextField(
                     value = quantumBackendName,
                     onValueChange = { quantumBackendName = it },
