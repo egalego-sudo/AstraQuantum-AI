@@ -3,6 +3,8 @@ package com.bittupandit.astraquantumai
 import android.content.Context
 import android.util.AtomicFile
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -219,7 +221,7 @@ internal fun BenchmarkScreen(backendUrl: String) {
     val questions = remember(module) { BQuestionBank.all.filter { it.module == module } }
     val question = questions[index]
     val latest = records.firstOrNull { it.id == latestId }
-    Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("ASTRA INTELLIGENCE BENCHMARK", fontSize = 17.sp, fontWeight = FontWeight.Black)
         Text("6 मॉड्यूल · 120 प्रश्न · Question version 1", fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
         BQuestionBank.moduleNames.forEach { name ->

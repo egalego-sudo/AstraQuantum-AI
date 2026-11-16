@@ -1150,7 +1150,7 @@ private fun askResearch(baseUrl: String, query: String): String {
     }
 }
 
-private fun askBackend(baseUrl: String, prompt: String, mimeType: String? = null, base64: String? = null): String {
+internal fun askBackend(baseUrl: String, prompt: String, mimeType: String? = null, base64: String? = null): String {
     if (baseUrl.isBlank()) return "ASTRA से जुड़ने के लिए Backend HTTPS URL सेव करें।"
     return try {
         val clean = baseUrl.trim().trimEnd('/')
