@@ -97,6 +97,7 @@ internal object AppUpdateRepository {
         connection.connectTimeout = 15000
         connection.readTimeout = 30000
         connection.setRequestProperty("Accept", "application/vnd.github+json")
+        connection.setRequestProperty("User-Agent", "ASTRA-QUANTUM-AI-PLUS-Updater")
         try {
             check(connection.responseCode == HttpURLConnection.HTTP_OK) {
                 "Update server returned HTTP ${connection.responseCode}."
@@ -121,6 +122,7 @@ internal object AppUpdateRepository {
         val connection = URL(url).openConnection() as HttpURLConnection
         connection.connectTimeout = 20000
         connection.readTimeout = 60000
+        connection.setRequestProperty("User-Agent", "ASTRA-QUANTUM-AI-PLUS-Updater")
         try {
             check(connection.responseCode == HttpURLConnection.HTTP_OK) {
                 "Update download failed with HTTP ${connection.responseCode}."
