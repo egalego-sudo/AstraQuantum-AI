@@ -59,35 +59,44 @@ jobs:
           retention-days: 14
 
       - name: Prepare persistent release signing key
-        if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_ALIAS != '' && env.ASTRA_KEY_PASSWORD != ''
+        if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
         run: |
           mkdir -p "$RUNNER_TEMP/keystore"
           echo "$ASTRA_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/keystore/astra-upload.jks"
           test -s "$RUNNER_TEMP/keystore/astra-upload.jks"
 
       - name: Validate persistent release signing credentials
-        if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_ALIAS != '' && env.ASTRA_KEY_PASSWORD != ''
+        if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
+        shell: bash
         run: |
-          if ! keytool -list -keystore "$RUNNER_TEMP/keystore/astra-upload.jks" -storepass "$ASTRA_KEYSTORE_PASSWORD" -alias "$ASTRA_KEY_ALIAS" >/dev/null 2>&1; then
-            echo "::error::The keystore password or alias does not match the uploaded keystore."
+          # Discover the real alias from the keystore instead of trusting a possibly stale alias secret.
+          if ! keytool -list -v -keystore "$RUNNER_TEMP/keystore/astra-upload.jks" -storepass "$ASTRA_KEYSTORE_PASSWORD" > "$RUNNER_TEMP/keystore/list.txt" 2> "$RUNNER_TEMP/keystore/list-error.txt"; then
+            echo "::error::The GitHub ASTRA_KEYSTORE_PASSWORD secret does not unlock this keystore. The alias was not the cause."
             exit 1
           fi
+          alias="$(sed -n 's/^Alias name: //p' "$RUNNER_TEMP/keystore/list.txt" | head -n 1)"
+          if [ -z "$alias" ]; then
+            echo "::error::The keystore opened, but no private-key alias was found."
+            exit 1
+          fi
+          echo "Detected signing alias: $alias"
+          echo "ASTRA_KEY_ALIAS=$alias" >> "$GITHUB_ENV"
           cp "$RUNNER_TEMP/keystore/astra-upload.jks" "$RUNNER_TEMP/keystore/credential-check.jks"
-          if ! keytool -keypasswd -alias "$ASTRA_KEY_ALIAS" -keystore "$RUNNER_TEMP/keystore/credential-check.jks" -storepass "$ASTRA_KEYSTORE_PASSWORD" -keypass "$ASTRA_KEY_PASSWORD" -new "$ASTRA_KEY_PASSWORD" >/dev/null 2>&1; then
-            echo "::error::The key password does not match the selected alias."
+          if ! keytool -keypasswd -alias "$alias" -keystore "$RUNNER_TEMP/keystore/credential-check.jks" -storepass "$ASTRA_KEYSTORE_PASSWORD" -keypass "$ASTRA_KEY_PASSWORD" -new "$ASTRA_KEY_PASSWORD" >/dev/null 2>&1; then
+            echo "::error::The GitHub ASTRA_KEY_PASSWORD secret does not unlock the private key for the detected alias."
             exit 1
           fi
-          rm -f "$RUNNER_TEMP/keystore/credential-check.jks"
+          rm -f "$RUNNER_TEMP/keystore/credential-check.jks" "$RUNNER_TEMP/keystore/list.txt" "$RUNNER_TEMP/keystore/list-error.txt"
           echo "Persistent signing credentials validated successfully."
 
       - name: Build permanently signed release APK
-        if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_ALIAS != '' && env.ASTRA_KEY_PASSWORD != ''
+        if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
         env:
           ASTRA_KEYSTORE_PATH: ${{ runner.temp }}/keystore/astra-upload.jks
         run: gradle --no-daemon assembleRelease
 
       - name: Upload signed update APK
-        if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_ALIAS != '' && env.ASTRA_KEY_PASSWORD != ''
+        if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
         uses: actions/upload-artifact@v4
         with:
           name: ASTRA-QUANTUM-AI-signed-update-apk
