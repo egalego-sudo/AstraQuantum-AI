@@ -248,7 +248,7 @@ private fun AstraApp(
             }
             Spacer(Modifier.height(14.dp))
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                listOf("Home", "App Builder", "Cores", "AI Chat", "Science QA", "Offline AI", "Research", "Action", "Memory", "Voice", "Files", "Quantum", "Projects", "Settings").forEach { item ->
+                listOf("Home", "AI Chat", "App Builder", "Website Builder", "Quantum", "Cores", "Science QA", "Offline AI", "Research", "Action", "Memory", "Voice", "Files", "Projects", "Settings").forEach { item ->
                     val selected = page == item
                     Surface(
                         onClick = { page = item },
@@ -262,7 +262,8 @@ private fun AstraApp(
         }
         HorizontalDivider(color = line)
         when (page) {
-            "App Builder" -> InstantAppBuilderScreen(backend)
+            "App Builder" -> InstantAppBuilderScreen(backend, initialWebsiteMode = false)
+            "Website Builder" -> InstantAppBuilderScreen(backend, initialWebsiteMode = true)
             "Cores" -> SimplePage("ASTRA FIVE CORE ARCHITECTURE", "पाँचों Core मिलकर ASTRA का काम बाँटते हैं। किसी सुविधा की उपलब्धता उसके वास्तविक मॉड्यूल और डिवाइस/सर्वर समर्थन पर निर्भर है।") {
                 val coreCards = listOf(
                     Triple("01 · PERCEPTION CORE", "देखना • सुनना • दस्तावेज़ समझना", "Files" to "इमेज/PDF विश्लेषण और Voice इनपुट"),
@@ -360,6 +361,33 @@ private fun AstraApp(
                         }
                     }
                     Spacer(Modifier.height(17.dp))
+                    Text("CENTRAL CONTROL", color = mint, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+                    Spacer(Modifier.height(9.dp))
+                    val controlModules = listOf(
+                        Triple("AI CHAT", "बातचीत और उत्तर", "AI Chat"),
+                        Triple("APP BUILDER", "ऐप प्रोटोटाइप बनाएँ", "App Builder"),
+                        Triple("WEBSITE BUILDER", "वेबसाइट और Preview", "Website Builder"),
+                        Triple("QUANTUM LAB", "क्वांटम सिमुलेशन", "Quantum")
+                    )
+                    controlModules.chunked(2).forEach { pair ->
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            pair.forEach { item ->
+                                Card(
+                                    onClick = { page = item.third },
+                                    modifier = Modifier.weight(1f).height(88.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color(0xFF383838)),
+                                    shape = RoundedCornerShape(16.dp)
+                                ) {
+                                    Column(Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.Center) {
+                                        Text(item.first, color = white, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = .5.sp)
+                                        Spacer(Modifier.height(5.dp))
+                                        Text(item.second, color = muted, fontSize = 10.sp)
+                                    }
+                                }
+                            }
+                        }
+                        Spacer(Modifier.height(8.dp))
+                    }
                     Text("EXPLORE ASTRA", color = Color(0xFFFFD86B), fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
                     Spacer(Modifier.height(10.dp))
                     val modules = listOf(
