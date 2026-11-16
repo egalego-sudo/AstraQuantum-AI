@@ -16,6 +16,7 @@ Android-first personal AI assistant.
 - Local notes/projects and chat history stored in app-private preferences.
 - PDF document analysis through the backend using the maintained pdf-parse parser.
 - Quantum Lab educational model for up to 32 independent Qubits, probability calculation and classical measurement sampling.
+- IBM Quantum hardware connector code with server-side IAM token exchange, backend listing, confirmation-gated one-qubit sampler submission and job-status lookup; it requires IBM API key and instance CRN secrets before it can connect to a real QPU.
 - Backend health-check screen.
 
 ## Quantum Lab scope and limits
