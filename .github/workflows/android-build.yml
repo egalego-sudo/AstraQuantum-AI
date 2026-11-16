@@ -90,11 +90,13 @@ jobs:
       - name: Check backend JavaScript syntax
         run: node --check backend/server.js
 
-      - name: Set up Android SDK command-line tools
-        uses: android-actions/setup-android@v3
-
       - name: Install Android NDK and CMake for BSDIFF engine
-        run: yes | sdkmanager --install "ndk;29.0.14206865" "cmake;3.31.6"
+        shell: bash
+        run: |
+          SDK_ROOT="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -maxdepth 3 -type f -name sdkmanager | sort -V | tail -n 1)"
+          test -n "$SDKMANAGER"
+          yes | "$SDKMANAGER" --install "ndk;29.0.14206865" "cmake;3.31.6"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
