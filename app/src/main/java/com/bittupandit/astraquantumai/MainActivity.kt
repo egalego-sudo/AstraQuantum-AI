@@ -542,13 +542,15 @@ private fun AstraApp(
                     }
                 }
             }
-            "Science QA" -> SimplePage("SCIENTIFIC INTELLIGENCE & VERIFICATION", "पाँच सहायक जाँच-स्तर AI को अधिक सावधान बनाते हैं। ये स्वचालित गणित-सॉल्वर या peer-reviewed fact-check का विकल्प नहीं हैं।") {
+            "Science QA" -> SimplePage("SEVEN-LAYER ADVANCED REASONING", "सात तर्क-गुणवत्ता परतें मौजूदा AI मॉडल को निर्देश देती हैं। ये नया foundation model, मानव IQ स्कोर या स्वतंत्र सत्यापन सेवा नहीं हैं।") {
                 val modules = listOf(
-                    "01 · MATHEMATICAL VALIDATOR" to "चरण-दर-चरण गणना, normalization, limiting cases, units और स्वतंत्र पुनर्गणना माँगता है। जटिल गणना की मशीन-आधारित पुष्टि अभी सीमित है।",
-                    "02 · SCIENTIFIC FACT CHECKER" to "दावे, स्रोत, तारीख और प्रमाण का स्तर अलग रखने को कहता है। Research स्क्रीन के स्रोत सीमित हैं; हर दावा स्वतः सत्यापित नहीं होता।",
-                    "03 · CONTEXT TRACKER" to "हाल की बातचीत में परिभाषाएँ, मान्यताएँ, intermediate states और बदली हुई अवस्थाएँ स्पष्ट रखने का निर्देश देता है। यह chat context पर निर्भर है।",
-                    "04 · HYPOTHESIS DETECTOR" to "स्थापित परिणाम, मॉडल-निर्भर निष्कर्ष, परिकल्पना और अज्ञात को अलग-अलग लेबल करने का निर्देश देता है।",
-                    "05 · SELF-CORRECTION ENGINE" to "उत्तर भेजने से पहले विरोधाभास, छूटे हुए चरण, गलत प्रारंभिक अवस्था और अति-आत्मविश्वास खोजने की जाँच-सूची लागू करता है।"
+                    "01 · DEEP REASONING" to "वास्तविक प्रश्न, लक्ष्य, बाधाएँ और मूल कारण पहचानना; तथ्य, मान्यताएँ और अज्ञात अलग रखना।",
+                    "02 · MULTI-LAYER THINKING" to "समस्या के लिए उपयोगी वैज्ञानिक, व्यावहारिक, गणितीय और दीर्घकालिक दृष्टिकोण जोड़ना।",
+                    "03 · SELF-CORRECTION" to "उत्तर में विरोधाभास, छूटे चरण, गणना त्रुटि और अप्रमाणित निष्कर्ष जाँचना।",
+                    "04 · SCIENTIFIC VERIFICATION" to "स्थापित तथ्य, मॉडल-निर्भर निष्कर्ष, परिकल्पना और अज्ञात अलग करना; नकली स्रोत न बनाना।",
+                    "05 · CREATIVE INTELLIGENCE" to "जहाँ उपयोगी हो, वैकल्पिक समाधान बनाना, उनके लाभ-हानि की तुलना करना।",
+                    "06 · CONTEXT & MEMORY REASONING" to "उपलब्ध संदर्भ और नवीनतम निर्णयों का उपयोग; निजी नोट्स को सार्वजनिक प्रमाण न मानना।",
+                    "07 · STRATEGIC PLANNING" to "बड़े लक्ष्य को क्रमबद्ध, जाँचने योग्य चरणों और सफलता-मापदंडों में बाँटना।"
                 )
                 modules.forEach { item ->
                     Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF303030)), shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
