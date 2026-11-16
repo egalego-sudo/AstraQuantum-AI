@@ -1,0 +1,83 @@
+[
+  {
+    "id": "nist-si",
+    "name": "NIST SI Units",
+    "domain": "science/metrology",
+    "url": "https://www.nist.gov/pml/owm/metric-si/si-units",
+    "source_type": "official_reference",
+    "priority": "high",
+    "usage": "SI definitions and metrology reference; follow NIST terms and cite pages."
+  },
+  {
+    "id": "nist-constants",
+    "name": "NIST CODATA Fundamental Physical Constants",
+    "domain": "science/physics",
+    "url": "https://physics.nist.gov/cuu/Constants/",
+    "source_type": "official_reference",
+    "priority": "high",
+    "usage": "Physical constants and recommended values; retain release/version and uncertainty."
+  },
+  {
+    "id": "openalex",
+    "name": "OpenAlex",
+    "domain": "research/multidisciplinary",
+    "url": "https://api.openalex.org/",
+    "source_type": "scholarly_index",
+    "priority": "high",
+    "usage": "Metadata and open-access locations; verify the underlying work before asserting claims."
+  },
+  {
+    "id": "crossref",
+    "name": "Crossref REST API",
+    "domain": "research/multidisciplinary",
+    "url": "https://api.crossref.org/",
+    "source_type": "scholarly_metadata",
+    "priority": "high",
+    "usage": "DOI and publication metadata; metadata is not proof of paper contents."
+  },
+  {
+    "id": "europe-pmc",
+    "name": "Europe PMC",
+    "domain": "research/biomedical",
+    "url": "https://www.ebi.ac.uk/europepmc/webservices/rest/",
+    "source_type": "scholarly_index",
+    "priority": "high",
+    "usage": "Biomedical metadata and open-access full text where available; obey API and license conditions."
+  },
+  {
+    "id": "arxiv",
+    "name": "arXiv",
+    "domain": "research/physics-math-computing",
+    "url": "https://export.arxiv.org/api/query",
+    "source_type": "preprint_repository",
+    "priority": "medium",
+    "usage": "Preprints; do not imply peer review unless publication is independently confirmed."
+  },
+  {
+    "id": "wikipedia",
+    "name": "Wikipedia",
+    "domain": "general/encyclopedic",
+    "url": "https://www.wikipedia.org/",
+    "source_type": "tertiary",
+    "priority": "low",
+    "usage": "Discovery and orientation only; prefer primary/official sources for factual claims."
+  },
+  {
+    "id": "python-docs",
+    "name": "Python Documentation",
+    "domain": "computing/python",
+    "url": "https://docs.python.org/3/",
+    "source_type": "official_reference",
+    "priority": "high",
+    "usage": "Python language and standard-library behavior; pin documentation version where relevant."
+  },
+  {
+    "id": "developer-android",
+    "name": "Android Developers",
+    "domain": "computing/android",
+    "url": "https://developer.android.com/docs",
+    "source_type": "official_reference",
+    "priority": "high",
+    "usage": "Android platform and API behavior; pin API level and documentation version."
+  }
+]
