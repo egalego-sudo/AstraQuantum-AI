@@ -523,12 +523,14 @@ async function research(input) {
   return {
     text: answer,
     sources: sourcesWithIds.map(source => ({
-      id: source.id, type: source.type, title: source.title, url: source.url,\n      relevance_score: source.relevance.score, matched_terms: source.relevance.matched_terms,
+      id: source.id, type: source.type, title: source.title, url: source.url,
+      relevance_score: source.relevance.score, matched_terms: source.relevance.matched_terms,
       year: source.year || "", doi: source.doi || "",
       fullTextFetched: Boolean(source.fullTextFetched), quality: source.quality
     })),
     research_meta: {
-      unique_source_count: sourcesWithIds.length,\n      search_queries_used: researchQueries,\n      rejected_irrelevant_source_count: rejectedIrrelevantCount,
+      unique_source_count: sourcesWithIds.length,
+      search_queries_used: researchQueries,\n      rejected_irrelevant_source_count: rejectedIrrelevantCount,
       source_types: sourceTypes,
       open_full_texts_fetched: fullTextResults.filter(Boolean).length,
       full_text_types: [...new Set(fullTextResults.filter(Boolean).map(s => s.type))],
