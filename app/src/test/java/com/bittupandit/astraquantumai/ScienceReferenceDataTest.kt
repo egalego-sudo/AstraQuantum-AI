@@ -15,6 +15,9 @@ class ScienceReferenceDataTest {
     }
 
     @Test fun periodicTableLookupUsesAtomicNumberAndSymbol() {
+        assertEquals(118, PeriodicTableCatalog.elements.size)
+        assertEquals((1..118).toList(), PeriodicTableCatalog.elements.map { it.atomicNumber })
+        assertEquals("Oganesson", PeriodicTableCatalog.byAtomicNumber(118)?.name)
         assertEquals("Carbon", PeriodicTableCatalog.byAtomicNumber(6)?.name)
         assertEquals(79, PeriodicTableCatalog.search("Au").single().atomicNumber)
         assertEquals("Hydrogen", PeriodicTableCatalog.search("hydrogen").single().name)
