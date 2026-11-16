@@ -96,7 +96,7 @@ class OfflineAiEngine(context: Context) {
         val activeConversation = conversation ?: error("स्थानीय AI इंजन शुरू नहीं हो पाया।")
         val response = StringBuilder()
         activeConversation.sendMessageAsync(prompt).collect { message ->
-            val chunk = message.text
+            val chunk = message.toString()
             if (chunk.isNotBlank()) response.append(chunk)
         }
         response.toString().trim().ifBlank { "स्थानीय मॉडल से उत्तर नहीं मिला।" }
