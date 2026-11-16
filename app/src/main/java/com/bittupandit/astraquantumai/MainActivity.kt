@@ -108,7 +108,7 @@ class MainActivity : ComponentActivity() {
                         }
                         runCatching { speechLauncher.launch(intent) }
                     },
-                    onPickFile = { fileLauncher.launch(arrayOf("image/jpeg", "image/png", "image/webp")) }
+                    onPickFile = { fileLauncher.launch(arrayOf("image/jpeg", "image/png", "image/webp", "application/pdf")) }
                 )
             }
         }
@@ -453,7 +453,7 @@ private fun AstraApp(
                 SelectionContainer { Text("पहचाना गया: $speechText", color = white) }
                 Button(enabled = speechText.isNotBlank(), onClick = { onSpeak(speechText) }, colors = ButtonDefaults.buttonColors(containerColor = graphite, contentColor = white)) { Text("आवाज़ में सुनें") }
             }
-            "Files" -> SimplePage("ASTRA IMAGE ANALYSIS", "JPG, PNG या WEBP फोटो चुनें और Groq Vision AI से उसका विश्लेषण कराएँ।") {
+            "Files" -> SimplePage("ASTRA FILE INTELLIGENCE", "PDF दस्तावेज़ का टेक्स्ट निकालकर AI से सारांश, मुख्य बिंदु और सवालों के जवाब पाएँ; JPG, PNG और WEBP फोटो का Vision विश्लेषण भी उपलब्ध है।") {
                 Button(onClick = onPickFile, colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("फोन से फ़ाइल चुनें") }
                 Text("चुनी गई फ़ाइल: $pickedFile", color = white)
                 Text("प्रकार: $pickedMime", color = muted, fontSize = 12.sp)
@@ -468,7 +468,7 @@ private fun AstraApp(
                                     val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: error("फ़ाइल पढ़ी नहीं जा सकी")
                                     require(bytes.size <= 7 * 1024 * 1024) { "फ़ाइल 7 MB से छोटी रखें।" }
                                     val encoded = Base64.encodeToString(bytes, Base64.NO_WRAP)
-                                    askBackend(backend, "इस फ़ाइल का हिंदी में सारांश, मुख्य बिंदु और महत्वपूर्ण तथ्य बताइए।", pickedMime, encoded)
+                                    askBackend(backend, if (pickedMime == "application/pdf") "इस PDF दस्तावेज़ का गहराई से हिंदी में विश्लेषण करें: पहले संक्षिप्त सारांश, फिर विषयवार मुख्य बिंदु, महत्वपूर्ण तिथियाँ/नाम/आँकड़े, दस्तावेज़ में दिए गए निष्कर्ष और अंत में संभावित अस्पष्टताएँ बताएँ। केवल दस्तावेज़ में मौजूद जानकारी को तथ्य कहें।" else "इस फ़ाइल का हिंदी में सारांश, मुख्य बिंदु और महत्वपूर्ण तथ्य बताइए।", pickedMime, encoded)
                                 }.getOrElse { "फ़ाइल विश्लेषण विफल: ${it.message}" }
                             }
                             fileAnalysis = result
