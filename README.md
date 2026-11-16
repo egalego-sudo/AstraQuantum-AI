@@ -14,6 +14,7 @@ Android-first personal AI assistant.
 - In-app research endpoint retrieves Wikipedia overview pages and Crossref scholarly-record metadata, then asks Groq to synthesize a cited report. This is an initial multi-source research layer, not exhaustive web crawling or conclusive fact verification.
 - PDF text extraction and AI analysis for text-based PDFs (up to 60 pages and 80,000 extracted characters); scanned/image-only PDFs still need OCR.
 - Local notes/projects and chat history stored in app-private preferences.
+- User-authored personal memory with an explicit opt-in switch before saved notes are included in AI prompts; memory stays local unless the user enables this.
 - PDF document analysis through the backend using the maintained pdf-parse parser.
 - Quantum Lab educational model for up to 32 independent Qubits, probability calculation and classical measurement sampling.
 - IBM Quantum hardware connector code with server-side IAM token exchange, backend listing, confirmation-gated one-qubit sampler submission and job-status lookup; it requires IBM API key and instance CRN secrets before it can connect to a real QPU.
