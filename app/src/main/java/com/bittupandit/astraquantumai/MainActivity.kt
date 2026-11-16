@@ -169,6 +169,7 @@ private fun AstraApp(
     var backend by remember { mutableStateOf(prefs.getString("backend_url", "https://astraquantum-ai.onrender.com") ?: "https://astraquantum-ai.onrender.com") }
     var memoryInput by remember { mutableStateOf("") }
     var memories by remember { mutableStateOf(prefs.getString("memories", "") ?: "") }
+    var useMemoryInChat by remember { mutableStateOf(prefs.getBoolean("use_memory_in_chat", false)) }
     var projectInput by remember { mutableStateOf("") }
     var projects by remember { mutableStateOf(prefs.getString("projects", "") ?: "") }
     var chat by remember { mutableStateOf(restoreChatHistory(prefs.getString("chat_history", null))) }
@@ -380,6 +381,10 @@ private fun AstraApp(
                             onClick = {
                                 val imageUri = pickedUri?.takeIf { pickedMime in listOf("image/jpeg", "image/png", "image/webp") }
                                 val question = prompt.trim().ifBlank { "इस फोटो में क्या दिखाई दे रहा है? विस्तार से हिंदी में विश्लेषण करें।" }
+                                val questionWithMemory = if (useMemoryInChat && memories.isNotBlank()) {
+                                    question + "\n\n[उपयोगकर्ता की अनुमति से निजी Memory संदर्भ]\n" + memories.take(10000) +
+                                        "\nइस निजी संदर्भ को केवल प्रासंगिक होने पर उपयोग करें; इसे सार्वजनिक तथ्य न मानें।"
+                                } else question
                                 chat = chat + ChatLine("You", question + if (imageUri != null) "  [फोटो: $pickedFile]" else "")
                                 prompt = ""
                                 busy = true
@@ -391,17 +396,17 @@ private fun AstraApp(
                                                 val bytes = context.contentResolver.openInputStream(imageUri)?.use { it.readBytes() } ?: error("फोटो पढ़ी नहीं जा सकी")
                                                 require(bytes.size <= 7 * 1024 * 1024) { "फोटो 7 MB से छोटी रखें।" }
                                                 val encoded = Base64.encodeToString(bytes, Base64.NO_WRAP)
-                                                askBackend(backend, question, pickedMime, encoded)
+                                                askBackend(backend, questionWithMemory, pickedMime, encoded)
                                             }.getOrElse { "फोटो विश्लेषण विफल: ${it.message}" }
                                         } else {
-                                            askBackend(backend, question)
+                                            askBackend(backend, questionWithMemory)
                                         }
                                         val remoteFailed = onlineResult.startsWith("ASTRA सर्वर से कनेक्शन नहीं हो पाया") ||
                                             onlineResult.startsWith("ASTRA से जुड़ने के लिए Backend HTTPS URL") ||
                                             onlineResult.startsWith("Groq सेवा में त्रुटि") ||
                                             onlineResult.startsWith("सुरक्षा के लिए backend URL")
                                         if (remoteFailed && imageUri == null && offlineEngine.isModelInstalled) {
-                                            runCatching { "ON-DEVICE · QWEN3-0.6B\n" + offlineEngine.answer(question) }
+                                            runCatching { "ON-DEVICE · QWEN3-0.6B\n" + offlineEngine.answer(questionWithMemory) }
                                                 .getOrElse { "ऑनलाइन सेवा और स्थानीय मॉडल दोनों उपलब्ध नहीं हुए: ${it.message}" }
                                         } else if (remoteFailed && imageUri != null) {
                                             onlineResult + "\n\nOFFLINE VISION अभी ASTRA में उपलब्ध नहीं है।"
@@ -464,11 +469,26 @@ private fun AstraApp(
                 }, modifier = Modifier.fillMaxWidth()) { Text("Fact Check · दावे की जाँच", color = white) }
                 Text("ध्यान दें: ये खोज पेज खोलते हैं; ASTRA अभी स्रोतों की स्वतंत्र सत्यता अपने-आप प्रमाणित नहीं करता।", color = muted, fontSize = 11.sp)
             }
-            "Memory" -> SimplePage("PRIVATE MEMORY", "यहाँ सेव किए गए नोट्स इसी फोन में रखे जाते हैं।") {
-                OutlinedTextField(memoryInput, { memoryInput = it }, Modifier.fillMaxWidth(), label = { Text("याद रखने के लिए नोट") })
-                Button(enabled = memoryInput.isNotBlank(), onClick = { addMemory(memoryInput) }, colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("नोट सेव करें") }
-                SelectionContainer { Text(memories.ifBlank { "अभी कोई नोट नहीं।" }, color = white) }
-                TextButton(onClick = { memories = ""; prefs.edit().remove("memories").apply() }) { Text("सभी नोट मिटाएँ", color = muted) }
+            "Memory" -> SimplePage("ADVANCED PRIVATE MEMORY", "ASTRA आपकी लिखी हुई यादें इसी फोन में सुरक्षित रखता है। Memory को AI चैट में भेजना अलग से आपकी अनुमति पर निर्भर है।") {
+                OutlinedTextField(memoryInput, { memoryInput = it }, Modifier.fillMaxWidth(), label = { Text("व्यक्तिगत तथ्य, पसंद या प्रोजेक्ट नोट") }, minLines = 2)
+                Button(enabled = memoryInput.isNotBlank(), onClick = { addMemory(memoryInput) }, colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("Memory में सेव करें") }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(Modifier.weight(1f)) {
+                        Text("AI चैट में Memory इस्तेमाल करें", color = white, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text("चालू करने पर सेव किए गए नोट चुने गए सवाल के साथ ASTRA backend को भेजे जाएँगे।", color = muted, fontSize = 10.sp)
+                    }
+                    Switch(checked = useMemoryInChat, onCheckedChange = {
+                        useMemoryInChat = it
+                        prefs.edit().putBoolean("use_memory_in_chat", it).apply()
+                    })
+                }
+                SelectionContainer { Text(memories.ifBlank { "अभी कोई Memory सेव नहीं है।" }, color = white) }
+                Text("गोपनीयता: Memory डिफ़ॉल्ट रूप से चैट में शामिल नहीं होती। केवल आपके हाथ से सेव किए नोट शामिल होंगे। ऐप डेटा हटाने पर ये मिट सकते हैं।", color = muted, fontSize = 10.sp)
+                TextButton(onClick = {
+                    memories = ""
+                    useMemoryInChat = false
+                    prefs.edit().remove("memories").putBoolean("use_memory_in_chat", false).apply()
+                }) { Text("सभी Memory मिटाएँ और उपयोग बंद करें", color = muted) }
             }
             "Voice" -> SimplePage("VOICE ASSISTANT", "हिंदी में बोलें। पहचाना गया टेक्स्ट AI Chat में भेज सकते हैं।") {
                 Button(onClick = onListen, colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("🎙 बोलकर पूछें") }
