@@ -11,7 +11,7 @@ Android-first personal AI assistant.
 - Groq text model and image-analysis model, configured on the server.
 - Voice input and text-to-speech output (device speech services required).
 - Image selection and image analysis for JPEG, PNG and WEBP.
-- In-app research endpoint retrieves Wikipedia overview pages and Crossref scholarly-record metadata, then asks Groq to synthesize a cited report. This is an initial multi-source research layer, not exhaustive web crawling or conclusive fact verification.
+- In-app research endpoint retrieves Wikipedia overview pages plus Crossref and OpenAlex scholarly-record metadata/available abstracts, deduplicates overlapping DOI/URL records, then asks Groq to synthesize a source-ID-cited report. Availability and source quality vary by topic; this is not exhaustive web crawling, full-text review, or conclusive fact verification.
 - PDF text extraction and AI analysis for text-based PDFs (up to 60 pages and 80,000 extracted characters); scanned/image-only PDFs still need OCR.
 - Local notes/projects and chat history stored in app-private preferences.
 - User-authored personal memory with an explicit opt-in switch before saved notes are included in AI prompts; memory stays local unless the user enables this.
@@ -27,7 +27,7 @@ The app is organized around five user-facing capability domains:
 1. **Perception Core** — voice input, image understanding through the online Vision endpoint, and text-based PDF extraction/analysis. Offline image understanding and guaranteed offline speech are not implemented.
 2. **Reasoning Core** — AI conversation and problem analysis through the configured Groq model; a small on-device text model is available as a separate offline option when installed.
 3. **Knowledge Core** — local user-authored memory with opt-in prompt sharing, plus an initial Wikipedia/Crossref research workflow. Retrieved references are not independently or conclusively verified.
-4. **Action Core** — currently a local project/notes workspace for planning. External actions are not yet implemented; consequential actions must require explicit user review and confirmation.
+4. **Action Core** — includes an AI-assisted task planner that creates a structured, reviewable plan and saves it to the local Projects checkpoint only after explicit confirmation. It does not yet execute actions in external apps or modify device settings; consequential actions must require explicit user review and confirmation.
 5. **Quantum Learning Core** — classical educational probability/measurement simulation for independent product-state qubits, plus an optional IBM Quantum connector. The simulator is not a general quantum computer or entanglement-capable circuit simulator.
 
 The **Cores** screen is an architecture dashboard that routes each domain to its current working module and states important capability limits. It does not imply that planned or device-dependent features are already complete.
@@ -36,9 +36,9 @@ The **Cores** screen is an architecture dashboard that routes each domain to its
 
 These capabilities work across the five Cores and have explicit implementation boundaries:
 
-1. **Evidence Intelligence** — Deep Research now instructs the model to separate supported claims, source disagreements, uncertainty/limitations and a confidence label; citations are tied to the retrieved Wikipedia/Crossref source IDs. This is evidence-aware synthesis, not independent proof or exhaustive fact-checking. The backend also returns the retrieved source count, types and limitations.
+1. **Evidence Intelligence** — Deep Research retrieves from Wikipedia, Crossref and OpenAlex where available, removes duplicate DOI/URL records, and instructs the model to separate supported claims, actual source disagreements, uncertainty/limitations and a qualitative confidence label. Citations are tied to retrieved source IDs. This is evidence-aware synthesis, not independent proof, full-text review or exhaustive fact-checking. The backend also returns the retrieved source count, types and limitations.
 2. **Long-Term Personal Intelligence** — with the user's opt-in enabled, the app can include locally saved Memory, project/checkpoint notes and a limited recent chat window in the next AI request. This is local app history/context, not automatic access to all separate ChatGPT conversations or a semantic memory database. Context is not sent when the opt-in is off.
-3. **Action Intelligence** — the current app supports local project/notes capture and planning. Connected external app actions and autonomous task completion are not yet implemented. Any future consequential action must have a preview and explicit user confirmation.
+3. **Action Intelligence** — the app can generate a structured task plan and, after the user confirms, save it as a local project checkpoint. Connected external app actions and autonomous task completion are not yet implemented. Any future consequential action must have a preview and explicit user confirmation.
 4. **Independent Offline Intelligence** — the Qwen3-0.6B on-device text model can serve as a text-chat fallback when the remote service fails, after the model is downloaded and initialized. Offline vision, offline document reasoning and guaranteed offline speech are not implemented.
 5. **Multimodal Intelligence** — voice transcription can feed the chat prompt; a selected image can be analyzed with its prompt by the online Vision model; text-based PDFs can be extracted and analyzed. A single continuous session combining multiple images, audio files and documents is not yet implemented. OCR for scanned PDFs is also not implemented.
 
