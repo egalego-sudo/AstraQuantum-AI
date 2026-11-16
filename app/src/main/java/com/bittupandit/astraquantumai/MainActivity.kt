@@ -1221,6 +1221,8 @@ internal fun askBackend(baseUrl: String, prompt: String, mimeType: String? = nul
 private fun ScienceLabScreen() {
     var reaction by remember { mutableStateOf("H2 + O2 -> H2O") }
     var reactionResult by remember { mutableStateOf("") }
+    var chemicalFormula by remember { mutableStateOf("H2O") }
+    var chemicalCompositionResult by remember { mutableStateOf("") }
     var linearA by remember { mutableStateOf("2") }
     var linearB by remember { mutableStateOf("-8") }
     var quadraticA by remember { mutableStateOf("1") }
@@ -1266,6 +1268,22 @@ private fun ScienceLabScreen() {
                 }, modifier = Modifier.fillMaxWidth()) { Text("समीकरण संतुलित करें") }
                 if (reactionResult.isNotBlank()) Text(reactionResult, color = white, fontWeight = FontWeight.SemiBold)
                 Text("सीमा: सामान्य neutral formula, parentheses और 2–6 पदार्थ; hydrates, ionic charge और redox half-reactions अभी समर्थित नहीं।", color = muted, fontSize = 10.sp)
+            }
+        }
+        Card(colors = CardDefaults.cardColors(containerColor = charcoal)) {
+            Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("CHEMISTRY · MOLAR MASS & COMPOSITION", color = mint, fontWeight = FontWeight.Bold)
+                OutlinedTextField(chemicalFormula, { chemicalFormula = it }, Modifier.fillMaxWidth(), label = { Text("Chemical formula (उदा. H2O, Ca(OH)2)") })
+                Button(onClick = {
+                    chemicalCompositionResult = runCatching {
+                        val result = ChemicalCompositionCalculator.analyze(chemicalFormula)
+                        "Molar mass: ${result.molarMassGPerMol} g/mol\\nAtoms: " +
+                            result.atomCounts.entries.joinToString { it.key + " = " + it.value } +
+                            "\\nMass %: " + result.massPercentByElement.entries.joinToString { it.key + " = " + "%.2f".format(it.value) + "%" }
+                    }.getOrElse { "गणना नहीं हुई: " + (it.message ?: "Formula जाँचें") }
+                }, modifier = Modifier.fillMaxWidth()) { Text("Molar mass और composition निकालें") }
+                if (chemicalCompositionResult.isNotBlank()) Text(chemicalCompositionResult, color = white, fontSize = 12.sp)
+                Text("सीमा: neutral formula, element symbols और parentheses; isotope-specific mass वाले तत्वों के लिए अलग डेटा चाहिए।", color = muted, fontSize = 10.sp)
             }
         }
         Card(colors = CardDefaults.cardColors(containerColor = charcoal)) {
