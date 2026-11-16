@@ -104,10 +104,17 @@ class MainActivity : ComponentActivity() {
                         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "hi-IN")
-                            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
-                            putExtra(RecognizerIntent.EXTRA_PROMPT, "ASTRA से बोलकर पूछें (ऑफलाइन पहचान उपलब्ध हो तो)")
+                            putExtra(RecognizerIntent.EXTRA_PROMPT, "ASTRA से हिंदी में बोलकर पूछें")
                         }
-                        runCatching { speechLauncher.launch(intent) }
+                        try {
+                            if (intent.resolveActivity(packageManager) != null) {
+                                speechLauncher.launch(intent)
+                            } else {
+                                Toast.makeText(this, "फोन में Speech Recognition सेवा उपलब्ध नहीं है। Google app या Speech Services by Google इंस्टॉल/अपडेट करें।", Toast.LENGTH_LONG).show()
+                            }
+                        } catch (e: Exception) {
+                            Toast.makeText(this, "Voice Search शुरू नहीं हो सका: " + (e.localizedMessage ?: "Speech service उपलब्ध नहीं"), Toast.LENGTH_LONG).show()
+                        }
                     },
                     onPickFile = { fileLauncher.launch(arrayOf("image/jpeg", "image/png", "image/webp", "application/pdf")) }
                 )
