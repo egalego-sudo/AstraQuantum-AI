@@ -50,12 +50,12 @@ The Groq API key and any other live environment values are intentionally NOT sto
 
 - Online Groq text chat and image analysis are implemented in source.
 - Voice input and text-to-speech use Android/device speech services.
-- Research buttons open external browser search pages; they are not an in-app indexed search engine.
+- The Research screen calls /v1/research, which retrieves Wikipedia overview text and Crossref scholarly metadata, then returns a Groq-generated report with a source list. This is a first research layer; it is not exhaustive web search, and source retrieval does not by itself prove a claim. Browser search shortcuts remain available.
 - Local notes, projects and chat history are stored in app-private local storage/preferences.
 - The Quantum Lab is an educational classical independent-product-state model, not quantum hardware or a general entanglement-capable circuit simulator.
 - Offline Qwen3-0.6B model download, LiteRT-LM initialization, and text fallback are present in source but must pass CI and a real airplane-mode phone test before being described as verified.
 - Offline vision is not implemented.
-- PDF analysis is not implemented.
+- PDF text extraction and AI analysis are implemented in source for text-based PDFs; current limits are 7 MiB upload, up to 60 pages and 80,000 extracted characters. Scanned/image-only PDFs require OCR, which is not yet integrated.
 - A debug APK is not a Play Store-signed release.
 
 ## Latest build diagnosis
