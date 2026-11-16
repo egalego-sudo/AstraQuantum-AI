@@ -23,7 +23,7 @@ class ScientificIntelligenceTest {
     @Test
     fun enhancedPromptDoesNotClaimGuaranteedCorrectness() {
         val prompt = ScientificIntelligence.enhancePrompt("Check this claim")
-        assertTrue(prompt.contains("not a new foundation model"))
+        assertTrue(prompt.contains("Do not claim a human IQ score"))
         assertTrue(prompt.contains("Never invent citations"))
         assertTrue(prompt.contains("Do not reveal private hidden chain-of-thought"))
     }
