@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { searchKnowledge } from "./knowledge.js";
+import { searchKnowledge, validateKnowledgeCitations } from "./knowledge.js";
 
 test("retrieves a relevant foundational record with source provenance", async () => {
   const results = await searchKnowledge("speed of light in vacuum", 3);
@@ -48,4 +48,33 @@ test("retrieved records are reviewed and have HTTPS provenance", async () => {
     assert.ok(record.sources.length > 0);
     for (const source of record.sources) assert.match(source.url, /^https:\/\//);
   }
+});
+
+
+test("keeps valid knowledge citations and removes unknown record IDs", () => {
+  const records = [{
+    id: "physics.speed-of-light-vacuum",
+    title: "Speed of light in vacuum",
+    sources: [{ publisher: "NIST", url: "https://physics.nist.gov/example" }]
+  }];
+  const answer = "Supported [KB:physics.speed-of-light-vacuum]. Unsupported [KB:made-up.record].";
+  const result = validateKnowledgeCitations(answer, records);
+  assert.ok(result.includes("[KB:physics.speed-of-light-vacuum]"));
+  assert.match(result, /unverified knowledge-base reference removed/);
+  assert.ok(!result.includes("[KB:made-up.record]"));
+});
+
+test("adds provenance URLs only for records actually cited", () => {
+  const records = [
+    { id: "record.a", title: "Record A", sources: [{ publisher: "Publisher A", url: "https://example.org/a" }] },
+    { id: "record.b", title: "Record B", sources: [{ publisher: "Publisher B", url: "https://example.org/b" }] }
+  ];
+  const result = validateKnowledgeCitations("Evidence [KB:record.a].", records);
+  assert.ok(result.includes("https://example.org/a"));
+  assert.ok(!result.includes("https://example.org/b"));
+});
+
+test("leaves deep-research numeric citations unchanged when no local records were retrieved", () => {
+  const answer = "Finding supported by [1] and [2].";
+  assert.equal(validateKnowledgeCitations(answer, []), answer);
 });
