@@ -182,6 +182,8 @@ private fun AstraApp(
     var offlineBusy by remember { mutableStateOf(false) }
     var offlineTestPrompt by remember { mutableStateOf("नमस्ते ASTRA, अपना परिचय दीजिए।") }
     var offlineTestAnswer by remember { mutableStateOf("") }
+    var researchResult by remember { mutableStateOf("") }
+    var researchBusy by remember { mutableStateOf(false) }
 
     LaunchedEffect(speechText) { if (speechText.isNotBlank()) { prompt = speechText; page = "AI Chat" } }
     LaunchedEffect(chat) { prefs.edit().putString("chat_history", encodeChatHistory(chat)).apply() }
@@ -420,6 +422,21 @@ private fun AstraApp(
             "Research" -> SimplePage("DEEP RESEARCH", "एक ही विषय को अलग-अलग स्रोतों पर खोजें। दावों को कम-से-कम दो स्वतंत्र स्रोतों से मिलाएँ।") {
                 OutlinedTextField(prompt, { prompt = it }, Modifier.fillMaxWidth(), label = { Text("किस विषय या दावे की जाँच करें?") })
                 Text("खोज के स्रोत", color = mint, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Button(enabled = prompt.isNotBlank() && !researchBusy, onClick = {
+                    researchBusy = true
+                    researchResult = "Wikipedia और Crossref पर स्रोत खोजे जा रहे हैं…"
+                    val query = prompt.trim()
+                    activity.lifecycleScope.launch {
+                        researchResult = withContext(Dispatchers.IO) { askResearch(backend, query) }
+                        researchBusy = false
+                    }
+                }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = violet, contentColor = Color.White)) {
+                    Text(if (researchBusy) "गहन शोध जारी…" else "ASTRA Deep Research + Source Check")
+                }
+                if (researchResult.isNotBlank()) {
+                    SelectionContainer { Text(researchResult, color = white, lineHeight = 20.sp) }
+                    TextButton(onClick = { copyText(researchResult) }) { Text("शोध रिपोर्ट कॉपी करें", color = mint) }
+                }
                 Button(enabled = prompt.isNotBlank(), onClick = {
                     val q = URLEncoder.encode(prompt.trim(), "UTF-8")
                     runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=" + q))) }
@@ -806,6 +823,46 @@ private fun checkAstraBackend(baseUrl: String): String {
         }
     } catch (e: Exception) {
         "कनेक्शन विफल: " + (e.message ?: "नेटवर्क त्रुटि")
+    }
+}
+
+private fun askResearch(baseUrl: String, query: String): String {
+    if (baseUrl.isBlank()) return "ASTRA backend URL सेव करें।"
+    return try {
+        val clean = baseUrl.trim().trimEnd('/')
+        if (!URLUtil.isHttpsUrl(clean)) return "सुरक्षा के लिए backend URL HTTPS होना चाहिए।"
+        val connection = (URL("$"+"clean/v1/research").openConnection() as HttpURLConnection).apply {
+            requestMethod = "POST"
+            connectTimeout = 20000
+            readTimeout = 90000
+            doOutput = true
+            setRequestProperty("Content-Type", "application/json; charset=utf-8")
+        }
+        val payload = JSONObject().put("query", query)
+        connection.outputStream.use { it.write(payload.toString().toByteArray(Charsets.UTF_8)) }
+        val code = connection.responseCode
+        val stream = if (code in 200..299) connection.inputStream else connection.errorStream
+        val body = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+        connection.disconnect()
+        if (code !in 200..299) {
+            val message = runCatching { JSONObject(body).optString("error") }.getOrDefault("")
+            "Deep Research त्रुटि (HTTP $code): $"+"{message.ifBlank { body.take(180) }}"
+        } else {
+            val json = JSONObject(body)
+            val report = json.optString("text")
+            val sources = json.optJSONArray("sources") ?: JSONArray()
+            val sourceText = buildString {
+                for (index in 0 until sources.length()) {
+                    val item = sources.optJSONObject(index) ?: continue
+                    append("\n[").append(item.optInt("id")).append("] ")
+                    append(item.optString("title")).append(" (").append(item.optString("year")).append(")")
+                    append("\n").append(item.optString("url")).append("\n")
+                }
+            }
+            report + if (sourceText.isNotBlank()) "\n\nस्रोत सूची\n" + sourceText else ""
+        }
+    } catch (error: Exception) {
+        "Deep Research कनेक्शन विफल: $"+"{error.message ?: "नेटवर्क त्रुटि"}"
     }
 }
 
