@@ -29,3 +29,8 @@ test("returns no records for an unrelated query", async () => {
   const results = await searchKnowledge("unrelated fictional phrase xyzzy", 4);
   assert.deepEqual(results, []);
 });
+
+test("ignores queries made only of common stop words", async () => {
+  const results = await searchKnowledge("the is and का की है", 4);
+  assert.deepEqual(results, []);
+});
