@@ -32,6 +32,18 @@ The app is organized around five user-facing capability domains:
 
 The **Cores** screen is an architecture dashboard that routes each domain to its current working module and states important capability limits. It does not imply that planned or device-dependent features are already complete.
 
+## Five Intelligence capabilities
+
+These capabilities work across the five Cores and have explicit implementation boundaries:
+
+1. **Evidence Intelligence** — Deep Research now instructs the model to separate supported claims, source disagreements, uncertainty/limitations and a confidence label; citations are tied to the retrieved Wikipedia/Crossref source IDs. This is evidence-aware synthesis, not independent proof or exhaustive fact-checking. The backend also returns the retrieved source count, types and limitations.
+2. **Long-Term Personal Intelligence** — with the user's opt-in enabled, the app can include locally saved Memory, project/checkpoint notes and a limited recent chat window in the next AI request. This is local app history/context, not automatic access to all separate ChatGPT conversations or a semantic memory database. Context is not sent when the opt-in is off.
+3. **Action Intelligence** — the current app supports local project/notes capture and planning. Connected external app actions and autonomous task completion are not yet implemented. Any future consequential action must have a preview and explicit user confirmation.
+4. **Independent Offline Intelligence** — the Qwen3-0.6B on-device text model can serve as a text-chat fallback when the remote service fails, after the model is downloaded and initialized. Offline vision, offline document reasoning and guaranteed offline speech are not implemented.
+5. **Multimodal Intelligence** — voice transcription can feed the chat prompt; a selected image can be analyzed with its prompt by the online Vision model; text-based PDFs can be extracted and analyzed. A single continuous session combining multiple images, audio files and documents is not yet implemented. OCR for scanned PDFs is also not implemented.
+
+The app's Cores dashboard describes these boundaries instead of presenting planned features as completed functionality.
+
 ## Quantum Lab scope and limits
 
 The 32-Qubit Learning Engine calculates independent product-state probabilities on demand and samples measurements without allocating the full state vector. It is a classical educational simulator, not quantum hardware and not a general entanglement-capable quantum circuit simulator. A dense 32-Qubit complex-double state vector would require about 64 GiB for amplitudes alone.
