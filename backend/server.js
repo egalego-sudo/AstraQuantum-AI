@@ -89,33 +89,91 @@ async function generate(input) {
   }
   content.push({ type: "input_text", text: prompt });
 
-  const response = await fetch("https://api.groq.com/openai/v1/responses", {
+  const requestWithRetry = async (url, options) => {
+    let lastError = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const response = await fetch(url, { ...options, signal: AbortSignal.timeout(60_000) });
+        if ((response.status === 429 || response.status >= 500) && attempt === 0) {
+          await new Promise(resolve => setTimeout(resolve, 1200));
+          continue;
+        }
+        return response;
+      } catch (error) {
+        lastError = error;
+        if (attempt === 0) {
+          await new Promise(resolve => setTimeout(resolve, 800));
+          continue;
+        }
+      }
+    }
+    throw new Error("Groq network request failed after retry: " + (lastError?.message || "network timeout"));
+  };
+
+  const requestBody = {
+    model,
+    instructions: ASTRA_INSTRUCTIONS,
+    input: [{ role: "user", content }],
+    max_output_tokens: 2048
+  };
+  const response = await requestWithRetry("https://api.groq.com/openai/v1/responses", {
     method: "POST",
     headers: {
       "content-type": "application/json",
       "authorization": `Bearer ${API_KEY}`
     },
-    body: JSON.stringify({
-      model,
-      instructions: ASTRA_INSTRUCTIONS,
-      input: [{ role: "user", content }],
-      max_output_tokens: 2048
-    }),
-    signal: AbortSignal.timeout(60_000)
+    body: JSON.stringify(requestBody)
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const message = data?.error?.message || `Groq API returned HTTP ${response.status}`;
-    throw new Error(message);
+    throw new Error(`Groq API HTTP ${response.status}: ${message}`);
   }
-  const text = data.output
+
+  let text = data.output
     ?.filter(item => item.type === "message")
     .flatMap(item => item.content || [])
-    .filter(item => item.type === "output_text")
+    .filter(item => item.type === "output_text" || item.type === "text")
     .map(item => item.text || "")
     .join("")
     .trim();
-  if (!text) throw new Error("Groq returned no text. Check the API key, model access and free-tier limits.");
+
+  // Some model/API responses can be successful but contain no Responses-API text.
+  // For text-only prompts, retry through Groq's compatible Chat Completions API.
+  if (!text && !input.base64) {
+    const fallbackResponse = await requestWithRetry("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "authorization": `Bearer ${API_KEY}`
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: ASTRA_INSTRUCTIONS },
+          { role: "user", content: prompt }
+        ],
+        max_tokens: 2048
+      })
+    });
+    const fallbackData = await fallbackResponse.json().catch(() => ({}));
+    if (!fallbackResponse.ok) {
+      const message = fallbackData?.error?.message || `Groq Chat Completions returned HTTP ${fallbackResponse.status}`;
+      throw new Error(`Groq fallback HTTP ${fallbackResponse.status}: ${message}`);
+    }
+    const contentValue = fallbackData?.choices?.[0]?.message?.content;
+    text = typeof contentValue === "string"
+      ? contentValue.trim()
+      : Array.isArray(contentValue)
+        ? contentValue.map(part => part?.text || "").join("").trim()
+        : "";
+  }
+
+  if (!text) {
+    const responseStatus = data?.status || "unknown";
+    const incompleteReason = data?.incomplete_details?.reason || "not reported";
+    throw new Error(`Groq returned an empty response after Responses API and Chat Completions fallback (status: ${responseStatus}; incomplete: ${incompleteReason}). Check model access, provider limits and server logs.`);
+  }
   return text;
 }
 
