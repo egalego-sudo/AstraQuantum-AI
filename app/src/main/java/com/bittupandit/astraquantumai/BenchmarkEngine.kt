@@ -23,12 +23,12 @@ import java.util.UUID
 import kotlin.math.abs
 
 private data class BQuestion(val id: String, val module: String, val prompt: String, val rubric: String, val version: Int = 1)
-private data class BRecord(
+internal data class BRecord(
     val id: String, val questionId: String, val module: String, val answer: String,
     val confidence: Double?, val humanScore: Int?, val timestamp: Long, val model: String = "Groq (server-configured)"
 )
 
-private object BQuestionBank {
+internal object BQuestionBank {
     private val modules = linkedMapOf(
         "Knowledge Intelligence" to listOf(
             "DNA और RNA में चार अंतर बताइए।", "प्रकाश-संश्लेषण का समीकरण और प्रक्रिया समझाइए।",
@@ -184,7 +184,7 @@ private object BStore {
     }
 }
 
-private object BMetrics {
+internal object BMetrics {
     fun brier(rows: List<BRecord>): Double? {
         val valid = rows.filter { it.confidence != null && it.humanScore != null }
         return valid.takeIf { it.isNotEmpty() }?.map {
