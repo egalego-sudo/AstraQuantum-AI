@@ -574,6 +574,18 @@ private fun AstraApp(
                 }
                 if (researchResult.isNotBlank()) {
                     SelectionContainer { Text(researchResult, color = white, lineHeight = 20.sp) }
+                    val researchLinks = Regex("https?://[^\\s)]+").findAll(researchResult)
+                        .map { it.value.trimEnd('.', ',', ';', ')', ']') }
+                        .distinct().take(12).toList()
+                    if (researchLinks.isNotEmpty()) {
+                        Text("स्रोत सीधे खोलें", color = mint, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        researchLinks.forEachIndexed { index, link ->
+                            TextButton(onClick = {
+                                runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link))) }
+                                    .onFailure { Toast.makeText(context, "स्रोत नहीं खुल पाया", Toast.LENGTH_SHORT).show() }
+                            }) { Text("स्रोत ${index + 1} खोलें ↗", color = mint) }
+                        }
+                    }
                     TextButton(onClick = { copyText(researchResult) }) { Text("शोध रिपोर्ट कॉपी करें", color = mint) }
                 }
                 Button(enabled = prompt.isNotBlank(), onClick = {

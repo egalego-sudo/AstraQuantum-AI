@@ -175,8 +175,8 @@ jobs:
           if-no-files-found: error
           retention-days: 90
       # Build a delta only against the exact previous signed APK artifact.
-      # This patch targets build #122; devices on other builds must not apply it.
-      - name: Download previous signed APK (build 122)
+      # This patch targets build #150; devices on other builds must not apply it.
+      - name: Download previous signed APK (build 150)
         if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
         uses: actions/download-artifact@v4
         with:
@@ -184,7 +184,7 @@ jobs:
           path: previous-release
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
-          run-id: 43888830737
+          run-id: 43903146328
 
       - name: Create and verify APK binary delta
         if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
@@ -204,8 +204,8 @@ jobs:
           NEW_CERT="$(sed -n 's/Signer #1 certificate SHA-256 digest: //p' new-cert.txt | head -n 1)"
           test -n "$OLD_CERT" && test "$OLD_CERT" = "$NEW_CERT"
           mkdir -p delta-output
-          bsdiff "$OLD_APK" "$NEW_APK" delta-output/ASTRA-build122-to-current.patch
-          bspatch "$OLD_APK" delta-output/reconstructed.apk delta-output/ASTRA-build122-to-current.patch
+          bsdiff "$OLD_APK" "$NEW_APK" delta-output/ASTRA-build150-to-current.patch
+          bspatch "$OLD_APK" delta-output/reconstructed.apk delta-output/ASTRA-build150-to-current.patch
           cmp "$NEW_APK" delta-output/reconstructed.apk
           OLD_HASH="$(sha256sum "$OLD_APK" | cut -d ' ' -f 1)"
           NEW_HASH="$(sha256sum "$NEW_APK" | cut -d ' ' -f 1)"
@@ -216,19 +216,19 @@ jobs:
           old_hash, new_hash, signer, old_path, new_path = sys.argv[1:]
           metadata = {
             "packageName": "com.bittupandit.astraquantumai",
-            "baseBuild": 122,
+            "baseBuild": 150,
             "targetBuild": int(os.environ.get("GITHUB_RUN_NUMBER", "0")),
             "baseApkSha256": old_hash,
             "targetApkSha256": new_hash,
             "signerCertificateSha256": signer,
-            "patchFile": "ASTRA-build122-to-current.patch",
-            "note": "Targets only the exact build-122 APK whose SHA-256 matches baseApkSha256."
+            "patchFile": "ASTRA-build150-to-current.patch",
+            "note": "Targets only the exact build-150 APK whose SHA-256 matches baseApkSha256."
           }
           with open("delta-output/UPDATE-METADATA.json", "w") as f:
             json.dump(metadata, f, indent=2)
           print("Old APK bytes:", os.path.getsize(old_path))
           print("New APK bytes:", os.path.getsize(new_path))
-          print("Delta bytes:", os.path.getsize("delta-output/ASTRA-build122-to-current.patch"))
+          print("Delta bytes:", os.path.getsize("delta-output/ASTRA-build150-to-current.patch"))
           print("Round-trip SHA-256 verified:", new_hash)
           PY
 
@@ -248,13 +248,13 @@ jobs:
           base = "https://github.com/" + os.environ["GITHUB_REPOSITORY"] + "/releases/download/" + tag + "/"
           data = {
             "packageName": "com.bittupandit.astraquantumai",
-            "baseBuild": 122,
+            "baseBuild": 150,
             "targetVersionCode": int(os.environ["GITHUB_RUN_NUMBER"]),
             "targetVersionName": "1.0." + os.environ["GITHUB_RUN_NUMBER"],
             "baseApkSha256": os.environ["OLD_HASH"] if "OLD_HASH" in os.environ else "",
             "targetApkSha256": os.environ["NEW_HASH"] if "NEW_HASH" in os.environ else "",
             "signerCertificateSha256": os.environ["SIGNER_SHA256"] if "SIGNER_SHA256" in os.environ else "",
-            "patchUrl": base + "ASTRA-build122-to-current.patch",
+            "patchUrl": base + "ASTRA-build150-to-current.patch",
             "apkUrl": base + "ASTRA-QUANTUM-AI.apk"
           }
           # Recompute hashes from the verified files and signer certificate.
@@ -307,7 +307,7 @@ jobs:
           set -euo pipefail
           TAG="astra-build-${GITHUB_RUN_NUMBER}"
           gh release create "$TAG" \
-            delta-output/ASTRA-build122-to-current.patch \
+            delta-output/ASTRA-build150-to-current.patch \
             delta-output/UPDATE-METADATA.json \
             delta-output/UPDATE-METADATA.sig \
             delta-output/ASTRA-QUANTUM-AI.apk \
@@ -320,9 +320,9 @@ jobs:
         if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
         uses: actions/upload-artifact@v4
         with:
-          name: ASTRA-QUANTUM-AI-APK-DELTA-build122
+          name: ASTRA-QUANTUM-AI-APK-DELTA-build150
           path: |
-            delta-output/ASTRA-build122-to-current.patch
+            delta-output/ASTRA-build150-to-current.patch
             delta-output/UPDATE-METADATA.json
             delta-output/UPDATE-METADATA.sig
             delta-output/ASTRA-QUANTUM-AI.apk
