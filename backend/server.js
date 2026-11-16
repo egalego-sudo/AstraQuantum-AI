@@ -1,4 +1,5 @@
 import http from "node:http";
+import pdfParse from "pdf-parse";
 
 const PORT = Number(process.env.PORT || 8080);
 const API_KEY = process.env.GROQ_API_KEY;
@@ -58,7 +59,20 @@ async function generate(input) {
     const base64 = String(input.base64).replace(/^data:[^;]+;base64,/, "");
     if (base64.length > 10 * 1024 * 1024) throw new Error("File is too large.");
     if (mimeType === "application/pdf") {
-      throw new Error("PDF analysis is temporarily unavailable on the Groq connection. Please upload a JPG, PNG or WEBP image.");
+      const pdfBytes = Buffer.from(base64, "base64");
+      if (pdfBytes.length < 8 || pdfBytes.subarray(0, 5).toString("ascii") !== "%PDF-") {
+        throw new Error("यह वैध PDF फ़ाइल नहीं लगती।");
+      }
+      let parsed;
+      try {
+        parsed = await pdfParse(pdfBytes, { max: 60 });
+      } catch {
+        throw new Error("PDF का टेक्स्ट नहीं पढ़ा जा सका। स्कैन की हुई PDF के लिए OCR सुविधा अभी उपलब्ध नहीं है।");
+      }
+      const extracted = String(parsed.text || "").replace(/\u0000/g, "").trim();
+      if (!extracted) throw new Error("इस PDF में पढ़ने योग्य टेक्स्ट नहीं मिला। स्कैन की हुई PDF के लिए OCR आवश्यक है।");
+      const clipped = extracted.slice(0, 80000);
+      content.push({ type: "input_text", text: (extracted.length > 80000 ? "PDF का टेक्स्ट 80,000 अक्षरों तक सीमित किया गया है; विश्लेषण इसी उपलब्ध अंश पर आधारित रखें।\n\n" : "PDF दस्तावेज़ से निकाला गया टेक्स्ट:\n\n") + clipped });
     } else if (["image/jpeg", "image/png", "image/webp"].includes(mimeType)) {
       model = VISION_MODEL;
       content.push({
