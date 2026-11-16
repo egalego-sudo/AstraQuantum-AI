@@ -495,7 +495,6 @@ private fun AstraApp(
                                     status = if (answer.startsWith("ON-DEVICE")) "OFFLINE AI · READY" else "HYBRID AI · READY"
                                 }
                             },
-                            modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink),
                             shape = CircleShape,
                             contentPadding = PaddingValues(horizontal = 8.dp),
