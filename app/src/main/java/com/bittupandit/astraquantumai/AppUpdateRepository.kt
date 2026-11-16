@@ -17,7 +17,10 @@ internal object AppUpdateRepository {
         val patchUrl: String,
         val apkUrl: String,
         val versionCode: Long,
-        val versionName: String
+        val versionName: String,
+        val patchSizeBytes: Long,
+        val apkSizeBytes: Long,
+        val deltaCompatible: Boolean
     )
 
     data class PreparedUpdate(
@@ -30,9 +33,11 @@ internal object AppUpdateRepository {
         val release = getJson("https://api.github.com/repos/egalego-sudo/AstraQuantum-AI/releases/latest")
         val assets = release.getJSONArray("assets")
         val urls = mutableMapOf<String, String>()
+        val sizes = mutableMapOf<String, Long>()
         for (i in 0 until assets.length()) {
             val item = assets.getJSONObject(i)
             urls[item.getString("name")] = item.getString("browser_download_url")
+            sizes[item.getString("name")] = item.optLong("size", 0L)
         }
         val metadataUrl = urls["UPDATE-METADATA.json"] ?: error("Latest release has no update metadata.")
         val signatureUrl = urls["UPDATE-METADATA.sig"] ?: error("Latest release has no metadata signature.")
@@ -48,7 +53,10 @@ internal object AppUpdateRepository {
         return AvailableUpdate(
             verified, patchUrl, apkUrl,
             json.getLong("targetVersionCode"),
-            json.getString("targetVersionName")
+            json.getString("targetVersionName"),
+            sizes["ASTRA-build150-to-current.patch"] ?: 0L,
+            sizes["ASTRA-QUANTUM-AI.apk"] ?: 0L,
+            sha256(File(context.applicationInfo.sourceDir)).equals(json.getString("baseApkSha256"), true)
         )
     }
 

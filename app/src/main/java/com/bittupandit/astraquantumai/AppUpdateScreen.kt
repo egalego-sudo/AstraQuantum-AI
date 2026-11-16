@@ -44,7 +44,7 @@ internal fun AppUpdateScreen() {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("SECURE APP UPDATER", color = Color(0xFFECECEC), fontSize = 16.sp, fontWeight = FontWeight.Bold)
         Text(
-            "पहले अपडेट की डिजिटल हस्ताक्षर जाँच होगी। आपके फोन का APK पैच के आधार से मेल खाए तो छोटा पैच डाउनलोड होगा; अन्यथा पूरा APK लिया जाएगा। गलत या पुराने आधार पर पैच कभी लागू नहीं होगा।",
+            "अपडेट जाँचने के बाद ऐप आपके मौजूदा APK का SHA-256 मिलाएगा। मेल होने पर केवल बदलाव वाला पैच डाउनलोड होगा। मेल न होने पर ही पूरा APK चुना जाएगा।",
             color = Color(0xFFB4B4B4), fontSize = 12.sp
         )
         Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color(0xFF303030))) {
@@ -63,7 +63,16 @@ internal fun AppUpdateScreen() {
                             busy = false
                             result.onSuccess {
                                 update = it
-                                status = "सत्यापित अपडेट उपलब्ध: ${it.versionName} (Build ${it.versionCode})"
+                                status = buildString {
+                                    append("अपडेट उपलब्ध: ${it.versionName} (Build ${it.versionCode})\n")
+                                    if (it.deltaCompatible) {
+                                        append("✓ आपका इंस्टॉल किया APK पैच के आधार से मेल खाता है।\n")
+                                        append("डाउनलोड होगा: छोटा पैच (${formatBytes(it.patchSizeBytes)})")
+                                    } else {
+                                        append("आपका इंस्टॉल किया APK इस पैच के आधार से मेल नहीं खाता।\n")
+                                        append("डाउनलोड होगा: पूरा APK (${formatBytes(it.apkSizeBytes)})")
+                                    }
+                                }
                             }.onFailure {
                                 update = null
                                 status = "अपडेट उपलब्ध नहीं या जाँच विफल: ${it.message ?: "अज्ञात त्रुटि"}"
@@ -75,7 +84,11 @@ internal fun AppUpdateScreen() {
                 ) { Text("CHECK FOR UPDATE") }
 
                 update?.let { available ->
-                    Text("नया संस्करण: ${available.versionName}", color = Color(0xFFECECEC), fontSize = 13.sp)
+                    Text(
+                        if (available.deltaCompatible) "चुना गया अपडेट: छोटा पैच • ${formatBytes(available.patchSizeBytes)}"
+                        else "चुना गया अपडेट: पूरा APK • ${formatBytes(available.apkSizeBytes)}",
+                        color = Color(0xFFECECEC), fontSize = 13.sp, fontWeight = FontWeight.Bold
+                    )
                     Button(
                         onClick = {
                             busy = true
@@ -122,6 +135,12 @@ internal fun AppUpdateScreen() {
         }
         AppBuildInfoScreen()
     }
+}
+
+private fun formatBytes(bytes: Long): String {
+    if (bytes <= 0L) return "आकार उपलब्ध नहीं"
+    val mb = bytes / (1024.0 * 1024.0)
+    return String.format(java.util.Locale.US, "%.2f MB", mb)
 }
 
 private fun openAndroidInstaller(context: Context, apk: java.io.File) {
