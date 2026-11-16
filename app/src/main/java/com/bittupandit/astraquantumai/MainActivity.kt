@@ -53,15 +53,16 @@ import java.net.URLEncoder
 import java.util.Locale
 
 // ASTRA Premium Cosmic Glass palette
-private val ink = Color(0xFF070B1B)       // deep-space navy
-private val charcoal = Color(0xFF101A31)  // glass panel
-private val graphite = Color(0xFF1A2B4D)  // raised panel
-private val paper = Color(0xFF0B1226)     // app canvas
-private val white = Color(0xFF55D6FF)    // electric cyan accent
-private val muted = Color(0xFFA9B9D6)    // soft starlight
-private val line = Color(0xFF263B63)     // subtle cosmic divider
-private val violet = Color(0xFF9B8CFF)   // quantum violet
-private val mint = Color(0xFF6CF2D5)     // secondary energy accent
+// ChatGPT-inspired neutral dark interface, with ASTRA identity retained.
+private val ink = Color(0xFF212121)
+private val charcoal = Color(0xFF2F2F2F)
+private val graphite = Color(0xFF3A3A3A)
+private val paper = Color(0xFF212121)
+private val white = Color(0xFFECECEC)
+private val muted = Color(0xFFB4B4B4)
+private val line = Color(0xFF454545)
+private val violet = Color(0xFF8E8EA0)
+private val mint = Color(0xFFD6D6D6)
 
 class MainActivity : ComponentActivity() {
     private var speechText by mutableStateOf("")
@@ -222,10 +223,9 @@ private fun AstraApp(
         projectInput = ""
     }
 
-    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF02030D), Color(0xFF080D27), Color(0xFF170A32), Color(0xFF050B1B))))) {
-        CosmicNebulaBackground(Modifier.fillMaxSize())
+    Box(Modifier.fillMaxSize().background(ink)) {
         Column(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(Color(0xC9101834), Color(0xB30A1025), Color.Transparent))).padding(horizontal = 20.dp, vertical = 16.dp)) {
+        Column(Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(Color(0xFF252525), Color(0xFF212121)))).padding(horizontal = 20.dp, vertical = 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(white), contentAlignment = Alignment.Center) {
                     Text("A", color = ink, fontWeight = FontWeight.Black, fontSize = 24.sp)
@@ -405,14 +405,19 @@ private fun AstraApp(
                     LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(vertical = 10.dp)) {
                         items(chat) { item ->
                             val isAi = item.from == "ASTRA"
-                            Card(colors = CardDefaults.cardColors(containerColor = if (isAi) Color(0xA6202D50) else Color(0xA6123A52)), shape = RoundedCornerShape(17.dp), modifier = Modifier.fillMaxWidth()) {
-                                Column(Modifier.padding(14.dp)) {
-                                    Text(if (isAi) "✳  ASTRA" else "YOU", color = if (isAi) white else muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                                    Spacer(Modifier.height(7.dp))
-                                    SelectionContainer { Text(item.text, color = white, fontSize = 14.sp, lineHeight = 21.sp) }
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = if (isAi) Arrangement.Start else Arrangement.End) {
+                                if (isAi) {
+                                    Box(Modifier.size(30.dp).clip(CircleShape).background(Color(0xFF444444)), contentAlignment = Alignment.Center) {
+                                        Text("A", color = white, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    }
+                                    Spacer(Modifier.width(10.dp))
+                                }
+                                Column(Modifier.widthIn(max = 310.dp).clip(RoundedCornerShape(if (isAi) 8.dp else 20.dp)).background(if (isAi) Color.Transparent else Color(0xFF303030)).padding(horizontal = 14.dp, vertical = 11.dp)) {
+                                    if (isAi) Text("ASTRA", color = muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                                    SelectionContainer { Text(item.text, color = white, fontSize = 14.sp, lineHeight = 22.sp) }
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        TextButton(onClick = { copyText(item.text) }, contentPadding = PaddingValues(horizontal = 4.dp)) { Text("▢ कॉपी करें", color = white, fontSize = 11.sp) }
-                                        if (isAi) TextButton(onClick = { onSpeak(item.text) }, contentPadding = PaddingValues(horizontal = 4.dp)) { Text("▶ सुनें", color = muted, fontSize = 11.sp) }
+                                        TextButton(onClick = { copyText(item.text) }, contentPadding = PaddingValues(horizontal = 3.dp)) { Text("कॉपी", color = muted, fontSize = 10.sp) }
+                                        if (isAi) TextButton(onClick = { onSpeak(item.text) }, contentPadding = PaddingValues(horizontal = 3.dp)) { Text("सुनें", color = muted, fontSize = 10.sp) }
                                     }
                                 }
                             }
@@ -422,9 +427,23 @@ private fun AstraApp(
                         Text("📷 फोटो तैयार: $pickedFile", color = mint, fontSize = 11.sp)
                     }
                     Spacer(Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedButton(onClick = onListen, shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = white), contentPadding = PaddingValues(horizontal = 10.dp)) { Text("🎙") }
-                        OutlinedButton(onClick = onPickFile, shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = mint), contentPadding = PaddingValues(horizontal = 10.dp)) { Text("📷 फोटो") }
+                    Row(horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedButton(onClick = onPickFile, shape = CircleShape, colors = ButtonDefaults.outlinedButtonColors(contentColor = white), contentPadding = PaddingValues(horizontal = 9.dp), modifier = Modifier.size(42.dp)) { Text("+", fontSize = 22.sp) }
+                        OutlinedButton(onClick = onListen, shape = CircleShape, colors = ButtonDefaults.outlinedButtonColors(contentColor = white), contentPadding = PaddingValues(horizontal = 9.dp), modifier = Modifier.size(42.dp)) { Text("🎙", fontSize = 15.sp) }
+                        OutlinedTextField(
+                            value = prompt,
+                            onValueChange = { prompt = it },
+                            modifier = Modifier.weight(1f),
+                            placeholder = { Text("ASTRA से कुछ भी पूछें", color = muted, fontSize = 13.sp) },
+                            shape = RoundedCornerShape(24.dp),
+                            maxLines = 4,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = white, unfocusedTextColor = white,
+                                focusedBorderColor = Color(0xFF555555), unfocusedBorderColor = Color(0xFF555555),
+                                focusedContainerColor = Color(0xFF303030), unfocusedContainerColor = Color(0xFF303030),
+                                cursorColor = white
+                            )
+                        )
                         Button(
                             enabled = (prompt.isNotBlank() || (pickedUri != null && pickedMime.startsWith("image/"))) && !busy,
                             onClick = {
@@ -478,9 +497,10 @@ private fun AstraApp(
                             },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink),
-                            shape = RoundedCornerShape(12.dp),
-                            contentPadding = PaddingValues(horizontal = 8.dp)
-                        ) { Text(if (busy) "काम जारी…" else "भेजें ↑", fontWeight = FontWeight.Bold, fontSize = 12.sp) }
+                            shape = CircleShape,
+                            contentPadding = PaddingValues(horizontal = 8.dp),
+                            modifier = Modifier.size(44.dp)
+                        ) { Text(if (busy) "…" else "↑", fontWeight = FontWeight.Bold, fontSize = 19.sp) }
                     }
                 }
             }
