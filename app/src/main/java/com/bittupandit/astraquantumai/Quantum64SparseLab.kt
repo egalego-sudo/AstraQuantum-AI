@@ -132,7 +132,7 @@ object AstraSparseQuantumSimulator {
     fun verifyGhz64(run: SparseQuantumRun, tolerance: Double = 1e-9): Boolean {
         if (run.qubits != 64 || kotlin.math.abs(run.norm - 1.0) > tolerance || run.amplitudes.size != 2) return false
         val zero = run.amplitudes[0L] ?: return false
-        val allOnes = run.amplitudes[Long.MIN_VALUE.inv()] ?: return false
+        val allOnes = run.amplitudes[-1L] ?: return false
         return kotlin.math.abs(zero.re - invSqrt2) < tolerance &&
             kotlin.math.abs(zero.im) < tolerance &&
             kotlin.math.abs(allOnes.re - invSqrt2) < tolerance &&
