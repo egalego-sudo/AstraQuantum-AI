@@ -62,3 +62,26 @@ export async function searchKnowledge(query, limit = 4) {
     .sort((a, b) => b.score - a.score || b.coverage - a.coverage || a.record.id.localeCompare(b.record.id));
   return ranked.slice(0, Math.max(0, Math.min(8, Number(limit) || 4))).map(item => item.record);
 }
+
+
+export function validateKnowledgeCitations(answer, records = []) {
+  const byId = new Map(records.map(record => [record.id, record]));
+  const citedIds = new Set();
+  const safeAnswer = String(answer || "").replace(/\\[KB:([^\\]\\s]+)\\]/g, (marker, id) => {
+    if (!byId.has(id)) return "[unverified knowledge-base reference removed]";
+    citedIds.add(id);
+    return marker;
+  });
+  if (!citedIds.size) return safeAnswer;
+  const references = [];
+  const seenUrls = new Set();
+  for (const id of citedIds) {
+    const record = byId.get(id);
+    for (const source of record.sources || []) {
+      if (!source || typeof source.url !== "string" || !source.url.startsWith("https://") || seenUrls.has(source.url)) continue;
+      seenUrls.add(source.url);
+      references.push("- [KB:" + id + "] " + record.title + " — " + (source.publisher || "Source") + ": " + source.url);
+    }
+  }
+  return safeAnswer + (references.length ? "\\n\\nVerified knowledge-base sources:\\n" + references.join("\\n") : "");
+}
