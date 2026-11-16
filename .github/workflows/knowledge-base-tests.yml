@@ -17,6 +17,9 @@ on:
     branches: ["main"]
     paths:
       - "backend/knowledge.js"
+      - "backend/server.js"
+      - "backend/research-quality.js"
+      - "backend/research-quality.test.js"
       - "backend/knowledge.test.js"
       - "backend/package.json"
       - "knowledge-base/**"
