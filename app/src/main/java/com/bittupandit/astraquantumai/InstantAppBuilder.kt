@@ -53,10 +53,10 @@ private val builderMuted = Color(0xFFB4B4B4)
 private val builderAccent = Color(0xFFD6D6D6)
 
 @Composable
-fun InstantAppBuilderScreen(backendUrl: String) {
+fun InstantAppBuilderScreen(backendUrl: String, initialWebsiteMode: Boolean = false) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var websiteMode by remember { mutableStateOf(false) }
+    var websiteMode by remember { mutableStateOf(initialWebsiteMode) }
     var idea by remember { mutableStateOf("") }
     var html by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
