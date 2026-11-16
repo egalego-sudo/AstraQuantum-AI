@@ -116,6 +116,53 @@ async function generate(input) {
   return text;
 }
 
+
+async function research(input) {
+  const query = String(input.query || "").trim();
+  if (!query || query.length > 500) throw new Error("Research query is empty or too long.");
+  const wikiUrl = new URL("https://en.wikipedia.org/w/api.php");
+  wikiUrl.search = new URLSearchParams({
+    action: "query", generator: "search", gsrsearch: query, gsrlimit: "5",
+    prop: "extracts", exintro: "1", explaintext: "1", format: "json"
+  }).toString();
+  const crossrefUrl = new URL("https://api.crossref.org/works");
+  crossrefUrl.search = new URLSearchParams({ "query.bibliographic": query, rows: "5", select: "title,author,published,DOI,URL,container-title,abstract" }).toString();
+
+  const [wikiResponse, crossrefResponse] = await Promise.all([
+    fetch(wikiUrl, { headers: { "user-agent": "ASTRA-Quantum-AI/1.0 (research assistant)" }, signal: AbortSignal.timeout(15000) }),
+    fetch(crossrefUrl, { headers: { "user-agent": "ASTRA-Quantum-AI/1.0 (mailto:research@astraquantum-ai.invalid)" }, signal: AbortSignal.timeout(15000) })
+  ]);
+  if (!wikiResponse.ok && !crossrefResponse.ok) throw new Error("Research sources are temporarily unavailable.");
+  const wikiData = wikiResponse.ok ? await wikiResponse.json() : {};
+  const crossrefData = crossrefResponse.ok ? await crossrefResponse.json() : {};
+  const wikiPages = Object.values(wikiData?.query?.pages || {}).map(page => ({
+    title: page.title, extract: String(page.extract || "").slice(0, 3500),
+    url: "https://en.wikipedia.org/?curid=" + page.pageid
+  })).filter(x => x.extract);
+  const papers = (crossrefData?.message?.items || []).map(item => ({
+    title: Array.isArray(item.title) ? item.title[0] : "",
+    authors: (item.author || []).slice(0, 4).map(a => [a.given, a.family].filter(Boolean).join(" ")).join(", "),
+    year: item.published?.["date-parts"]?.[0]?.[0] || "",
+    journal: Array.isArray(item["container-title"]) ? item["container-title"][0] : "",
+    doi: item.DOI || "", url: item.URL || (item.DOI ? "https://doi.org/" + item.DOI : ""),
+    abstract: String(item.abstract || "").replace(/<[^>]*>/g, "").slice(0, 1800)
+  })).filter(x => x.title);
+  const sources = [
+    ...wikiPages.map(x => ({ type: "encyclopedia", ...x })),
+    ...papers.map(x => ({ type: "research-paper", ...x }))
+  ];
+  if (!sources.length) throw new Error("इस विषय के लिए अभी कोई उपयोगी स्रोत नहीं मिला।");
+  const evidence = sources.map((source, i) =>
+    "[" + (i + 1) + "] " + source.type + " | " + source.title + " | " + (source.year || "") +
+    "\nURL: " + source.url + "\n" + (source.extract || source.abstract || "")
+  ).join("\n\n");
+  const answer = await generate({
+    prompt: "इस शोध प्रश्न का हिंदी में विश्लेषण करें: " + query +
+      "\n\nनीचे live retrieved sources दिए गए हैं। हर महत्वपूर्ण तथ्य के बाद [संख्या] citation लगाएँ। Wikipedia को अकेले निर्णायक प्रमाण न मानें। शोध-पत्र के शीर्षक/वर्ष/DOI को source metadata कहें, उसके निष्कर्ष को abstract से आगे न बढ़ाएँ। जहाँ स्रोत आपस में सहमत न हों या पर्याप्त प्रमाण न हो, स्पष्ट लिखें। अंत में 'स्रोत और सीमाएँ' शीर्षक में प्रयुक्त URLs दें।\n\n" + evidence
+  });
+  return { text: answer, sources: sources.map((source, i) => ({ id: i + 1, type: source.type, title: source.title, url: source.url, year: source.year || "" })) };
+}
+
 const server = http.createServer(async (req, res) => {
   if (req.method === "OPTIONS") return send(res, 204, {});
   const pathname = new URL(req.url || "/", "http://localhost").pathname.replace(/\/+$/, "") || "/";
@@ -131,7 +178,7 @@ const server = http.createServer(async (req, res) => {
       vision_model: VISION_MODEL
     });
   }
-  if (req.method !== "POST" || !["/v1/generate", "/v1/analyze"].includes(req.url || "")) {
+  if (req.method !== "POST" || !["/v1/generate", "/v1/analyze", "/v1/research"].includes(pathname)) {
     return send(res, 404, { error: "Not found" });
   }
   const ip = req.socket.remoteAddress || "unknown";
@@ -141,6 +188,10 @@ const server = http.createServer(async (req, res) => {
   recent.push(now); hits.set(ip, recent);
   try {
     const input = await readBody(req);
+    if (pathname === "/v1/research") {
+      const result = await research(input);
+      return send(res, 200, result);
+    }
     const text = await generate(input);
     return send(res, 200, { text });
   } catch (error) {
