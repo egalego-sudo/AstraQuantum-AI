@@ -53,44 +53,69 @@ private val builderAccent = Color(0xFFD6D6D6)
 fun InstantAppBuilderScreen(backendUrl: String) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    var websiteMode by remember { mutableStateOf(false) }
     var idea by remember { mutableStateOf("") }
     var html by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
-    var status by remember { mutableStateOf("अपना ऐप आइडिया लिखें। ASTRA पहले एक चलने योग्य वेब-ऐप प्रोटोटाइप बनाएगा।") }
+    var status by remember { mutableStateOf("ऐप या वेबसाइट चुनें और अपना आइडिया लिखें।") }
     var showPreview by remember { mutableStateOf(true) }
 
     Column(
         Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("ASTRA INSTANT APP BUILDER", color = builderText, fontSize = 17.sp, fontWeight = FontWeight.Black)
-        Text("IDEA → DESIGN → WORKING WEB APP", color = builderAccent, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-        Text("सिर्फ बताइए कि कैसी ऐप चाहिए। ASTRA उसका शुरुआती HTML/CSS/JavaScript प्रोटोटाइप बनाएगा, जिसे यहीं Preview कर सकेंगी।", color = builderMuted, fontSize = 12.sp, lineHeight = 18.sp)
+        Text("ASTRA INSTANT BUILDER", color = builderText, fontSize = 17.sp, fontWeight = FontWeight.Black)
+        Text("YOUR IDEA → READY-TO-PREVIEW PROJECT", color = builderAccent, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (websiteMode) {
+                OutlinedButton(onClick = { websiteMode = false; html = ""; status = "ऐप बनाने का आइडिया लिखें।" }) { Text("ऐप बनाएं") }
+                Button(onClick = { websiteMode = true; html = ""; status = "वेबसाइट बनाने का आइडिया लिखें।" }, colors = ButtonDefaults.buttonColors(containerColor = builderAccent, contentColor = builderInk)) { Text("वेबसाइट बनाएं") }
+            } else {
+                Button(onClick = { websiteMode = false; html = ""; status = "ऐप बनाने का आइडिया लिखें।" }, colors = ButtonDefaults.buttonColors(containerColor = builderAccent, contentColor = builderInk)) { Text("ऐप बनाएं") }
+                OutlinedButton(onClick = { websiteMode = true; html = ""; status = "वेबसाइट बनाने का आइडिया लिखें।" }) { Text("वेबसाइट बनाएं") }
+            }
+        }
+        Text(
+            if (websiteMode) "अपनी वेबसाइट का नाम, उद्देश्य और जरूरी पेज बताइए। ASTRA मोबाइल-फ्रेंडली वेबसाइट का डिजाइन और कोड बनाकर यहीं Preview दिखाएगा।"
+            else "सिर्फ बताइए कि कैसी ऐप चाहिए। ASTRA उसका शुरुआती HTML/CSS/JavaScript प्रोटोटाइप बनाएगा और यहीं Preview दिखाएगा।",
+            color = builderMuted, fontSize = 12.sp, lineHeight = 18.sp
+        )
         OutlinedTextField(
             value = idea,
             onValueChange = { idea = it },
             modifier = Modifier.fillMaxWidth(),
             minLines = 3,
-            label = { Text("आप कौन-सी ऐप बनाना चाहती हैं?") },
-            placeholder = { Text("उदाहरण: दुकानदार के लिए हिसाब-किताब ऐप, जिसमें ग्राहक, उधार और भुगतान का रिकॉर्ड हो…") }
+            label = { Text(if (websiteMode) "किस तरह की वेबसाइट बनानी है?" else "आप कौन-सी ऐप बनाना चाहती हैं?") },
+            placeholder = {
+                Text(
+                    if (websiteMode) "उदाहरण: मेरी बुटीक की वेबसाइट बनाओ—होम, हमारे बारे में, प्रोडक्ट गैलरी, संपर्क और WhatsApp बटन के साथ…"
+                    else "उदाहरण: दुकानदार के लिए हिसाब-किताब ऐप, जिसमें ग्राहक, उधार और भुगतान का रिकॉर्ड हो…"
+                )
+            }
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = { idea = "एक सुंदर टू-डू ऐप बनाओ जिसमें काम जोड़ सकूँ, पूरा होने पर टिक कर सकूँ और काम हटाने का विकल्प हो।" }) { Text("To-do ऐप") }
-            OutlinedButton(onClick = { idea = "एक छोटा खर्चा मैनेजर बनाओ जिसमें खर्च जोड़ना, कुल रकम और खर्चों की सूची दिखे।" }) { Text("खर्चा ऐप") }
+            OutlinedButton(onClick = {
+                idea = if (websiteMode) "एक आधुनिक बुटीक वेबसाइट बनाओ जिसमें होम पेज, हमारे बारे में, प्रोडक्ट गैलरी, कीमतें, संपर्क और WhatsApp संपर्क बटन हो।"
+                else "एक सुंदर टू-डू ऐप बनाओ जिसमें काम जोड़ सकूँ, पूरा होने पर टिक कर सकूँ और काम हटाने का विकल्प हो।"
+            }) { Text(if (websiteMode) "बुटीक वेबसाइट" else "To-do ऐप") }
+            OutlinedButton(onClick = {
+                idea = if (websiteMode) "एक प्रोफेशनल व्यक्तिगत पोर्टफोलियो वेबसाइट बनाओ जिसमें परिचय, कौशल, काम के नमूने और संपर्क सेक्शन हों।"
+                else "एक छोटा खर्चा मैनेजर बनाओ जिसमें खर्च जोड़ना, कुल रकम और खर्चों की सूची दिखे।"
+            }) { Text(if (websiteMode) "पोर्टफोलियो" else "खर्चा ऐप") }
         }
         Button(
             onClick = {
                 busy = true
                 html = ""
-                status = "ASTRA आपका ऐप बना रहा है…"
+                status = if (websiteMode) "ASTRA आपकी वेबसाइट बना रहा है…" else "ASTRA आपका ऐप बना रहा है…"
                 scope.launch {
                     try {
-                        val result = withContext(Dispatchers.IO) { buildPrototype(backendUrl, idea) }
+                        val result = withContext(Dispatchers.IO) { buildPrototype(backendUrl, idea, websiteMode) }
                         html = result
                         showPreview = true
-                        status = "प्रोटोटाइप तैयार है। नीचे Preview देखें।"
+                        status = if (websiteMode) "वेबसाइट तैयार है। नीचे Preview देखें।" else "ऐप प्रोटोटाइप तैयार है। नीचे Preview देखें।"
                     } catch (error: Exception) {
-                        status = "बनाने में समस्या: ${error.message ?: "कनेक्शन त्रुटि"}"
+                        status = "बनाने में समस्या: " + (error.message ?: "कनेक्शन त्रुटि")
                     } finally {
                         busy = false
                     }
@@ -103,14 +128,17 @@ fun InstantAppBuilderScreen(backendUrl: String) {
         ) {
             if (busy) {
                 CircularProgressIndicator(color = builderInk, modifier = Modifier.height(18.dp))
-                Text("  ऐप तैयार हो रही है…")
-            } else Text("✦  ऐप बनाइए")
+                Text(if (websiteMode) "  वेबसाइट बन रही है…" else "  ऐप तैयार हो रही है…")
+            } else Text(if (websiteMode) "✦  वेबसाइट बनाइए" else "✦  ऐप बनाइए")
         }
         Text(status, color = builderMuted, fontSize = 12.sp)
         if (html.isNotBlank()) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = { showPreview = true }, colors = ButtonDefaults.buttonColors(containerColor = builderCard)) { Text("Preview") }
-                OutlinedButton(onClick = { copyGeneratedCode(context, html); status = "पूरा HTML कोड कॉपी हो गया।" }) { Text("कोड कॉपी करें") }
+                Button(onClick = { showPreview = true }, colors = ButtonDefaults.buttonColors(containerColor = builderCard)) { Text("Live Preview") }
+                OutlinedButton(onClick = {
+                    copyGeneratedCode(context, html, websiteMode)
+                    status = if (websiteMode) "वेबसाइट का HTML कोड कॉपी हो गया।" else "ऐप का HTML कोड कॉपी हो गया।"
+                }) { Text("कोड कॉपी करें") }
             }
             if (showPreview) {
                 Card(
@@ -119,7 +147,7 @@ fun InstantAppBuilderScreen(backendUrl: String) {
                     shape = RoundedCornerShape(14.dp)
                 ) {
                     AndroidView(
-                        modifier = Modifier.fillMaxWidth().height(520.dp),
+                        modifier = Modifier.fillMaxWidth().height(560.dp),
                         factory = { ctx ->
                             WebView(ctx).apply {
                                 webViewClient = WebViewClient()
@@ -138,16 +166,40 @@ fun InstantAppBuilderScreen(backendUrl: String) {
                     )
                 }
             }
-            Text("यह पहला वेब-ऐप प्रोटोटाइप है। अभी इससे सीधे Android APK या Play Store पैकेज नहीं बनता; वह अगला निर्माण चरण होगा।", color = builderMuted, fontSize = 11.sp, lineHeight = 16.sp)
+            Text(
+                if (websiteMode) "यह आपकी वेबसाइट का तैयार HTML/CSS/JavaScript प्रोजेक्ट है और Preview यहीं चलता है। इसे सार्वजनिक इंटरनेट पर लाइव करने के लिए अलग hosting/publish चरण जोड़ना होगा; अभी वेबसाइट अपने-आप ऑनलाइन प्रकाशित नहीं होती।"
+                else "यह वेब-ऐप प्रोटोटाइप है। अभी इससे सीधे Android APK या Play Store पैकेज नहीं बनता; वह अलग निर्माण चरण होगा।",
+                color = builderMuted, fontSize = 11.sp, lineHeight = 16.sp
+            )
         }
         Spacer(Modifier.height(12.dp))
         Text("Creator by Bittu Pandit", color = builderAccent, fontSize = 11.sp, fontWeight = FontWeight.Bold)
     }
 }
 
-private fun buildPrototype(backendUrl: String, idea: String): String {
-    require(idea.isNotBlank()) { "पहले ऐप का आइडिया लिखें।" }
-    val prompt = """
+private fun buildPrototype(backendUrl: String, idea: String, websiteMode: Boolean): String {
+    require(idea.isNotBlank()) { "पहले अपना आइडिया लिखें।" }
+    val prompt = if (websiteMode) {
+        """
+You are ASTRA INSTANT WEBSITE BUILDER. Create a complete, polished, production-style responsive single-file WEBSITE from the user's brief.
+Return ONLY raw HTML, no Markdown fences or explanations.
+Requirements:
+- This is a WEBSITE, not an app dashboard. Create a professional public-facing site with strong visual hierarchy and clear navigation.
+- Include all CSS and JavaScript inline in one valid HTML document.
+- Mobile-first responsive layout for Android phones and desktop.
+- Build the pages/sections requested (as a single-page website with working section navigation if multiple pages are requested).
+- Include meaningful website copy, header, hero section, calls to action, footer, and contact details only when provided.
+- Add SEO title, meta description, viewport, semantic headings, accessible labels, and social sharing metadata.
+- Make menus, galleries, FAQ, forms and other requested interactions genuinely work. Forms must clearly say they are demo-only unless a real backend exists.
+- Use only inline SVG/CSS artwork; no external libraries, CDN, remote assets, API keys, payment claims, login claims, or network calls.
+- Add a small footer exactly: Creator by Bittu Pandit
+- Escape user text safely when rendering it; do not use eval.
+- Do not invent phone numbers, addresses, testimonials, certifications, or business facts.
+- Return compact but complete code.
+Website brief:
+""" + idea
+    } else {
+        """
 You are ASTRA INSTANT APP BUILDER. Create a complete, polished, responsive single-file web app prototype from the user's idea.
 Return ONLY raw HTML, no Markdown fences or explanations.
 Requirements:
@@ -161,9 +213,10 @@ Requirements:
 - Escape user text safely when rendering it; do not use eval.
 - Keep code compact enough for one response.
 User's app idea:
-$idea
-""".trimIndent()
+""" + idea
+    }
     val cleanBase = backendUrl.trim().trimEnd('/')
+    require(cleanBase.startsWith("https://")) { "Settings में सही HTTPS Backend URL सेव करें।" }
     val connection = (URL(cleanBase + "/v1/generate").openConnection() as HttpURLConnection).apply {
         requestMethod = "POST"
         connectTimeout = 15000
@@ -178,12 +231,12 @@ $idea
         val body = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
         if (code !in 200..299) {
             val message = runCatching { JSONObject(body).optString("error") }.getOrDefault("")
-            throw IllegalStateException(message.ifBlank { "Backend HTTP $code" })
+            throw IllegalStateException(message.ifBlank { "Backend HTTP " + code })
         }
         val raw = JSONObject(body).optString("text").trim()
         val cleaned = raw.removePrefix("```html").removePrefix("```").removeSuffix("```").trim()
         if (!cleaned.lowercase().contains("<html") && !cleaned.lowercase().contains("<!doctype html")) {
-            throw IllegalStateException("AI ने पूरा HTML प्रोटोटाइप नहीं लौटाया। फिर कोशिश करें।")
+            throw IllegalStateException("AI ने पूरा HTML प्रोजेक्ट नहीं लौटाया। फिर कोशिश करें।")
         }
         return cleaned
     } finally {
@@ -191,7 +244,7 @@ $idea
     }
 }
 
-private fun copyGeneratedCode(context: Context, value: String) {
+private fun copyGeneratedCode(context: Context, value: String, websiteMode: Boolean) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    clipboard.setPrimaryClip(ClipData.newPlainText("ASTRA generated app", value))
+    clipboard.setPrimaryClip(ClipData.newPlainText(if (websiteMode) "ASTRA generated website" else "ASTRA generated app", value))
 }
