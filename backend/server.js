@@ -174,7 +174,7 @@ async function generate(input) {
           model,
           messages: [
             { role: "system", content: ASTRA_INSTRUCTIONS },
-            { role: "user", content: prompt }
+            { role: "user", content: prompt + knowledgeContext }
           ],
           max_tokens: Math.min(8192, Math.max(2048, Number(input.maxOutputTokens) || 2048))
         })
@@ -217,7 +217,7 @@ async function generate(input) {
         model,
         messages: [
           { role: "system", content: ASTRA_INSTRUCTIONS },
-          { role: "user", content: prompt }
+          { role: "user", content: prompt + knowledgeContext }
         ],
         max_tokens: Math.min(8192, Math.max(2048, Number(input.maxOutputTokens) || 2048))
       })
@@ -240,7 +240,7 @@ async function generate(input) {
     const incompleteReason = data?.incomplete_details?.reason || "not reported";
     throw new Error(`Groq returned an empty response after Responses API and Chat Completions fallback (status: ${responseStatus}; incomplete: ${incompleteReason}). Check model access, provider limits and server logs.`);
   }
-  return text;
+  return validateKnowledgeCitations(text, knowledgeHits);
 }
 
 
