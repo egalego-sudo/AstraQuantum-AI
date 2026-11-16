@@ -278,6 +278,23 @@ private fun AstraApp(
                 }
                 Text("ईमानदार क्षमता स्थिति", color = mint, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 Text("• इमेज समझना अभी ऑनलाइन Vision पर निर्भर है; Offline Vision उपलब्ध नहीं।\n• आवाज़ की पहचान फोन के speech provider पर निर्भर है।\n• स्रोत जुटाना और AI रिपोर्ट बनाना उपलब्ध है, पर स्वतः निर्णायक सत्यापन नहीं।\n• Action Core अभी सुरक्षित planning/workspace स्तर पर है; कोई संदेश, भुगतान या फोन-सेटिंग बिना स्पष्ट अनुमति नहीं की जाती।\n• Quantum Learning अभी शैक्षिक classical simulation है; वास्तविक QPU के लिए IBM credentials और अलग पुष्टि चाहिए।", color = muted, fontSize = 11.sp, lineHeight = 18.sp)
+                Spacer(Modifier.height(8.dp))
+                Text("ASTRA INTELLIGENCE LAYER", color = Color(0xFFFFD86B), fontSize = 14.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
+                val intelligenceCards = listOf(
+                    "EVIDENCE INTELLIGENCE" to "रिपोर्ट में समर्थित तथ्य, स्रोत-संदर्भ, संभावित विरोधाभास और अनिश्चितता अलग दिखाने का नियम। स्रोत-जाँच अभी सीमित Wikipedia/Crossref डेटा पर आधारित है।",
+                    "LONG-TERM PERSONAL INTELLIGENCE" to "आपकी अनुमति पर Saved Memory, Projects और हाल की बातचीत का संदर्भ AI को दिया जाता है; इससे पिछला काम आगे बढ़ाने में मदद मिलती है।",
+                    "ACTION INTELLIGENCE" to "अभी Projects workspace में योजना और checkpoint सेव करें। जुड़े हुए बाहरी टूल में स्वतः काम पूरा करना अभी विकसित होना बाकी है।",
+                    "INDEPENDENT OFFLINE INTELLIGENCE" to "Qwen3-0.6B स्थानीय text model इंस्टॉल होने पर नेटवर्क विफलता में text chat fallback देता है। Offline image/voice/document intelligence अभी उपलब्ध नहीं।",
+                    "MULTIMODAL INTELLIGENCE" to "Voice-to-text, image + prompt, और PDF text analysis उपलब्ध हैं; एक ही संयुक्त multi-file multimodal session अभी सीमित है।"
+                )
+                intelligenceCards.forEach { item ->
+                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xAA101A34)), shape = RoundedCornerShape(15.dp), modifier = Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(13.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                            Text(item.first, color = mint, fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = .6.sp)
+                            Text(item.second, color = Color(0xFFE1E7FF), fontSize = 11.sp, lineHeight = 17.sp)
+                        }
+                    }
+                }
             }
             "Home" -> {
                 Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp)) {
