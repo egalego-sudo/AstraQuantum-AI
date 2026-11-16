@@ -61,6 +61,27 @@ fun QuantumCircuitLab() {
             }, modifier = Modifier.weight(1f)) { Text("Grover 2-Qubit") }
         }
 
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            Button(onClick = {
+                qubits = 3
+                ops = listOf(QuantumOp("X", 0))
+                gate = "H"
+                target = 0
+                control = 1
+                result = AstraQuantumSimulator.qftBasisDemo()
+                sampleText = ""
+                message = "3-Qubit QFT सफल। Basis |001⟩ का Fourier spectrum नीचे है।"
+            }, modifier = Modifier.weight(1f)) { Text("QFT Demo") }
+            OutlinedButton(onClick = {
+                qubits = 3
+                ops = listOf(QuantumOp("X", 0))
+                result = AstraQuantumSimulator.fourierTransform(AstraQuantumSimulator.qftBasisDemo(), inverse = true)
+                sampleText = ""
+                message = if (AstraQuantumSimulator.verifyQftRoundTrip()) "Inverse QFT PASS: मूल |001⟩ अवस्था वापस मिली।" else "Inverse QFT जाँच असफल।"
+            }, modifier = Modifier.weight(1f)) { Text("Inverse QFT") }
+        }
+
         Text("एक gate चुनें", color = muted)
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
             gates.take(6).forEach { g -> FilterChip(selected = gate == g, onClick = { gate = g }, label = { Text(g) }) }
