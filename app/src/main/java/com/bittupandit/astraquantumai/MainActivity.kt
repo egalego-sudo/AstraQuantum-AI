@@ -159,6 +159,7 @@ private fun AstraApp(
 ) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("astra_private", 0) }
+    val offlineEngine = remember { OfflineAiEngine(context) }
     var page by remember { mutableStateOf("Home") }
     var showSplash by remember { mutableStateOf(true) }
     LaunchedEffect(Unit) { delay(1800); showSplash = false }
@@ -176,9 +177,20 @@ private fun AstraApp(
     var qubitResult by remember { mutableStateOf("Qubit तैयार है। Qubit संख्या और कोण चुनकर गणना करें।") }
     var fileAnalysis by remember { mutableStateOf("") }
     var fileBusy by remember { mutableStateOf(false) }
+    var offlineProgress by remember { mutableIntStateOf(0) }
+    var offlineStatus by remember { mutableStateOf("मॉडल अभी डाउनलोड नहीं हुआ है।") }
+    var offlineBusy by remember { mutableStateOf(false) }
+    var offlineTestPrompt by remember { mutableStateOf("नमस्ते ASTRA, अपना परिचय दीजिए।") }
+    var offlineTestAnswer by remember { mutableStateOf("") }
 
     LaunchedEffect(speechText) { if (speechText.isNotBlank()) { prompt = speechText; page = "AI Chat" } }
     LaunchedEffect(chat) { prefs.edit().putString("chat_history", encodeChatHistory(chat)).apply() }
+    LaunchedEffect(Unit) {
+        offlineStatus = if (offlineEngine.isModelInstalled) "ऑफलाइन मॉडल फोन में उपलब्ध है।" else "पहली बार लगभग 328 MiB मॉडल डाउनलोड करना होगा।"
+    }
+    DisposableEffect(offlineEngine) {
+        onDispose { offlineEngine.close() }
+    }
     var healthBusy by remember { mutableStateOf(false) }
 
     fun copyText(value: String) {
@@ -217,7 +229,7 @@ private fun AstraApp(
             }
             Spacer(Modifier.height(14.dp))
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                listOf("Home", "AI Chat", "Research", "Memory", "Voice", "Files", "Quantum", "Projects", "Settings").forEach { item ->
+                listOf("Home", "AI Chat", "Offline AI", "Research", "Memory", "Voice", "Files", "Quantum", "Projects", "Settings").forEach { item ->
                     val selected = page == item
                     Surface(
                         onClick = { page = item },
@@ -364,10 +376,10 @@ private fun AstraApp(
                                 chat = chat + ChatLine("You", question + if (imageUri != null) "  [फोटो: $pickedFile]" else "")
                                 prompt = ""
                                 busy = true
-                                status = if (imageUri != null) "VISION AI फोटो का विश्लेषण कर रहा है…" else "GROQ AI से उत्तर आ रहा है…"
+                                status = if (imageUri != null) "VISION AI फोटो का विश्लेषण कर रहा है…" else "HYBRID ROUTER · ONLINE/OFFLINE"
                                 activity.lifecycleScope.launch {
                                     val answer = withContext(Dispatchers.IO) {
-                                        if (imageUri != null) {
+                                        val onlineResult = if (imageUri != null) {
                                             runCatching {
                                                 val bytes = context.contentResolver.openInputStream(imageUri)?.use { it.readBytes() } ?: error("फोटो पढ़ी नहीं जा सकी")
                                                 require(bytes.size <= 7 * 1024 * 1024) { "फोटो 7 MB से छोटी रखें।" }
@@ -377,10 +389,23 @@ private fun AstraApp(
                                         } else {
                                             askBackend(backend, question)
                                         }
+                                        val remoteFailed = onlineResult.startsWith("ASTRA सर्वर से कनेक्शन नहीं हो पाया") ||
+                                            onlineResult.startsWith("Groq सेवा में त्रुटि") ||
+                                            onlineResult.startsWith("सुरक्षा के लिए backend URL")
+                                        if (remoteFailed && imageUri == null && offlineEngine.isModelInstalled) {
+                                            runCatching { "ON-DEVICE · QWEN3-0.6B\n" + offlineEngine.answer(question) }
+                                                .getOrElse { "ऑनलाइन सेवा और स्थानीय मॉडल दोनों उपलब्ध नहीं हुए: ${it.message}" }
+                                        } else if (remoteFailed && imageUri != null) {
+                                            onlineResult + "\n\nOFFLINE VISION अभी ASTRA में उपलब्ध नहीं है।"
+                                        } else if (imageUri != null) {
+                                            "ONLINE · GROQ VISION\n" + onlineResult
+                                        } else {
+                                            "ONLINE · GROQ\n" + onlineResult
+                                        }
                                     }
                                     chat = chat + ChatLine("ASTRA", answer)
                                     busy = false
-                                    status = "GROQ AI · READY"
+                                    status = if (answer.startsWith("ON-DEVICE")) "OFFLINE AI · READY" else "HYBRID AI · READY"
                                 }
                             },
                             modifier = Modifier.weight(1f),
@@ -508,6 +533,66 @@ private fun AstraApp(
                         "यह classical random sampling है, वास्तविक quantum measurement नहीं।"
                 }, modifier = Modifier.fillMaxWidth()) { Text("1,000 measurement shots चलाएँ", color = white) }
                 SelectionContainer { Text(qubitResult, color = white, lineHeight = 21.sp) }
+            }
+            "Offline AI" -> SimplePage("OFFLINE AI CORE", "इंटरनेट बंद होने पर ASTRA इस स्थानीय मॉडल से जवाब दे सकेगा। पहली बार मॉडल डाउनलोड करने के लिए इंटरनेट और लगभग 328 MiB खाली जगह चाहिए।") {
+                Text("स्थानीय मॉडल: ${OfflineAiEngine.MODEL_NAME}", color = mint, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text(if (offlineEngine.isModelInstalled) "स्थिति: मॉडल फोन में इंस्टॉल है" else "स्थिति: मॉडल डाउनलोड होना बाकी है", color = white, fontSize = 12.sp)
+                if (offlineBusy && offlineProgress > 0) {
+                    LinearProgressIndicator(progress = { offlineProgress / 100f }, modifier = Modifier.fillMaxWidth())
+                    Text("डाउनलोड: $offlineProgress%", color = mint, fontSize = 12.sp)
+                }
+                Button(
+                    enabled = !offlineBusy && !offlineEngine.isModelInstalled,
+                    onClick = {
+                        offlineBusy = true
+                        offlineProgress = 0
+                        offlineStatus = "Qwen मॉडल डाउनलोड हो रहा है…"
+                        activity.lifecycleScope.launch {
+                            try {
+                                offlineEngine.downloadModel { offlineProgress = it }
+                                offlineStatus = "मॉडल डाउनलोड और आकार-जाँच सफल। अब स्थानीय परीक्षण करें।"
+                            } catch (error: Exception) {
+                                offlineStatus = "डाउनलोड विफल: ${error.message ?: "नेटवर्क त्रुटि"}"
+                            } finally {
+                                offlineBusy = false
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)
+                ) { Text(if (offlineBusy) "डाउनलोड जारी…" else if (offlineEngine.isModelInstalled) "मॉडल डाउनलोड हो चुका है" else "328 MiB मॉडल डाउनलोड करें") }
+                Text(offlineStatus, color = muted, fontSize = 12.sp)
+                OutlinedTextField(
+                    value = offlineTestPrompt,
+                    onValueChange = { offlineTestPrompt = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("स्थानीय AI का परीक्षण") },
+                    minLines = 2
+                )
+                Button(
+                    enabled = offlineEngine.isModelInstalled && !offlineBusy && offlineTestPrompt.isNotBlank(),
+                    onClick = {
+                        offlineBusy = true
+                        offlineTestAnswer = ""
+                        activity.lifecycleScope.launch {
+                            try {
+                                offlineStatus = offlineEngine.initialize()
+                                offlineTestAnswer = offlineEngine.answer(offlineTestPrompt)
+                            } catch (error: Exception) {
+                                offlineTestAnswer = "स्थानीय मॉडल त्रुटि: ${error.message}"
+                            } finally {
+                                offlineBusy = false
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = violet, contentColor = Color.White)
+                ) { Text(if (offlineBusy) "स्थानीय AI चल रहा है…" else "ऑफलाइन AI टेस्ट चलाएँ") }
+                if (offlineTestAnswer.isNotBlank()) {
+                    SelectionContainer { Text(offlineTestAnswer, color = white, lineHeight = 21.sp) }
+                }
+                Text("मॉडल लाइसेंस: Apache 2.0 · Qwen3-0.6B. लाइव इंटरनेट खोज और वर्तमान समाचार ऑफलाइन उपलब्ध नहीं होंगे।", color = muted, fontSize = 11.sp)
+                Text("Creator by Bittu Pandit", color = mint, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             }
             "Projects" -> SimplePage("PROJECT WORKSPACE", "अपने प्रोजेक्ट के नोट्स सेव करें। ये इसी फोन में रहेंगे और ऐप दोबारा खोलने पर वापस मिलेंगे।") {
                 OutlinedTextField(projectInput, { projectInput = it }, Modifier.fillMaxWidth(), label = { Text("नया प्रोजेक्ट या नोट लिखें") }, minLines = 3)
