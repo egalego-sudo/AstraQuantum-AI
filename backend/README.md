@@ -48,6 +48,12 @@ The `/v1/analyze` route is also accepted by the server and uses the same request
 - The Android client allows up to 150 seconds for this research request.
 - This is a bounded indexed-source search, not exhaustive internet search or a guarantee that every source, paper, or claim has been found. arXiv records are preprints unless their publication status is independently confirmed; Wikipedia is a tertiary source. Users should inspect primary sources and cited evidence.
 
+## Cost-conscious research behavior
+
+- The current Deep Research route uses public endpoints from Wikipedia, Crossref, OpenAlex, Europe PMC and arXiv, then uses the already-configured Groq model to synthesize the retrieved records. No additional search-provider API key is required by this route.
+- This is bounded source retrieval, not general-purpose browser automation. Public endpoints have their own availability, terms and rate limits; Groq inference remains subject to the user's existing Groq plan, quota and any applicable charges.
+- Groq's separate built-in Browser Search and Code Interpreter tools are not enabled by default in this project. Their current pricing/allowances must be confirmed in the Groq account before enabling them; do not assume these tools are free.
+
 ## IBM Quantum hardware connector
 
 - Server routes: `GET /v1/quantum/backends`, `POST /v1/quantum/demo`, and `GET /v1/quantum/jobs/{id}`.
