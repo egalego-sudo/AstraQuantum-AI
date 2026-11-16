@@ -11,6 +11,7 @@ import android.speech.tts.TextToSpeech
 import android.util.Base64
 import android.webkit.URLUtil
 import android.widget.Toast
+import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -37,6 +38,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -51,6 +53,8 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
 import java.util.Locale
+import io.noties.markwon.Markwon
+import io.noties.markwon.ext.tables.TablePlugin
 
 // ASTRA ChatGPT-inspired neutral charcoal palette.
 private val ink = Color(0xFF212121)
@@ -166,6 +170,11 @@ private fun AstraApp(
     onPickFile: () -> Unit
 ) {
     val context = LocalContext.current
+    val markdownRenderer = remember(context) {
+        Markwon.builder(context)
+            .usePlugin(TablePlugin.create(context))
+            .build()
+    }
     val prefs = remember { context.getSharedPreferences("astra_private", 0) }
     val offlineEngine = remember { OfflineAiEngine(context) }
     var page by remember { mutableStateOf("Home") }
@@ -453,7 +462,19 @@ private fun AstraApp(
                                 }
                                 Column(Modifier.widthIn(max = 310.dp).clip(RoundedCornerShape(if (isAi) 8.dp else 20.dp)).background(if (isAi) Color(0xAA182747) else Color(0xCC123A52)).padding(horizontal = 14.dp, vertical = 11.dp)) {
                                     if (isAi) Text("ASTRA", color = muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                                    SelectionContainer { Text(item.text, color = white, fontSize = 14.sp, lineHeight = 22.sp) }
+                                    AndroidView(
+                                        modifier = Modifier.fillMaxWidth().wrapContentHeight(),
+                                        factory = { viewContext ->
+                                            TextView(viewContext).apply {
+                                                setTextColor(android.graphics.Color.WHITE)
+                                                textSize = 14f
+                                                setLineSpacing(0f, 1.28f)
+                                                setTextIsSelectable(true)
+                                                setLinkTextColor(android.graphics.Color.rgb(150, 205, 255))
+                                            }
+                                        },
+                                        update = { textView -> markdownRenderer.setMarkdown(textView, item.text) }
+                                    )
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         TextButton(onClick = { copyText(item.text) }, contentPadding = PaddingValues(horizontal = 3.dp)) { Text("कॉपी", color = muted, fontSize = 10.sp) }
                                         if (isAi) TextButton(onClick = { onSpeak(item.text) }, contentPadding = PaddingValues(horizontal = 3.dp)) { Text("सुनें", color = muted, fontSize = 10.sp) }
