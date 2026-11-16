@@ -11,8 +11,10 @@ Android-first personal AI assistant.
 - Groq text model and image-analysis model, configured on the server.
 - Voice input and text-to-speech output (device speech services required).
 - Image selection and image analysis for JPEG, PNG and WEBP.
-- Research shortcut that opens a web search in the browser.
+- In-app research endpoint retrieves Wikipedia overview pages and Crossref scholarly-record metadata, then asks Groq to synthesize a cited report. This is an initial multi-source research layer, not exhaustive web crawling or conclusive fact verification.
+- PDF text extraction and AI analysis for text-based PDFs (up to 60 pages and 80,000 extracted characters); scanned/image-only PDFs still need OCR.
 - Local notes/projects and chat history stored in app-private preferences.
+- PDF document analysis through the backend using the maintained pdf-parse parser.
 - Quantum Lab educational model for up to 32 independent Qubits, probability calculation and classical measurement sampling.
 - Backend health-check screen.
 
