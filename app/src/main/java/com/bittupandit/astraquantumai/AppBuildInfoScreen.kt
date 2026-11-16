@@ -77,7 +77,7 @@ internal fun AppBuildInfoScreen() {
                 Text(apkSha256, color = if (hashError) Color(0xFFFFB4AB) else Color(0xFFECECEC), fontSize = 10.sp)
             }
         }
-        Text("अपडेटर का अगला चरण: इस पहचान को सर्वर पर उपलब्ध पैच के base APK से मिलाना, फिर ही छोटा पैच डाउनलोड करना। अभी इस स्क्रीन से कोई डाउनलोड या इंस्टॉल नहीं होता।", color = Color(0xFFB4B4B4), fontSize = 11.sp)
+        Text("अपडेटर इसी पहचान से तय करता है कि छोटा डेल्टा पैच लागू हो सकता है या पूरा APK डाउनलोड करना होगा। इंस्टॉलेशन हमेशा Android की अनुमति से ही होगा।", color = Color(0xFFB4B4B4), fontSize = 11.sp)
         Text("Creator by Bittu Pandit", color = Color(0xFFD6D6D6), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
     }
 }
