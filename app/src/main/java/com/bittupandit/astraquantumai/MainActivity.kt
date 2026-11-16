@@ -1144,7 +1144,17 @@ private fun askResearch(baseUrl: String, query: String): String {
                     append("\n").append(item.optString("url")).append("\n")
                 }
             }
-            buildString {\n                append(report)\n                if (meta != null) {\n                    append("\\n\\nशोध कवरेज: ")\n                    append(meta.optInt("unique_source_count")).append(" अलग स्रोत; ")\n                    append(meta.optInt("open_full_texts_fetched")).append(" Open Access full-text दस्तावेज़ प्राप्त।")\n                    append("\\nस्रोत प्रकार: ").append(meta.optJSONArray("source_types")?.let { arr -> (0 until arr.length()).joinToString(", ") { arr.optString(it) } } ?: "उपलब्ध")\n                    append("\\nसीमा: ").append(meta.optString("coverage_note"))\n                }\n                if (sourceText.isNotBlank()) append("\\n\\nस्रोत सूची\\n").append(sourceText)\n            }
+            buildString {
+                append(report)
+                if (meta != null) {
+                    append("\n\nशोध कवरेज: ")
+                    append(meta.optInt("unique_source_count")).append(" अलग स्रोत; ")
+                    append(meta.optInt("open_full_texts_fetched")).append(" Open Access full-text दस्तावेज़ प्राप्त।")
+                    append("\nस्रोत प्रकार: ").append(meta.optJSONArray("source_types")?.let { arr -> (0 until arr.length()).joinToString(", ") { arr.optString(it) } } ?: "उपलब्ध")
+                    append("\nसीमा: ").append(meta.optString("coverage_note"))
+                }
+                if (sourceText.isNotBlank()) append("\n\nस्रोत सूची\n").append(sourceText)
+            }
         }
     } catch (error: Exception) {
         "Deep Research कनेक्शन विफल: " + (error.message ?: "नेटवर्क त्रुटि")
