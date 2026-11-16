@@ -46,6 +46,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import org.json.JSONArray
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
@@ -121,6 +122,28 @@ class MainActivity : ComponentActivity() {
 }
 
 private data class ChatLine(val from: String, val text: String)
+
+private fun restoreChatHistory(raw: String?): List<ChatLine> {
+    if (raw.isNullOrBlank()) return listOf(ChatLine("ASTRA", "नमस्ते! मैं ASTRA हूँ। अपना सवाल पूछिए—मैं Groq AI से उत्तर तैयार करूँगा।"))
+    return runCatching {
+        val array = JSONArray(raw)
+        List(array.length()) { index ->
+            val item = array.getJSONObject(index)
+            ChatLine(item.optString("from", "ASTRA"), item.optString("text"))
+        }.filter { it.text.isNotBlank() }.ifEmpty {
+            listOf(ChatLine("ASTRA", "नमस्ते! मैं ASTRA हूँ। अपना सवाल पूछिए।"))
+        }
+    }.getOrElse { listOf(ChatLine("ASTRA", "पुरानी चैट पढ़ी नहीं जा सकी। नई बातचीत शुरू करें।")) }
+}
+
+private fun encodeChatHistory(chat: List<ChatLine>): String {
+    val array = JSONArray()
+    chat.takeLast(100).forEach { item ->
+        array.put(JSONObject().put("from", item.from).put("text", item.text))
+    }
+    return array.toString()
+}
+
 private data class AstraModule(val title: String, val subtitle: String, val symbol: String)
 
 @Composable
@@ -147,13 +170,15 @@ private fun AstraApp(
     var memories by remember { mutableStateOf(prefs.getString("memories", "") ?: "") }
     var projectInput by remember { mutableStateOf("") }
     var projects by remember { mutableStateOf(prefs.getString("projects", "") ?: "") }
-    var chat by remember { mutableStateOf(listOf(ChatLine("ASTRA", "नमस्ते! मैं ASTRA हूँ। अपना सवाल पूछिए—मैं Groq AI से उत्तर तैयार करूँगा।"))) }
+    var chat by remember { mutableStateOf(restoreChatHistory(prefs.getString("chat_history", null))) }
     var qubitAngle by remember { mutableFloatStateOf(45f) }
     var qubitResult by remember { mutableStateOf("Qubit तैयार है। कोण बदलकर मापन करें।") }
     var fileAnalysis by remember { mutableStateOf("") }
     var fileBusy by remember { mutableStateOf(false) }
 
     LaunchedEffect(speechText) { if (speechText.isNotBlank()) { prompt = speechText; page = "AI Chat" } }
+    LaunchedEffect(chat) { prefs.edit().putString("chat_history", encodeChatHistory(chat)).apply() }
+    var healthBusy by remember { mutableStateOf(false) }
 
     fun copyText(value: String) {
         val clipboard = context.getSystemService(ClipboardManager::class.java)
@@ -358,12 +383,30 @@ private fun AstraApp(
                     }
                 }
             }
-            "Research" -> SimplePage("DEEP RESEARCH", "अपने विषय को खोजें। खोज परिणाम ब्राउज़र में खुलेंगे; स्रोतों को अलग-अलग जाँचें।") {
-                OutlinedTextField(prompt, { prompt = it }, Modifier.fillMaxWidth(), label = { Text("किस विषय पर शोध करें?") })
+            "Research" -> SimplePage("DEEP RESEARCH", "एक ही विषय को अलग-अलग स्रोतों पर खोजें। दावों को कम-से-कम दो स्वतंत्र स्रोतों से मिलाएँ।") {
+                OutlinedTextField(prompt, { prompt = it }, Modifier.fillMaxWidth(), label = { Text("किस विषय या दावे की जाँच करें?") })
+                Text("खोज के स्रोत", color = mint, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 Button(enabled = prompt.isNotBlank(), onClick = {
-                    val q = URLEncoder.encode(prompt, "UTF-8")
-                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=$q")))
-                }, colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("वेब पर खोजें") }
+                    val q = URLEncoder.encode(prompt.trim(), "UTF-8")
+                    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=" + q))) }
+                        .onFailure { Toast.makeText(context, "ब्राउज़र नहीं खुल पाया", Toast.LENGTH_SHORT).show() }
+                }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("Google पर खोजें") }
+                OutlinedButton(enabled = prompt.isNotBlank(), onClick = {
+                    val q = URLEncoder.encode(prompt.trim(), "UTF-8")
+                    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.bing.com/search?q=" + q))) }
+                        .onFailure { Toast.makeText(context, "ब्राउज़र नहीं खुल पाया", Toast.LENGTH_SHORT).show() }
+                }, modifier = Modifier.fillMaxWidth()) { Text("Bing पर खोजें", color = white) }
+                OutlinedButton(enabled = prompt.isNotBlank(), onClick = {
+                    val q = URLEncoder.encode(prompt.trim(), "UTF-8")
+                    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://scholar.google.com/scholar?q=" + q))) }
+                        .onFailure { Toast.makeText(context, "ब्राउज़र नहीं खुल पाया", Toast.LENGTH_SHORT).show() }
+                }, modifier = Modifier.fillMaxWidth()) { Text("Google Scholar · शोध पत्र", color = white) }
+                OutlinedButton(enabled = prompt.isNotBlank(), onClick = {
+                    val q = URLEncoder.encode("fact check " + prompt.trim(), "UTF-8")
+                    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=" + q))) }
+                        .onFailure { Toast.makeText(context, "ब्राउज़र नहीं खुल पाया", Toast.LENGTH_SHORT).show() }
+                }, modifier = Modifier.fillMaxWidth()) { Text("Fact Check · दावे की जाँच", color = white) }
+                Text("ध्यान दें: ये खोज पेज खोलते हैं; ASTRA अभी स्रोतों की स्वतंत्र सत्यता अपने-आप प्रमाणित नहीं करता।", color = muted, fontSize = 11.sp)
             }
             "Memory" -> SimplePage("PRIVATE MEMORY", "यहाँ सेव किए गए नोट्स इसी फोन में रखे जाते हैं।") {
                 OutlinedTextField(memoryInput, { memoryInput = it }, Modifier.fillMaxWidth(), label = { Text("याद रखने के लिए नोट") })
@@ -414,19 +457,31 @@ private fun AstraApp(
                 }, colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("मापन संभावना निकालें") }
                 SelectionContainer { Text(qubitResult, color = white) }
             }
-            "Projects" -> SimplePage("PROJECT WORKSPACE", "अपने प्रोजेक्ट और काम के नोट्स यहाँ व्यवस्थित करें।") {
-                OutlinedTextField(projectInput, { projectInput = it }, Modifier.fillMaxWidth(), label = { Text("प्रोजेक्ट / कार्य नोट") })
-                Button(enabled = projectInput.isNotBlank(), onClick = { addProject(projectInput) }, colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("सेव करें") }
-                SelectionContainer { Text(projects.ifBlank { "अभी कोई प्रोजेक्ट नोट नहीं।" }, color = white) }
+            "Projects" -> SimplePage("PROJECT WORKSPACE", "अपने प्रोजेक्ट के नोट्स सेव करें। ये इसी फोन में रहेंगे और ऐप दोबारा खोलने पर वापस मिलेंगे।") {
+                OutlinedTextField(projectInput, { projectInput = it }, Modifier.fillMaxWidth(), label = { Text("नया प्रोजेक्ट या नोट लिखें") }, minLines = 3)
+                Button(enabled = projectInput.isNotBlank(), onClick = { addProject(projectInput) }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("प्रोजेक्ट / नोट सेव करें") }
+                Text("सेव की गई सामग्री", color = mint, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                SelectionContainer { Text(projects.ifBlank { "अभी कोई प्रोजेक्ट नोट नहीं।" }, color = white, lineHeight = 21.sp) }
+                Text("नोट फोन के निजी ऐप स्टोरेज में सेव हैं; ऐप डेटा हटाने या ऐप uninstall करने पर मिट सकते हैं।", color = muted, fontSize = 11.sp)
+                TextButton(onClick = { projects = ""; prefs.edit().remove("projects").apply() }) { Text("सभी प्रोजेक्ट नोट मिटाएँ", color = muted) }
             }
-            "Settings" -> SimplePage("CONNECTION SETTINGS", "Groq AI इंजन। API key Android ऐप में नहीं, Render के सुरक्षित Environment में रहती है।") {
+            "Settings" -> SimplePage("CONNECTION SETTINGS", "Groq AI की API key ऐप में नहीं, Render के सुरक्षित Environment में रहती है।") {
                 OutlinedTextField(backend, { backend = it }, Modifier.fillMaxWidth(), label = { Text("Backend HTTPS URL") })
                 Button(onClick = {
                     backend = backend.trim().trimEnd('/')
                     prefs.edit().putString("backend_url", backend).apply()
                     status = "Backend URL सेव हुआ"
                     Toast.makeText(context, "Backend URL सेव हुआ", Toast.LENGTH_SHORT).show()
-                }, colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("सेटिंग सेव करें") }
+                }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("सेटिंग सेव करें") }
+                OutlinedButton(enabled = !healthBusy, onClick = {
+                    healthBusy = true
+                    status = "सर्वर जाँचा जा रहा है…"
+                    activity.lifecycleScope.launch {
+                        val result = withContext(Dispatchers.IO) { checkAstraBackend(backend) }
+                        status = result
+                        healthBusy = false
+                    }
+                }, modifier = Modifier.fillMaxWidth()) { Text(if (healthBusy) "जाँच जारी है…" else "AI सर्वर कनेक्शन जाँचें", color = white) }
                 Text("API endpoint: /v1/generate", color = muted, fontSize = 12.sp)
                 Text("स्थिति: $status", color = white, fontSize = 12.sp)
             }
@@ -588,6 +643,31 @@ private fun QuantumArtwork(modifier: Modifier = Modifier, variant: Int = 0) {
                 drawCircle(violet, radius = radius * 1.45f, center = center, style = Stroke(width = .7.dp.toPx()), alpha = .8f)
             }
         }
+    }
+}
+
+private fun checkAstraBackend(baseUrl: String): String {
+    if (baseUrl.isBlank()) return "त्रुटि: Backend URL खाली है।"
+    return try {
+        val clean = baseUrl.trim().trimEnd('/')
+        if (!URLUtil.isHttpsUrl(clean)) return "त्रुटि: केवल HTTPS backend स्वीकार है।"
+        val connection = (URL("$clean/health").openConnection() as HttpURLConnection).apply {
+            requestMethod = "GET"
+            connectTimeout = 8000
+            readTimeout = 8000
+        }
+        val code = connection.responseCode
+        val body = (if (code in 200..299) connection.inputStream else connection.errorStream)
+            ?.bufferedReader()?.use { it.readText() }.orEmpty()
+        connection.disconnect()
+        if (code !in 200..299) "सर्वर उपलब्ध नहीं · HTTP $code"
+        else {
+            val json = JSONObject(body)
+            if (json.optBoolean("ok")) "कनेक्शन सफल · " + json.optString("provider", "AI") + " · " + json.optString("model", "मॉडल सक्रिय")
+            else "सर्वर मिला, पर health check सफल नहीं हुआ।"
+        }
+    } catch (e: Exception) {
+        "कनेक्शन विफल: " + (e.message ?: "नेटवर्क त्रुटि")
     }
 }
 
