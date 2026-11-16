@@ -367,7 +367,9 @@ private fun AstraApp(
                         Triple("AI CHAT", "बातचीत और उत्तर", "AI Chat"),
                         Triple("APP BUILDER", "ऐप प्रोटोटाइप बनाएँ", "App Builder"),
                         Triple("WEBSITE BUILDER", "वेबसाइट और Preview", "Website Builder"),
-                        Triple("QUANTUM LAB", "क्वांटम सिमुलेशन", "Quantum")
+                        Triple("QUANTUM LAB", "क्वांटम सिमुलेशन", "Quantum"),
+                        Triple("PROJECTS", "आपके सेव किए प्रोजेक्ट और नोट्स", "Projects"),
+                        Triple("UPDATES", "नया ASTRA संस्करण जाँचें", "Updates")
                     )
                     controlModules.chunked(2).forEach { pair ->
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
