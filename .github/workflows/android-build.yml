@@ -26,6 +26,55 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create changed-files source patch
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os, subprocess, zipfile
+          from pathlib import Path
+          out = Path('patch-output')
+          out.mkdir(exist_ok=True)
+          raw = subprocess.check_output(['git', 'diff', '--name-status', '-z', 'HEAD^', 'HEAD'])
+          parts = raw.decode('utf-8', 'surrogateescape').split('\\0')
+          entries, i = [], 0
+          while i < len(parts) and parts[i]:
+              status = parts[i]; i += 1
+              if status.startswith(('R', 'C')):
+                  old, new = parts[i], parts[i+1]; i += 2
+                  entries.append((status, old, new))
+              else:
+                  name = parts[i]; i += 1
+                  entries.append((status, name, name))
+          manifest = ['ASTRA QUANTUM AI PLUS - SOURCE PATCH', '', 'Overlay included files onto the same repository root.', 'Deleted files are listed below and must be removed manually if applying by hand.', '']
+          included = []
+          with zipfile.ZipFile(out / 'ASTRA-SOURCE-PATCH.zip', 'w', zipfile.ZIP_DEFLATED) as z:
+              for status, old, new in entries:
+                  if status.startswith('D'):
+                      manifest.append(f'DELETED: {old}')
+                      continue
+                  if new.startswith('.git/') or Path(new).name in ('.env', '.env.local') or new.endswith(('.jks', '.keystore')):
+                      manifest.append(f'SKIPPED (sensitive): {new}')
+                      continue
+                  p = Path(new)
+                  if p.is_file():
+                      z.write(p, new)
+                      included.append(new)
+                      manifest.append(f'INCLUDED: {new}')
+              z.writestr('PATCH-MANIFEST.txt', '\\n'.join(manifest) + '\\n')
+          print('Patch files:', len(included))
+          print('Patch archive:', out / 'ASTRA-SOURCE-PATCH.zip')
+          PY
+
+      - name: Upload changed-files source patch
+        uses: actions/upload-artifact@v4
+        with:
+          name: ASTRA-SOURCE-PATCH
+          path: patch-output/ASTRA-SOURCE-PATCH.zip
+          if-no-files-found: error
+          retention-days: 90
 
       - name: Set up Java
         uses: actions/setup-java@v4
