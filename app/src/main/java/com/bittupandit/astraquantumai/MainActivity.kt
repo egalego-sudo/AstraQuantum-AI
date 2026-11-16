@@ -587,7 +587,11 @@ private fun AstraApp(
                                     }
                                     chat = chat + ChatLine("ASTRA", answer)
                                     busy = false
-                                    status = if (answer.startsWith("ON-DEVICE")) "OFFLINE AI · READY" else "HYBRID AI · READY"
+                                    status = when {
+                                        answer.startsWith("ON-DEVICE") -> "OFFLINE AI · READY"
+                                        answer.startsWith("ONLINE · GROQ DEEP RESEARCH") -> "DEEP RESEARCH · READY"
+                                        else -> "HYBRID AI · READY"
+                                    }
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink),
