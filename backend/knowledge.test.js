@@ -59,9 +59,9 @@ test("keeps valid knowledge citations and removes unknown record IDs", () => {
   }];
   const answer = "Supported [KB:physics.speed-of-light-vacuum]. Unsupported [KB:made-up.record].";
   const result = validateKnowledgeCitations(answer, records);
-  assert.match(result, /\\[KB:physics\\.speed-of-light-vacuum\\]/);
+  assert.ok(result.includes("[KB:physics.speed-of-light-vacuum]"));
   assert.match(result, /unverified knowledge-base reference removed/);
-  assert.doesNotMatch(result, /\\[KB:made-up\\.record\\]/);
+  assert.ok(!result.includes("[KB:made-up.record]"));
 });
 
 test("adds provenance URLs only for records actually cited", () => {
@@ -71,7 +71,7 @@ test("adds provenance URLs only for records actually cited", () => {
   ];
   const result = validateKnowledgeCitations("Evidence [KB:record.a].", records);
   assert.match(result, /https:\\/\\/example\\.org\\/a/);
-  assert.doesNotMatch(result, /example\\.org\\/b/);
+  assert.ok(!result.includes("https://example.org/b"));
 });
 
 test("leaves deep-research numeric citations unchanged when no local records were retrieved", () => {
