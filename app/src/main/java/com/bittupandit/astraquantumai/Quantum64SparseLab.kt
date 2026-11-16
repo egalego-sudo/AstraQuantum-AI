@@ -1,8 +1,6 @@
 package com.bittupandit.astraquantumai
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -169,7 +167,7 @@ fun Quantum64SparseLab() {
     val gates = listOf("H", "X", "Y", "Z", "S", "SDG", "T", "RX90", "RY90", "RZ90", "CNOT", "CZ")
     val controlled = gate == "CNOT" || gate == "CZ"
 
-    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("ASTRA QUANTUM ENGINE · SPARSE MODE", color = Color(0xFF8E8EA0), fontWeight = FontWeight.Bold, fontSize = 12.sp)
         Text("64-Qubit Sparse Simulator", color = white, fontWeight = FontWeight.Bold, fontSize = 18.sp)
         Text("Qubits: $qubits  •  संभावित basis states: 2^$qubits  •  वर्तमान circuit gates: ${operations.size}", color = muted, fontSize = 12.sp)
