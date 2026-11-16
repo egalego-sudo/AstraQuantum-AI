@@ -85,4 +85,58 @@ object ScienceCalculator {
             "v = fλ = $frequencyHz Hz × $wavelengthM m",
             "For a monochromatic wave component in the stated medium.")
     }
+
+    fun gravitationalForce(mass1Kg: Double, mass2Kg: Double, separationM: Double): ScienceCalculation {
+        finitePositive("Mass 1", mass1Kg); finitePositive("Mass 2", mass2Kg); finitePositive("Separation", separationM)
+        val g = 6.67430e-11
+        val result = g * mass1Kg * mass2Kg / (separationM * separationM)
+        require(result.isFinite()) { "Result is outside the supported numeric range." }
+        return ScienceCalculation("Newtonian gravitational force", result, "N",
+            "F = G m₁m₂/r² = $g × $mass1Kg × $mass2Kg / $separationM²",
+            "Point masses or spherically symmetric bodies; weak-field Newtonian approximation.")
+    }
+
+    fun workByConstantForce(forceN: Double, displacementM: Double, angleDegrees: Double): ScienceCalculation {
+        finite("Force", forceN); finite("Displacement", displacementM); finite("Angle", angleDegrees)
+        require(forceN >= 0.0 && displacementM >= 0.0) { "Force magnitude and displacement must be non-negative." }
+        require(angleDegrees in 0.0..180.0) { "Angle must be between 0 and 180 degrees." }
+        val result = forceN * displacementM * kotlin.math.cos(Math.toRadians(angleDegrees))
+        return ScienceCalculation("Work by constant force", result, "J",
+            "W = F d cos θ = $forceN × $displacementM × cos($angleDegrees°)",
+            "Force is constant; angle is between force and displacement vectors.")
+    }
+
+    fun density(massKg: Double, volumeM3: Double): ScienceCalculation {
+        finitePositive("Mass", massKg); finitePositive("Volume", volumeM3)
+        val result = massKg / volumeM3
+        require(result.isFinite()) { "Result is outside the supported numeric range." }
+        return ScienceCalculation("Mass density", result, "kg/m³", "ρ = m/V = $massKg / $volumeM3",
+            "Bulk density; for nonuniform material this is an average over the stated volume.")
+    }
+
+    fun pressure(forceN: Double, areaM2: Double): ScienceCalculation {
+        finite("Force", forceN); finitePositive("Area", areaM2)
+        require(forceN >= 0.0) { "Force magnitude must be non-negative." }
+        val result = forceN / areaM2
+        require(result.isFinite()) { "Result is outside the supported numeric range." }
+        return ScienceCalculation("Pressure", result, "Pa", "P = F/A = $forceN / $areaM2",
+            "Force is normal to the stated area; average pressure over that area.")
+    }
+
+    fun electricPower(voltageV: Double, currentA: Double): ScienceCalculation {
+        finite("Voltage", voltageV); finite("Current", currentA)
+        val result = voltageV * currentA
+        require(result.isFinite()) { "Result is outside the supported numeric range." }
+        return ScienceCalculation("Electric power", result, "W", "P = VI = $voltageV × $currentA",
+            "Instantaneous DC or resistive power; AC power requires phase and RMS treatment.")
+    }
+
+    fun photonEnergy(frequencyHz: Double): ScienceCalculation {
+        finitePositive("Frequency", frequencyHz)
+        val h = 6.62607015e-34
+        val result = h * frequencyHz
+        require(result.isFinite()) { "Result is outside the supported numeric range." }
+        return ScienceCalculation("Photon energy", result, "J", "E = hf = $h × $frequencyHz",
+            "Single photon; Planck constant is exact in the SI.")
+    }
 }
