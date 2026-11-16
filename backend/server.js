@@ -530,7 +530,8 @@ async function research(input) {
     })),
     research_meta: {
       unique_source_count: sourcesWithIds.length,
-      search_queries_used: researchQueries,\n      rejected_irrelevant_source_count: rejectedIrrelevantCount,
+      search_queries_used: researchQueries,
+      rejected_irrelevant_source_count: rejectedIrrelevantCount,
       source_types: sourceTypes,
       open_full_texts_fetched: fullTextResults.filter(Boolean).length,
       full_text_types: [...new Set(fullTextResults.filter(Boolean).map(s => s.type))],
