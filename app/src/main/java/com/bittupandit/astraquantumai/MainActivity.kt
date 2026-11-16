@@ -390,6 +390,7 @@ private fun AstraApp(
                                             askBackend(backend, question)
                                         }
                                         val remoteFailed = onlineResult.startsWith("ASTRA सर्वर से कनेक्शन नहीं हो पाया") ||
+                                            onlineResult.startsWith("ASTRA से जुड़ने के लिए Backend HTTPS URL") ||
                                             onlineResult.startsWith("Groq सेवा में त्रुटि") ||
                                             onlineResult.startsWith("सुरक्षा के लिए backend URL")
                                         if (remoteFailed && imageUri == null && offlineEngine.isModelInstalled) {
