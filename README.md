@@ -1,34 +1,36 @@
 # ASTRA QUANTUM AI PLUS
 
-An Android-first personal AI assistant project.
+Android-first personal AI assistant.
 
 **Creator by Bittu Pandit**
 
-## Project goals
+## Implemented in the current Android app
 
-- AI chat interface
-- Hindi and English experience
-- Research and source-aware answers
-- User-controlled memory
-- Voice and image features
-- PDF and document assistance
-- Quantum Lab for educational simulation
-- Projects and workspace
+- Kotlin + Jetpack Compose Android application.
+- Hindi/English AI chat through the ASTRA backend.
+- Groq text model and image-analysis model, configured on the server.
+- Voice input and text-to-speech output (device speech services required).
+- Image selection and image analysis for JPEG, PNG and WEBP.
+- Research shortcut that opens a web search in the browser.
+- Local notes/projects and chat history stored in app-private preferences.
+- Quantum Lab educational model for up to 32 independent Qubits, probability calculation and classical measurement sampling.
+- Backend health-check screen.
 
-## Current status
+## Quantum Lab scope and limits
 
-This repository is being initialized. The features above are project goals, not claims that a working APK or production backend is already available.
+The 32-Qubit Learning Engine calculates independent product-state probabilities on demand and samples measurements without allocating the full state vector. It is a classical educational simulator, not quantum hardware and not a general entanglement-capable quantum circuit simulator. A dense 32-Qubit complex-double state vector would require about 64 GiB for amplitudes alone.
 
-## Planned technical direction
+## Build
 
-- Android app built with Kotlin and Jetpack Compose
-- Backend-mediated AI requests so secret API keys are not embedded in the APK
-- Clear separation between educational quantum simulation and access to real quantum hardware/cloud services
+The GitHub Actions workflow builds a debug APK using Java 17 and Gradle 8.9. The workflow artifact is a test build, not a signed Play Store release. Device installation and runtime behavior still require a real Android-device test.
 
-## Safety and configuration
+## Backend
 
-Do not commit API keys, passwords, signing keys, or other secrets. Store backend credentials in server-side environment variables.
+The Node.js backend is in `backend/`. It uses the Groq API and expects `GROQ_API_KEY` to be configured as a secret in the hosting provider. Optional model settings are `GROQ_MODEL` and `GROQ_VISION_MODEL`. See [backend/README.md](backend/README.md).
 
-## Build status
+## Security
 
-No installable APK has been verified yet. Build and device testing will be documented after they are completed.
+- Never commit API keys, passwords, signing keys, or production secrets.
+- Keep provider credentials in server-side environment variables.
+- The Android app communicates with the backend over HTTPS.
+- The current backend includes a basic per-IP rate limit; public production deployment still needs stronger abuse controls, monitoring and operational review.
