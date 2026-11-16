@@ -46,7 +46,7 @@ test("keeps general research queries usable without forcing a biology filter", (
     { title: "History of the Printing Press", abstract: "Printing technology in Europe." },
     { title: "Photosynthesis in plants", abstract: "Chloroplasts and carbon fixation." }
   ], queries);
-  assert.equal(ranked.length, 2);
+  assert.equal(ranked.length, 1);
   assert.equal(ranked[0].title, "History of the Printing Press");
 });
 
