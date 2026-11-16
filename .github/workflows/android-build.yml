@@ -38,7 +38,7 @@ jobs:
           out = Path('patch-output')
           out.mkdir(exist_ok=True)
           raw = subprocess.check_output(['git', 'diff', '--name-status', '-z', 'HEAD^', 'HEAD'])
-          parts = raw.decode('utf-8', 'surrogateescape').split('\\0')
+          parts = raw.decode('utf-8', 'surrogateescape').split(chr(0))
           entries, i = [], 0
           while i < len(parts) and parts[i]:
               status = parts[i]; i += 1
@@ -63,7 +63,7 @@ jobs:
                       z.write(p, new)
                       included.append(new)
                       manifest.append(f'INCLUDED: {new}')
-              z.writestr('PATCH-MANIFEST.txt', '\\n'.join(manifest) + '\\n')
+              z.writestr('PATCH-MANIFEST.txt', chr(10).join(manifest) + chr(10))
           print('Patch files:', len(included))
           print('Patch archive:', out / 'ASTRA-SOURCE-PATCH.zip')
           PY
