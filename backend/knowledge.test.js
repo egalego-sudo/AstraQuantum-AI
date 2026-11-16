@@ -70,7 +70,7 @@ test("adds provenance URLs only for records actually cited", () => {
     { id: "record.b", title: "Record B", sources: [{ publisher: "Publisher B", url: "https://example.org/b" }] }
   ];
   const result = validateKnowledgeCitations("Evidence [KB:record.a].", records);
-  assert.match(result, /https:\\/\\/example\\.org\\/a/);
+  assert.ok(result.includes("https://example.org/a"));
   assert.ok(!result.includes("https://example.org/b"));
 });
 
