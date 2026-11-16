@@ -464,7 +464,7 @@ private fun AstraApp(
                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                         Text("कुल basis states", color = muted, fontSize = 11.sp)
                         Text("${1 shl qubitCount} अवस्थाएँ (2^${qubitCount})", color = white, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        Text("अनुमानित state-vector memory: ${(8L * (1L shl qubitCount)) / 1024} KB", color = mint, fontSize = 11.sp)
+                        Text("अनुमानित state-vector memory: ${(16L * (1L shl qubitCount)) / 1024} KB", color = mint, fontSize = 11.sp)
                     }
                 }
                 Button(onClick = {
