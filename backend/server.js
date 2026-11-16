@@ -103,7 +103,11 @@ async function generate(input) {
 
 const server = http.createServer(async (req, res) => {
   if (req.method === "OPTIONS") return send(res, 204, {});
-  if (req.method === "GET" && req.url === "/health") {
+  const pathname = new URL(req.url || "/", "http://localhost").pathname.replace(/\/+$/, "") || "/";
+  if (req.method === "GET" && pathname === "/") {
+    return send(res, 200, { ok: true, service: "ASTRA AI backend", message: "Use /health to check server status." });
+  }
+  if (req.method === "GET" && pathname === "/health") {
     return send(res, 200, {
       ok: true,
       service: "ASTRA AI backend",
