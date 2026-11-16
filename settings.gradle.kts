@@ -13,4 +13,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "AstraQuantumAI"
-include(":app")
+include(":app", ":ApkPatchLibrary")
