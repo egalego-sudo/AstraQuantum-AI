@@ -348,29 +348,35 @@ private fun AstraApp(
                             }
                         }
                     }
-                    OutlinedTextField(
-                        value = prompt, onValueChange = { prompt = it }, modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("ASTRA से कुछ भी पूछें…", color = muted) },
-                        shape = RoundedCornerShape(16.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = white, unfocusedTextColor = white,
-                            focusedBorderColor = white, unfocusedBorderColor = line,
-                            cursorColor = white, focusedContainerColor = Color(0xC9101834), unfocusedContainerColor = Color(0x99101A31)
-                        )
-                    )
+                    if (pickedUri != null && pickedMime.startsWith("image/")) {
+                        Text("📷 फोटो तैयार: $pickedFile", color = mint, fontSize = 11.sp)
+                    }
                     Spacer(Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedButton(onClick = onListen, shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = white)) { Text("🎙") }
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedButton(onClick = onListen, shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = white), contentPadding = PaddingValues(horizontal = 10.dp)) { Text("🎙") }
+                        OutlinedButton(onClick = onPickFile, shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = mint), contentPadding = PaddingValues(horizontal = 10.dp)) { Text("📷 फोटो") }
                         Button(
-                            enabled = prompt.isNotBlank() && !busy,
+                            enabled = (prompt.isNotBlank() || (pickedUri != null && pickedMime.startsWith("image/"))) && !busy,
                             onClick = {
-                                val question = prompt.trim()
-                                chat = chat + ChatLine("You", question)
+                                val imageUri = pickedUri?.takeIf { pickedMime in listOf("image/jpeg", "image/png", "image/webp") }
+                                val question = prompt.trim().ifBlank { "इस फोटो में क्या दिखाई दे रहा है? विस्तार से हिंदी में विश्लेषण करें।" }
+                                chat = chat + ChatLine("You", question + if (imageUri != null) "  [फोटो: $pickedFile]" else "")
                                 prompt = ""
                                 busy = true
-                                status = "GROQ AI से उत्तर आ रहा है…"
+                                status = if (imageUri != null) "VISION AI फोटो का विश्लेषण कर रहा है…" else "GROQ AI से उत्तर आ रहा है…"
                                 activity.lifecycleScope.launch {
-                                    val answer = withContext(Dispatchers.IO) { askBackend(backend, question) }
+                                    val answer = withContext(Dispatchers.IO) {
+                                        if (imageUri != null) {
+                                            runCatching {
+                                                val bytes = context.contentResolver.openInputStream(imageUri)?.use { it.readBytes() } ?: error("फोटो पढ़ी नहीं जा सकी")
+                                                require(bytes.size <= 7 * 1024 * 1024) { "फोटो 7 MB से छोटी रखें।" }
+                                                val encoded = Base64.encodeToString(bytes, Base64.NO_WRAP)
+                                                askBackend(backend, question, pickedMime, encoded)
+                                            }.getOrElse { "फोटो विश्लेषण विफल: ${it.message}" }
+                                        } else {
+                                            askBackend(backend, question)
+                                        }
+                                    }
                                     chat = chat + ChatLine("ASTRA", answer)
                                     busy = false
                                     status = "GROQ AI · READY"
@@ -378,8 +384,9 @@ private fun AstraApp(
                             },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink),
-                            shape = RoundedCornerShape(12.dp)
-                        ) { Text(if (busy) "उत्तर तैयार हो रहा है…" else "भेजें  ↑", fontWeight = FontWeight.Bold) }
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp)
+                        ) { Text(if (busy) "काम जारी…" else "भेजें ↑", fontWeight = FontWeight.Bold, fontSize = 12.sp) }
                     }
                 }
             }
