@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   build:
-    name: Build debug APK
+    name: Build ASTRA APKs
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -41,13 +41,40 @@ jobs:
         with:
           gradle-version: "8.9"
 
-      - name: Build debug APK from current repository source
+      - name: Build debug APK
         run: gradle --no-daemon assembleDebug
 
-      - name: Upload APK artifact
+      - name: Prepare persistent release signing key
+        if: ${{ secrets.ASTRA_KEYSTORE_BASE64 != '' && secrets.ASTRA_KEYSTORE_PASSWORD != '' && secrets.ASTRA_KEY_ALIAS != '' && secrets.ASTRA_KEY_PASSWORD != '' }}
+        env:
+          ASTRA_KEYSTORE_BASE64: ${{ secrets.ASTRA_KEYSTORE_BASE64 }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/keystore"
+          echo "$ASTRA_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/keystore/astra-upload.jks"
+          test -s "$RUNNER_TEMP/keystore/astra-upload.jks"
+
+      - name: Build permanently signed release APK
+        if: ${{ secrets.ASTRA_KEYSTORE_BASE64 != '' && secrets.ASTRA_KEYSTORE_PASSWORD != '' && secrets.ASTRA_KEY_ALIAS != '' && secrets.ASTRA_KEY_PASSWORD != '' }}
+        env:
+          ASTRA_KEYSTORE_PATH: ${{ runner.temp }}/keystore/astra-upload.jks
+          ASTRA_KEYSTORE_PASSWORD: ${{ secrets.ASTRA_KEYSTORE_PASSWORD }}
+          ASTRA_KEY_ALIAS: ${{ secrets.ASTRA_KEY_ALIAS }}
+          ASTRA_KEY_PASSWORD: ${{ secrets.ASTRA_KEY_PASSWORD }}
+        run: gradle --no-daemon assembleRelease
+
+      - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: ASTRA-QUANTUM-AI-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
+
+      - name: Upload signed update APK
+        if: ${{ secrets.ASTRA_KEYSTORE_BASE64 != '' && secrets.ASTRA_KEYSTORE_PASSWORD != '' && secrets.ASTRA_KEY_ALIAS != '' && secrets.ASTRA_KEY_PASSWORD != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ASTRA-QUANTUM-AI-signed-update-apk
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 90
