@@ -255,7 +255,7 @@ jobs:
           apk=glob.glob("app/build/outputs/apk/release/**/*.apk",recursive=True)[0]
           cert=subprocess.check_output(["openssl","x509","-in","app/src/main/assets/update_signer.pem","-outform","DER"])
           legacy=next((p for p in patches if p["baseBuild"]==194),patches[0])
-data={"packageName":"com.bittupandit.astraquantumai","targetVersionCode":int(os.environ["GITHUB_RUN_NUMBER"]),"targetVersionName":"1.0."+os.environ["GITHUB_RUN_NUMBER"],"targetApkSha256":hashlib.sha256(open(apk,"rb").read()).hexdigest(),"signerCertificateSha256":hashlib.sha256(cert).hexdigest(),"apkUrl":base+"ASTRA-QUANTUM-AI.apk","patches":patches,"baseApkSha256":legacy["baseApkSha256"],"patchUrl":legacy["patchUrl"]}
+          data={"packageName":"com.bittupandit.astraquantumai","targetVersionCode":int(os.environ["GITHUB_RUN_NUMBER"]),"targetVersionName":"1.0."+os.environ["GITHUB_RUN_NUMBER"],"targetApkSha256":hashlib.sha256(open(apk,"rb").read()).hexdigest(),"signerCertificateSha256":hashlib.sha256(cert).hexdigest(),"apkUrl":base+"ASTRA-QUANTUM-AI.apk","patches":patches,"baseApkSha256":legacy["baseApkSha256"],"patchUrl":legacy["patchUrl"]}
           json.dump(data,open("delta-output/UPDATE-METADATA.json","w"),separators=(",",":"),sort_keys=True)
           PY
           cat > "$RUNNER_TEMP/SignUpdateMetadata.java" <<'JAVA'
