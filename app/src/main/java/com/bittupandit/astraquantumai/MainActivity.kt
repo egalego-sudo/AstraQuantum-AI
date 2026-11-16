@@ -248,7 +248,7 @@ private fun AstraApp(
             }
             Spacer(Modifier.height(14.dp))
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                listOf("Home", "Cores", "AI Chat", "Offline AI", "Research", "Action", "Memory", "Voice", "Files", "Quantum", "Projects", "Settings").forEach { item ->
+                listOf("Home", "Cores", "AI Chat", "Science QA", "Offline AI", "Research", "Action", "Memory", "Voice", "Files", "Quantum", "Projects", "Settings").forEach { item ->
                     val selected = page == item
                     Surface(
                         onClick = { page = item },
@@ -455,7 +455,7 @@ private fun AstraApp(
                             onClick = {
                                 val imageUri = pickedUri?.takeIf { pickedMime in listOf("image/jpeg", "image/png", "image/webp") }
                                 val question = prompt.trim().ifBlank { "इस फोटो में क्या दिखाई दे रहा है? विस्तार से हिंदी में विश्लेषण करें।" }
-                                val questionWithMemory = if (useMemoryInChat && (memories.isNotBlank() || projects.isNotBlank() || chat.size > 1)) {
+                                val rawQuestionWithMemory = if (useMemoryInChat && (memories.isNotBlank() || projects.isNotBlank() || chat.size > 1)) {
                                     val recentConversation = chat.takeLast(12).joinToString("\n") { line ->
                                         (if (line.from == "ASTRA") "ASTRA: " else "उपयोगकर्ता: ") + line.text.take(1800)
                                     }
@@ -465,6 +465,7 @@ private fun AstraApp(
                                         "\nहाल की बातचीत का संदर्भ:\n" + recentConversation.take(10000) +
                                         "\nनिर्देश: पुराने संदर्भ को केवल तभी उपयोग करें जब वर्तमान प्रश्न से संबंधित हो। पुरानी योजना जहाँ रुकी थी वहाँ से आगे बढ़ने में मदद करें। संदर्भ को सार्वजनिक प्रमाण न मानें; विरोधाभास हो तो उपयोगकर्ता से स्पष्ट करें।"
                                 } else question
+                                val questionWithMemory = ScientificIntelligence.enhancePrompt(rawQuestionWithMemory)
                                 chat = chat + ChatLine("You", question + if (imageUri != null) "  [फोटो: $pickedFile]" else "")
                                 prompt = ""
                                 busy = true
@@ -508,6 +509,24 @@ private fun AstraApp(
                         ) { Text(if (busy) "…" else "↑", fontWeight = FontWeight.Bold, fontSize = 19.sp) }
                     }
                 }
+            }
+            "Science QA" -> SimplePage("SCIENTIFIC INTELLIGENCE & VERIFICATION", "पाँच सहायक जाँच-स्तर AI को अधिक सावधान बनाते हैं। ये स्वचालित गणित-सॉल्वर या peer-reviewed fact-check का विकल्प नहीं हैं।") {
+                val modules = listOf(
+                    "01 · MATHEMATICAL VALIDATOR" to "चरण-दर-चरण गणना, normalization, limiting cases, units और स्वतंत्र पुनर्गणना माँगता है। जटिल गणना की मशीन-आधारित पुष्टि अभी सीमित है।",
+                    "02 · SCIENTIFIC FACT CHECKER" to "दावे, स्रोत, तारीख और प्रमाण का स्तर अलग रखने को कहता है। Research स्क्रीन के स्रोत सीमित हैं; हर दावा स्वतः सत्यापित नहीं होता।",
+                    "03 · CONTEXT TRACKER" to "हाल की बातचीत में परिभाषाएँ, मान्यताएँ, intermediate states और बदली हुई अवस्थाएँ स्पष्ट रखने का निर्देश देता है। यह chat context पर निर्भर है।",
+                    "04 · HYPOTHESIS DETECTOR" to "स्थापित परिणाम, मॉडल-निर्भर निष्कर्ष, परिकल्पना और अज्ञात को अलग-अलग लेबल करने का निर्देश देता है।",
+                    "05 · SELF-CORRECTION ENGINE" to "उत्तर भेजने से पहले विरोधाभास, छूटे हुए चरण, गलत प्रारंभिक अवस्था और अति-आत्मविश्वास खोजने की जाँच-सूची लागू करता है।"
+                )
+                modules.forEach { item ->
+                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF303030)), shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(13.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                            Text(item.first, color = mint, fontSize = 11.sp, fontWeight = FontWeight.Black)
+                            Text(item.second, color = white, fontSize = 12.sp, lineHeight = 18.sp)
+                        }
+                    }
+                }
+                Text("स्थिति: पाँचों निर्देश AI Chat के प्रत्येक ऑनलाइन/ऑफलाइन प्रश्न के साथ जोड़े जाते हैं। यह गुणवत्ता-सुधार परत है, पूर्ण स्वतंत्र सत्यापन की गारंटी नहीं।", color = mint, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             }
             "Research" -> SimplePage("DEEP RESEARCH", "Wikipedia, Crossref और OpenAlex से उपलब्ध स्रोत खोजें। स्रोतों की संख्या और गुणवत्ता विषय के अनुसार बदल सकती है; यह निर्णायक fact-check नहीं है।") {
                 OutlinedTextField(prompt, { prompt = it }, Modifier.fillMaxWidth(), label = { Text("किस विषय या दावे की जाँच करें?") })
