@@ -323,6 +323,8 @@ jobs:
           name: ASTRA-QUANTUM-AI-APK-DELTA-build122
           path: |
             delta-output/ASTRA-build122-to-current.patch
-            delta-output/UPDATE-METADATA.json\n            delta-output/UPDATE-METADATA.sig\n            delta-output/ASTRA-QUANTUM-AI.apk
+            delta-output/UPDATE-METADATA.json
+            delta-output/UPDATE-METADATA.sig
+            delta-output/ASTRA-QUANTUM-AI.apk
           if-no-files-found: error
           retention-days: 90
