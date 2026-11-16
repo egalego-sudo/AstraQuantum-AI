@@ -379,7 +379,7 @@ async function research(input) {
     "\nURL: " + source.url + "\n" + (source.extract || source.abstract || "केवल bibliographic metadata उपलब्ध; abstract/full text उपलब्ध नहीं।")
   ).join("\n\n");
   const answer = await generate({
-    prompt: "इस शोध प्रश्न का हिंदी में प्रमाण-आधारित विश्लेषण करें: " + query +
+    prompt: "इस शोध प्रश्न का प्रमाण-आधारित विश्लेषण उसी भाषा में करें जिसमें प्रश्न पूछा गया है: हिंदी प्रश्न पर हिंदी, English question पर English, और मिश्रित प्रश्न पर स्वाभाविक द्विभाषी उत्तर दें: " + query +
       "\n\nनीचे live retrieved sources दिए गए हैं। यह source set सीमित है; इसे पूरे इंटरनेट या पूर्ण literature review का प्रतिनिधि न बताएं। हर महत्वपूर्ण दावे के बाद केवल उन्हीं स्रोतों के [संख्या] citations दें जो वास्तव में उसका समर्थन करते हैं। स्रोत का शीर्षक/वर्ष/DOI metadata है, स्वयं प्रमाण नहीं। Wikipedia को अकेले निर्णायक प्रमाण न मानें; Crossref record का abstract उपलब्ध हो तो निष्कर्ष उससे आगे न बढ़ाएं।" +
       "\n\nरिपोर्ट में ये अलग-अलग headings अनिवार्य रखें:" +
       "\n1. समर्थित तथ्य — हर बिंदु के साथ [source id] और प्रमाण का संक्षिप्त आधार।" +
