@@ -1,4 +1,4 @@
-# ASTRA QUANTUM AI PLUS backend
+# Quantum AI backend
 
 Node.js HTTP service that keeps the Groq API key on the server, never in the Android APK.
 
