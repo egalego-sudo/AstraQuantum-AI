@@ -27,6 +27,7 @@ fun QuantumCircuitLab() {
     var message by remember { mutableStateOf("Circuit खाली है। H gate जोड़कर Run दबाएँ।") }
     var shots by remember { mutableIntStateOf(1000) }
     var sampleText by remember { mutableStateOf("") }
+    var shorResult by remember { mutableStateOf<AstraQuantumSimulator.ShorDemoResult?>(null) }
     val gates = listOf("H", "X", "Y", "Z", "S", "T", "RX90", "RY90", "RZ90", "CNOT", "CZ")
     val isControlled = gate == "CNOT" || gate == "CZ"
 
@@ -80,6 +81,34 @@ fun QuantumCircuitLab() {
                 sampleText = ""
                 message = if (AstraQuantumSimulator.verifyQftRoundTrip()) "Inverse QFT PASS: मूल |001⟩ अवस्था वापस मिली।" else "Inverse QFT जाँच असफल।"
             }, modifier = Modifier.weight(1f)) { Text("Inverse QFT") }
+        }
+
+
+        Button(onClick = {
+            runCatching { AstraQuantumSimulator.shorFactorDemo15() }
+                .onSuccess { demo ->
+                    shorResult = demo
+                    qubits = 8
+                    result = demo.run
+                    ops = emptyList()
+                    sampleText = ""
+                    message = "Shor educational demo PASS: N=${demo.number} के factors ${demo.factors.first} और ${demo.factors.second}।"
+                }
+                .onFailure { message = "Shor demo error: ${it.message}"; shorResult = null }
+        }, modifier = Modifier.fillMaxWidth()) { Text("Shor Algorithm · Factor 15") }
+        shorResult?.let { demo ->
+            Card(colors = CardDefaults.cardColors(containerColor = panel), modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    Text("SHOR ORDER-FINDING RESULT", color = Color(0xFF6CF2D5), fontWeight = FontWeight.Bold)
+                    Text("N = ${demo.number}  •  a = ${demo.base}  •  Period r = ${demo.period}", color = white)
+                    Text("${demo.number} = ${demo.factors.first} × ${demo.factors.second}", color = white, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                    Text("Inverse QFT phase peaks:", color = muted)
+                    demo.phasePeaks.forEach { (phase, probability) ->
+                        Text("k=$phase  •  P=${"%.2f".format(Locale.US, probability * 100)}%  •  k/16=$phase/16", color = white, fontSize = 11.sp)
+                    }
+                    Text("यह छोटा educational state-vector demo है: modular-function oracle को सीधे गणित से लागू किया गया है; reversible gate-by-gate Shor circuit और quantum hardware execution अभी शामिल नहीं हैं।", color = muted, fontSize = 11.sp)
+                }
+            }
         }
 
         Text("एक gate चुनें", color = muted)
