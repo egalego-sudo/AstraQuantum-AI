@@ -248,7 +248,7 @@ private fun AstraApp(
             }
             Spacer(Modifier.height(14.dp))
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                listOf("Home", "AI Chat", "App Builder", "Website Builder", "Quantum", "Cores", "Science QA", "Offline AI", "Research", "Action", "Memory", "Voice", "Files", "Projects", "Updates", "Settings").forEach { item ->
+                listOf("Home", "AI Chat", "Benchmark", "App Builder", "Website Builder", "Quantum", "Cores", "Science QA", "Offline AI", "Research", "Action", "Memory", "Voice", "Files", "Projects", "Updates", "Settings").forEach { item ->
                     val selected = page == item
                     Surface(
                         onClick = { page = item },
@@ -262,6 +262,7 @@ private fun AstraApp(
         }
         HorizontalDivider(color = line)
         when (page) {
+            "Benchmark" -> BenchmarkScreen(backend)
             "App Builder" -> InstantAppBuilderScreen(backend, initialWebsiteMode = false)
             "Website Builder" -> InstantAppBuilderScreen(backend, initialWebsiteMode = true)
             "Cores" -> SimplePage("ASTRA FIVE CORE ARCHITECTURE", "पाँचों Core मिलकर ASTRA का काम बाँटते हैं। किसी सुविधा की उपलब्धता उसके वास्तविक मॉड्यूल और डिवाइस/सर्वर समर्थन पर निर्भर है।") {
