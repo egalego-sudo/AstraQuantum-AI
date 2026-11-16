@@ -831,7 +831,7 @@ private fun askResearch(baseUrl: String, query: String): String {
     return try {
         val clean = baseUrl.trim().trimEnd('/')
         if (!URLUtil.isHttpsUrl(clean)) return "सुरक्षा के लिए backend URL HTTPS होना चाहिए।"
-        val connection = (URL("$"+"clean/v1/research").openConnection() as HttpURLConnection).apply {
+        val connection = (URL(clean + "/v1/research").openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
             connectTimeout = 20000
             readTimeout = 90000
@@ -846,7 +846,7 @@ private fun askResearch(baseUrl: String, query: String): String {
         connection.disconnect()
         if (code !in 200..299) {
             val message = runCatching { JSONObject(body).optString("error") }.getOrDefault("")
-            "Deep Research त्रुटि (HTTP $code): $"+"{message.ifBlank { body.take(180) }}"
+            "Deep Research त्रुटि (HTTP $code): " + message.ifBlank { body.take(180) }
         } else {
             val json = JSONObject(body)
             val report = json.optString("text")
@@ -862,7 +862,7 @@ private fun askResearch(baseUrl: String, query: String): String {
             report + if (sourceText.isNotBlank()) "\n\nस्रोत सूची\n" + sourceText else ""
         }
     } catch (error: Exception) {
-        "Deep Research कनेक्शन विफल: $"+"{error.message ?: "नेटवर्क त्रुटि"}"
+        "Deep Research कनेक्शन विफल: " + (error.message ?: "नेटवर्क त्रुटि")
     }
 }
 
