@@ -4,7 +4,7 @@ Node.js HTTP service that keeps the Groq API key on the server, never in the And
 
 ## Requirements and configuration
 
-- Node.js 20 or newer.
+- Node.js 20.16 or newer (required by the pinned pdf-parse 2.x package).
 - Set `GROQ_API_KEY` in the hosting provider's secret/environment settings.
 - Optional:
   - `GROQ_MODEL` (default: `openai/gpt-oss-20b`)
@@ -31,13 +31,22 @@ GROQ_API_KEY=your_key_here npm start
 - JSON body: `{"prompt":"Your question"}`
 - For image analysis, also provide `mimeType` and base64-encoded `base64` fields.
 - Supported image MIME types: `image/jpeg`, `image/png`, `image/webp`.
+- PDF MIME type `application/pdf` is accepted for text extraction (up to 60 pages and 80,000 extracted characters); scanned PDFs need OCR and are not supported yet.
 - Response: `{"text":"..."}`
 
-The `/v1/analyze` route is also accepted by the server and uses the same request handler. PDF analysis is not implemented on the Groq path; the Android file picker therefore offers image formats only.
+The `/v1/analyze` route is also accepted by the server and uses the same request handler.
+
+## Research API
+
+- `POST /v1/research`
+- JSON body: `{"query":"research topic"}`
+- Retrieves up to five Wikipedia overview pages and five Crossref scholarly records, then synthesizes a Hindi/English report through Groq.
+- Response includes `text` and a `sources` list with IDs, source types, titles, URLs and years.
+- This is an initial, limited source set. It is not exhaustive web search, primary-source review, or guaranteed fact verification. Users should open and assess the cited sources.
 
 ## Limits and deployment notes
 
-- Prompt length: 12,000 characters.
+- Prompt length: 100,000 characters (research evidence is included in the prompt).
 - Encoded file limit: 10 MiB in the backend; the Android app currently applies a smaller 7 MiB source-file limit.
 - Basic rate limit: 20 requests per IP per minute.
 - Apply provider-level access controls, stronger abuse protection, monitoring and operational review before public production use.
