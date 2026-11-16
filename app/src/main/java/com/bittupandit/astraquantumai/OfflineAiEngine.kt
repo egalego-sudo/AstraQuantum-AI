@@ -12,6 +12,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.security.MessageDigest
 
 /** On-device Qwen3-0.6B runtime. Download starts only after an explicit user action. */
 class OfflineAiEngine(context: Context) {
@@ -37,6 +38,7 @@ class OfflineAiEngine(context: Context) {
             instanceFollowRedirects = true
             setRequestProperty("User-Agent", "ASTRA-QUANTUM-AI-PLUS/1.0")
         }
+        val digest = MessageDigest.getInstance("SHA-256")
         try {
             connection.connect()
             check(connection.responseCode in 200..299) { "मॉडल डाउनलोड नहीं हो पाया · HTTP ${connection.responseCode}" }
@@ -50,6 +52,7 @@ class OfflineAiEngine(context: Context) {
                         if (count < 0) break
                         total += count
                         require(total <= MAX_MODEL_BYTES) { "मॉडल फ़ाइल का आकार अपेक्षा से बड़ा है।" }
+                        digest.update(buffer, 0, count)
                         output.write(buffer, 0, count)
                         if (declaredLength > 0) withContext(Dispatchers.Main) { onProgress(((total * 100L) / declaredLength).toInt().coerceIn(0, 99)) }
                     }
@@ -58,6 +61,10 @@ class OfflineAiEngine(context: Context) {
             }
             check(partial.length() in MIN_MODEL_BYTES..MAX_MODEL_BYTES) {
                 "डाउनलोड अधूरा या गलत है (${partial.length()} bytes)। दोबारा प्रयास करें।"
+            }
+            val actualSha256 = digest.digest().joinToString("") { "%02x".format(it) }
+            check(actualSha256.equals(MODEL_SHA256, ignoreCase = true)) {
+                "मॉडल की SHA-256 जाँच विफल हुई। सुरक्षा के लिए डाउनलोड हटाया गया; दोबारा डाउनलोड करें।"
             }
             check(partial.renameTo(modelFile)) { "मॉडल फ़ाइल सुरक्षित नहीं की जा सकी।" }
             withContext(Dispatchers.Main) { onProgress(100) }
@@ -113,6 +120,8 @@ class OfflineAiEngine(context: Context) {
         const val MODEL_NAME = "Qwen3-0.6B · 328 MiB"
         private const val MODEL_FILE = "Qwen3-0.6B_dynamic_wi4b32_afp32.litertlm"
         private const val MODEL_URL = "https://huggingface.co/litert-community/Qwen3-0.6B/resolve/main/Qwen3-0.6B_dynamic_wi4b32_afp32.litertlm"
+        // SHA-256 from the Hugging Face LFS object for the pinned model artifact.
+        private const val MODEL_SHA256 = "96491bb0f78fa68098bf8f1d3628194c97041aff7894f8cc29303b3acdb877a9"
         private const val MIN_MODEL_BYTES = 250L * 1024L * 1024L
         private const val MAX_MODEL_BYTES = 400L * 1024L * 1024L
     }
