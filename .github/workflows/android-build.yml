@@ -177,149 +177,106 @@ jobs:
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 90
-      # Build a delta only against the exact previous signed APK artifact.
-      # This patch targets build #150; devices on other builds must not apply it.
-      - name: Download previous signed APK (build 150)
+      # Create a separately verified binary patch for each of the 20 most recent compatible release APKs.
+      - name: Download recent signed base APKs
         if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
-        uses: actions/download-artifact@v4
-        with:
-          name: ASTRA-QUANTUM-AI-signed-update-apk
-          path: previous-release
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository }}
-          run-id: 43903146328
-
-      - name: Create and verify APK binary delta
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p delta-bases delta-output
+          gh release list --repo "$GITHUB_REPOSITORY" --limit 30 --json tagName > "$RUNNER_TEMP/releases.json"
+          python3 - "$RUNNER_TEMP/releases.json" "$GITHUB_RUN_NUMBER" <<'PY'
+          import json,re,sys
+          rows=json.load(open(sys.argv[1])); target=int(sys.argv[2]); tags=[]
+          for r in rows:
+              m=re.fullmatch(r"astra-build-(\d+)",r.get("tagName",""))
+              if m and int(m.group(1))<target: tags.append((int(m.group(1)),r["tagName"]))
+          tags.sort(reverse=True)
+          open("delta-bases/tags.txt","w").writelines(f"{n} {t}\n" for n,t in tags[:20])
+          PY
+          while read -r N TAG; do
+            mkdir -p "delta-bases/$N"
+            gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern ASTRA-QUANTUM-AI.apk --dir "delta-bases/$N" || rm -rf "delta-bases/$N"
+          done < delta-bases/tags.txt
+          mkdir -p delta-bases/150
+          gh run download 43903146328 --repo "$GITHUB_REPOSITORY" --name ASTRA-QUANTUM-AI-signed-update-apk --dir delta-bases/150 || true
+      - name: Create and verify multi-base APK deltas
         if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
         shell: bash
         run: |
           set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install -y bsdiff
-          OLD_APK="$(find previous-release -type f -name '*.apk' -print -quit)"
-          NEW_APK="$(find app/build/outputs/apk/release -type f -name '*.apk' -print -quit)"
-          test -n "$OLD_APK" && test -n "$NEW_APK"
-          TOOLS="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
-          test -x "$TOOLS"
-          "$TOOLS" verify --print-certs "$OLD_APK" > old-cert.txt
-          "$TOOLS" verify --print-certs "$NEW_APK" > new-cert.txt
-          OLD_CERT="$(sed -n 's/Signer #1 certificate SHA-256 digest: //p' old-cert.txt | head -n 1)"
+          sudo apt-get update && sudo apt-get install -y bsdiff
+          NEW_APK="$(find app/build/outputs/apk/release -name '*.apk' -print -quit)"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          "$APKSIGNER" verify --print-certs "$NEW_APK" > new-cert.txt
           NEW_CERT="$(sed -n 's/Signer #1 certificate SHA-256 digest: //p' new-cert.txt | head -n 1)"
-          test -n "$OLD_CERT" && test "$OLD_CERT" = "$NEW_CERT"
-          mkdir -p delta-output
-          bsdiff "$OLD_APK" "$NEW_APK" delta-output/ASTRA-build150-to-current.patch
-          bspatch "$OLD_APK" delta-output/reconstructed.apk delta-output/ASTRA-build150-to-current.patch
-          cmp "$NEW_APK" delta-output/reconstructed.apk
-          OLD_HASH="$(sha256sum "$OLD_APK" | cut -d ' ' -f 1)"
           NEW_HASH="$(sha256sum "$NEW_APK" | cut -d ' ' -f 1)"
-          REBUILT_HASH="$(sha256sum delta-output/reconstructed.apk | cut -d ' ' -f 1)"
-          test "$NEW_HASH" = "$REBUILT_HASH"
-          python3 - "$OLD_HASH" "$NEW_HASH" "$OLD_CERT" "$OLD_APK" "$NEW_APK" <<'PY'
-          import json, os, sys
-          old_hash, new_hash, signer, old_path, new_path = sys.argv[1:]
-          metadata = {
-            "packageName": "com.bittupandit.astraquantumai",
-            "baseBuild": 150,
-            "targetBuild": int(os.environ.get("GITHUB_RUN_NUMBER", "0")),
-            "baseApkSha256": old_hash,
-            "targetApkSha256": new_hash,
-            "signerCertificateSha256": signer,
-            "patchFile": "ASTRA-build150-to-current.patch",
-            "note": "Targets only the exact build-150 APK whose SHA-256 matches baseApkSha256."
-          }
-          with open("delta-output/UPDATE-METADATA.json", "w") as f:
-            json.dump(metadata, f, indent=2)
-          print("Old APK bytes:", os.path.getsize(old_path))
-          print("New APK bytes:", os.path.getsize(new_path))
-          print("Delta bytes:", os.path.getsize("delta-output/ASTRA-build150-to-current.patch"))
-          print("Round-trip SHA-256 verified:", new_hash)
+          export NEW_APK NEW_CERT NEW_HASH APKSIGNER
+          python3 <<'PY'
+          import hashlib,json,os,pathlib,subprocess
+          out=pathlib.Path("delta-output"); patches=[]
+          for base in sorted(pathlib.Path("delta-bases").glob("*/*.apk"),key=lambda p:int(p.parent.name),reverse=True):
+              try: build=int(base.parent.name)
+              except ValueError: continue
+              cert=subprocess.check_output([os.environ["APKSIGNER"],"verify","--print-certs",str(base)],text=True,stderr=subprocess.STDOUT)
+              signer=next((x.split(": ",1)[1].strip() for x in cert.splitlines() if "Signer #1 certificate SHA-256 digest:" in x),"")
+              if signer.lower()!=os.environ["NEW_CERT"].lower(): continue
+              name=f"ASTRA-build{build}-to-{os.environ['GITHUB_RUN_NUMBER']}.patch"; patch=out/name
+              subprocess.run(["bsdiff",str(base),os.environ["NEW_APK"],str(patch)],check=True)
+              rebuilt=out/f"verify-{build}.apk"; subprocess.run(["bspatch",str(base),str(rebuilt),str(patch)],check=True)
+              good=hashlib.sha256(rebuilt.read_bytes()).hexdigest()==os.environ["NEW_HASH"]; rebuilt.unlink()
+              if not good: raise SystemExit(f"Patch verification failed for base {build}")
+              patches.append({"baseBuild":build,"baseApkSha256":hashlib.sha256(base.read_bytes()).hexdigest(),"patchFile":name,"patchSizeBytes":patch.stat().st_size})
+          if not patches: raise SystemExit("No compatible signed base APKs; release blocked.")
+          json.dump(patches,open(out/"patches.json","w"),indent=2)
+          print("Verified multi-base patches:",len(patches))
           PY
-
-      - name: Create and sign update metadata
+      - name: Create and sign multi-base update metadata
         if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
         shell: bash
         env:
           ASTRA_KEYSTORE_PATH: ${{ runner.temp }}/keystore/astra-upload.jks
         run: |
           set -euo pipefail
-          NEW_APK="$(find app/build/outputs/apk/release -type f -name '*.apk' -print -quit)"
+          NEW_APK="$(find app/build/outputs/apk/release -name '*.apk' -print -quit)"
           cp "$NEW_APK" delta-output/ASTRA-QUANTUM-AI.apk
           TAG="astra-build-${GITHUB_RUN_NUMBER}"
           python3 - "$TAG" <<'PY'
-          import json, os, sys
-          tag = sys.argv[1]
-          base = "https://github.com/" + os.environ["GITHUB_REPOSITORY"] + "/releases/download/" + tag + "/"
-          data = {
-            "packageName": "com.bittupandit.astraquantumai",
-            "baseBuild": 150,
-            "targetVersionCode": int(os.environ["GITHUB_RUN_NUMBER"]),
-            "targetVersionName": "1.0." + os.environ["GITHUB_RUN_NUMBER"],
-            "baseApkSha256": os.environ["OLD_HASH"] if "OLD_HASH" in os.environ else "",
-            "targetApkSha256": os.environ["NEW_HASH"] if "NEW_HASH" in os.environ else "",
-            "signerCertificateSha256": os.environ["SIGNER_SHA256"] if "SIGNER_SHA256" in os.environ else "",
-            "patchUrl": base + "ASTRA-build150-to-current.patch",
-            "apkUrl": base + "ASTRA-QUANTUM-AI.apk"
-          }
-          # Recompute hashes from the verified files and signer certificate.
-          import hashlib, glob, subprocess
-          old = glob.glob("previous-release/**/*.apk", recursive=True)[0]
-          new = glob.glob("app/build/outputs/apk/release/**/*.apk", recursive=True)[0]
-          data["baseApkSha256"] = hashlib.sha256(open(old, "rb").read()).hexdigest()
-          data["targetApkSha256"] = hashlib.sha256(open(new, "rb").read()).hexdigest()
-          cert = subprocess.check_output(["openssl", "x509", "-in", "app/src/main/assets/update_signer.pem", "-outform", "DER"])
-          data["signerCertificateSha256"] = hashlib.sha256(cert).hexdigest()
-          with open("delta-output/UPDATE-METADATA.json", "w") as f:
-            json.dump(data, f, separators=(",", ":"), sort_keys=True)
+          import glob,hashlib,json,os,subprocess,sys
+          base=f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/releases/download/{sys.argv[1]}/"
+          patches=json.load(open("delta-output/patches.json"))
+          for p in patches: p["patchUrl"]=base+p["patchFile"]
+          apk=glob.glob("app/build/outputs/apk/release/**/*.apk",recursive=True)[0]
+          cert=subprocess.check_output(["openssl","x509","-in","app/src/main/assets/update_signer.pem","-outform","DER"])
+          data={"packageName":"com.bittupandit.astraquantumai","targetVersionCode":int(os.environ["GITHUB_RUN_NUMBER"]),"targetVersionName":"1.0."+os.environ["GITHUB_RUN_NUMBER"],"targetApkSha256":hashlib.sha256(open(apk,"rb").read()).hexdigest(),"signerCertificateSha256":hashlib.sha256(cert).hexdigest(),"apkUrl":base+"ASTRA-QUANTUM-AI.apk","patches":patches}
+          json.dump(data,open("delta-output/UPDATE-METADATA.json","w"),separators=(",",":"),sort_keys=True)
           PY
           cat > "$RUNNER_TEMP/SignUpdateMetadata.java" <<'JAVA'
-          import java.nio.file.*;
-          import java.security.*;
-          import java.security.cert.*;
-          import java.util.Base64;
-          import java.io.*;
-          public class SignUpdateMetadata {
-            public static void main(String[] a) throws Exception {
-              String path=a[0], storePass=a[1], alias=a[2], keyPass=a[3], meta=a[4], sigOut=a[5];
-              KeyStore ks=null; Exception last=null;
-              for (String type : new String[]{"PKCS12","JKS"}) {
-                try { ks=KeyStore.getInstance(type); try(InputStream in=new FileInputStream(path)){ks.load(in,storePass.toCharArray());} break; }
-                catch(Exception e){last=e;ks=null;}
-              }
-              if(ks==null) throw last;
-              PrivateKey key=(PrivateKey)ks.getKey(alias,keyPass.toCharArray());
-              String alg=key.getAlgorithm().equalsIgnoreCase("RSA")?"SHA256withRSA":"SHA256withECDSA";
-              Signature signer=Signature.getInstance(alg);
-              signer.initSign(key);
-              signer.update(Files.readAllBytes(Path.of(meta)));
-              Files.writeString(Path.of(sigOut), Base64.getEncoder().encodeToString(signer.sign()));
-            }
-          }
+          import java.nio.file.*; import java.security.*; import java.util.Base64; import java.io.*;
+          public class SignUpdateMetadata { public static void main(String[] a) throws Exception {
+            KeyStore ks=null; Exception last=null;
+            for(String t:new String[]{"PKCS12","JKS"}) try { ks=KeyStore.getInstance(t); try(InputStream in=new FileInputStream(a[0])){ks.load(in,a[1].toCharArray());} break; } catch(Exception e){last=e;ks=null;}
+            if(ks==null) throw last; PrivateKey k=(PrivateKey)ks.getKey(a[2],a[3].toCharArray());
+            Signature s=Signature.getInstance(k.getAlgorithm().equalsIgnoreCase("RSA")?"SHA256withRSA":"SHA256withECDSA");
+            s.initSign(k); s.update(Files.readAllBytes(Path.of(a[4]))); Files.writeString(Path.of(a[5]),Base64.getEncoder().encodeToString(s.sign()));
+          }}
           JAVA
           javac "$RUNNER_TEMP/SignUpdateMetadata.java"
           java -cp "$RUNNER_TEMP" SignUpdateMetadata "$ASTRA_KEYSTORE_PATH" "$ASTRA_KEYSTORE_PASSWORD" "$ASTRA_KEY_ALIAS" "$ASTRA_KEY_PASSWORD" delta-output/UPDATE-METADATA.json delta-output/UPDATE-METADATA.sig
           openssl x509 -in app/src/main/assets/update_signer.pem -pubkey -noout > "$RUNNER_TEMP/update-public.pem"
           base64 -d delta-output/UPDATE-METADATA.sig > "$RUNNER_TEMP/update-signature.bin"
           openssl dgst -sha256 -verify "$RUNNER_TEMP/update-public.pem" -signature "$RUNNER_TEMP/update-signature.bin" delta-output/UPDATE-METADATA.json
-          echo "Signed update metadata signature verified against embedded app certificate."
-
-      - name: Publish verified update release
+      - name: Publish verified multi-base update release
         if: github.ref == 'refs/heads/main' && env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           TAG="astra-build-${GITHUB_RUN_NUMBER}"
-          gh release create "$TAG" \
-            delta-output/ASTRA-build150-to-current.patch \
-            delta-output/UPDATE-METADATA.json \
-            delta-output/UPDATE-METADATA.sig \
-            delta-output/ASTRA-QUANTUM-AI.apk \
-            --repo "$GITHUB_REPOSITORY" \
-            --title "ASTRA QUANTUM AI PLUS Build ${GITHUB_RUN_NUMBER}" \
-            --notes "Signed update for ASTRA QUANTUM AI PLUS. The app verifies metadata signature, package ID, APK hash, version and signing certificate before showing Android's installer." \
-            --latest --target "$GITHUB_SHA"
+          gh release create "$TAG" delta-output/*.patch delta-output/UPDATE-METADATA.json delta-output/UPDATE-METADATA.sig delta-output/ASTRA-QUANTUM-AI.apk --repo "$GITHUB_REPOSITORY" --title "ASTRA QUANTUM AI PLUS Build ${GITHUB_RUN_NUMBER}" --notes "Signed per-build delta patches for the 20 most recent compatible releases. Full APK fallback only." --latest --target "$GITHUB_SHA"
 
-      - name: Upload verified APK binary delta
+            - name: Upload verified APK binary delta
         if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
         uses: actions/upload-artifact@v4
         with:
