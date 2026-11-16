@@ -194,6 +194,11 @@ private fun AstraApp(
         onDispose { offlineEngine.close() }
     }
     var healthBusy by remember { mutableStateOf(false) }
+    var quantumBackendName by remember { mutableStateOf("") }
+    var quantumJobId by remember { mutableStateOf("") }
+    var quantumHardwareResult by remember { mutableStateOf("") }
+    var quantumHardwareBusy by remember { mutableStateOf(false) }
+    var confirmQuantumJob by remember { mutableStateOf(false) }
 
     fun copyText(value: String) {
         val clipboard = context.getSystemService(ClipboardManager::class.java)
@@ -551,6 +556,77 @@ private fun AstraApp(
                         "यह classical random sampling है, वास्तविक quantum measurement नहीं।"
                 }, modifier = Modifier.fillMaxWidth()) { Text("1,000 measurement shots चलाएँ", color = white) }
                 SelectionContainer { Text(qubitResult, color = white, lineHeight = 21.sp) }
+                HorizontalDivider(color = line, modifier = Modifier.padding(vertical = 10.dp))
+                Text("REAL QUANTUM HARDWARE · IBM QUANTUM", color = mint, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text("यह हिस्सा IBM के असली quantum compute service से जुड़ेगा। इसके लिए server पर IBM API key और Quantum instance CRN सुरक्षित रूप से configure होना जरूरी है।", color = muted, fontSize = 11.sp)
+                OutlinedTextField(
+                    value = quantumBackendName,
+                    onValueChange = { quantumBackendName = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("IBM backend नाम (जैसे ibm_fez)") },
+                    singleLine = true
+                )
+                Button(
+                    enabled = !quantumHardwareBusy,
+                    onClick = {
+                        quantumHardwareBusy = true
+                        activity.lifecycleScope.launch {
+                            quantumHardwareResult = withContext(Dispatchers.IO) { quantumApiRequest(backend, "/v1/quantum/backends", "GET") }
+                            quantumHardwareBusy = false
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = graphite, contentColor = white)
+                ) { Text(if (quantumHardwareBusy) "IBM से संपर्क…" else "IBM के उपलब्ध QPU देखें") }
+                Button(
+                    enabled = quantumBackendName.isNotBlank() && !quantumHardwareBusy,
+                    onClick = { confirmQuantumJob = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = violet, contentColor = Color.White)
+                ) { Text("असली QPU पर 1-qubit demo भेजें") }
+                OutlinedTextField(
+                    value = quantumJobId,
+                    onValueChange = { quantumJobId = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Quantum Job ID") },
+                    singleLine = true
+                )
+                OutlinedButton(
+                    enabled = quantumJobId.isNotBlank() && !quantumHardwareBusy,
+                    onClick = {
+                        quantumHardwareBusy = true
+                        activity.lifecycleScope.launch {
+                            quantumHardwareResult = withContext(Dispatchers.IO) { quantumApiRequest(backend, "/v1/quantum/jobs/" + quantumJobId.trim(), "GET") }
+                            quantumHardwareBusy = false
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Job स्थिति जाँचें", color = white) }
+                if (quantumHardwareResult.isNotBlank()) {
+                    SelectionContainer { Text(quantumHardwareResult, color = white, lineHeight = 18.sp) }
+                }
+                if (confirmQuantumJob) {
+                    AlertDialog(
+                        onDismissRequest = { confirmQuantumJob = false },
+                        title = { Text("वास्तविक Quantum Job भेजें?") },
+                        text = { Text("यह request IBM Quantum service पर एक वास्तविक job जमा करेगी। आपके IBM plan की usage allocation या quota लागू हो सकती है। क्या आप इसे भेजना चाहते हैं?") },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                confirmQuantumJob = false
+                                quantumHardwareBusy = true
+                                activity.lifecycleScope.launch {
+                                    quantumHardwareResult = withContext(Dispatchers.IO) {
+                                        quantumApiRequest(backend, "/v1/quantum/demo", "POST", JSONObject().put("backend", quantumBackendName.trim()))
+                                    }
+                                    runCatching { quantumJobId = JSONObject(quantumHardwareResult).optString("job_id", quantumJobId) }
+                                    quantumHardwareBusy = false
+                                }
+                            }) { Text("हाँ, job भेजें") }
+                        },
+                        dismissButton = { TextButton(onClick = { confirmQuantumJob = false }) { Text("रद्द करें") } }
+                    )
+                }
+                Text("जब तक IBM credentials configure नहीं होते, यह connector सक्रिय hardware connection नहीं है।", color = muted, fontSize = 10.sp)
             }
             "Offline AI" -> SimplePage("OFFLINE AI CORE", "इंटरनेट बंद होने पर ASTRA इस स्थानीय मॉडल से जवाब दे सकेगा। पहली बार मॉडल डाउनलोड करने के लिए इंटरनेट और लगभग 328 MiB खाली जगह चाहिए।") {
                 Text("स्थानीय मॉडल: ${OfflineAiEngine.MODEL_NAME}", color = mint, fontWeight = FontWeight.Bold, fontSize = 13.sp)
@@ -823,6 +899,36 @@ private fun checkAstraBackend(baseUrl: String): String {
         }
     } catch (e: Exception) {
         "कनेक्शन विफल: " + (e.message ?: "नेटवर्क त्रुटि")
+    }
+}
+
+private fun quantumApiRequest(baseUrl: String, path: String, method: String, payload: JSONObject? = null): String {
+    if (baseUrl.isBlank()) return "ASTRA backend URL सेव करें।"
+    return try {
+        val clean = baseUrl.trim().trimEnd('/')
+        if (!URLUtil.isHttpsUrl(clean)) return "सुरक्षा के लिए backend URL HTTPS होना चाहिए।"
+        val connection = (URL(clean + path).openConnection() as HttpURLConnection).apply {
+            requestMethod = method
+            connectTimeout = 20000
+            readTimeout = 90000
+            doOutput = method == "POST"
+            setRequestProperty("Content-Type", "application/json; charset=utf-8")
+        }
+        if (method == "POST" && payload != null) {
+            connection.outputStream.use { it.write(payload.toString().toByteArray(Charsets.UTF_8)) }
+        }
+        val code = connection.responseCode
+        val stream = if (code in 200..299) connection.inputStream else connection.errorStream
+        val body = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+        connection.disconnect()
+        if (code !in 200..299) {
+            val message = runCatching { JSONObject(body).optString("error") }.getOrDefault("")
+            "Quantum सेवा त्रुटि (HTTP " + code + "): " + message.ifBlank { body.take(250) }
+        } else {
+            runCatching { JSONObject(body).toString(2) }.getOrElse { body }
+        }
+    } catch (error: Exception) {
+        "Quantum connection विफल: " + (error.message ?: "नेटवर्क त्रुटि")
     }
 }
 
