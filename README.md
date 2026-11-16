@@ -20,6 +20,18 @@ Android-first personal AI assistant.
 - IBM Quantum hardware connector code with server-side IAM token exchange, backend listing, confirmation-gated one-qubit sampler submission and job-status lookup; it requires IBM API key and instance CRN secrets before it can connect to a real QPU.
 - Backend health-check screen.
 
+## Five Core architecture
+
+The app is organized around five user-facing capability domains:
+
+1. **Perception Core** — voice input, image understanding through the online Vision endpoint, and text-based PDF extraction/analysis. Offline image understanding and guaranteed offline speech are not implemented.
+2. **Reasoning Core** — AI conversation and problem analysis through the configured Groq model; a small on-device text model is available as a separate offline option when installed.
+3. **Knowledge Core** — local user-authored memory with opt-in prompt sharing, plus an initial Wikipedia/Crossref research workflow. Retrieved references are not independently or conclusively verified.
+4. **Action Core** — currently a local project/notes workspace for planning. External actions are not yet implemented; consequential actions must require explicit user review and confirmation.
+5. **Quantum Learning Core** — classical educational probability/measurement simulation for independent product-state qubits, plus an optional IBM Quantum connector. The simulator is not a general quantum computer or entanglement-capable circuit simulator.
+
+The **Cores** screen is an architecture dashboard that routes each domain to its current working module and states important capability limits. It does not imply that planned or device-dependent features are already complete.
+
 ## Quantum Lab scope and limits
 
 The 32-Qubit Learning Engine calculates independent product-state probabilities on demand and samples measurements without allocating the full state vector. It is a classical educational simulator, not quantum hardware and not a general entanglement-capable quantum circuit simulator. A dense 32-Qubit complex-double state vector would require about 64 GiB for amplitudes alone.
