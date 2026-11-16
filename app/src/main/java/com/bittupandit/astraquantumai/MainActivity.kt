@@ -1231,6 +1231,18 @@ private fun ScienceLabScreen() {
     var forceAcceleration by remember { mutableStateOf("9.8") }
     var physicsResult by remember { mutableStateOf("") }
     var elementQuery by remember { mutableStateOf("") }
+    var unitValue by remember { mutableStateOf("1") }
+    var unitFrom by remember { mutableStateOf("km") }
+    var unitTo by remember { mutableStateOf("m") }
+    var unitResult by remember { mutableStateOf("") }
+    var formulaQuery by remember { mutableStateOf("") }
+    val allScienceFormulas = remember { ScienceFormulaCatalog.formulas + AdvancedScienceFormulaCatalog.formulas }
+    val visibleScienceFormulas = remember(formulaQuery) {
+        val q = formulaQuery.trim().lowercase()
+        if (q.isBlank()) allScienceFormulas else allScienceFormulas.filter {
+            listOf(it.discipline, it.topic, it.name, it.equation, it.assumptions).any { field -> field.lowercase().contains(q) }
+        }
+    }
     val elements = remember(elementQuery) {
         PeriodicTableCatalog.elements.filter {
             it.name.contains(elementQuery, ignoreCase = true) ||
@@ -1314,14 +1326,45 @@ private fun ScienceLabScreen() {
             }
         }
         Card(colors = CardDefaults.cardColors(containerColor = charcoal)) {
+            Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("SCIENTIFIC UNIT CONVERTER", color = mint, fontWeight = FontWeight.Bold)
+                OutlinedTextField(unitValue, { unitValue = it }, Modifier.fillMaxWidth(), label = { Text("मान (Value)") })
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(unitFrom, { unitFrom = it }, Modifier.weight(1f), label = { Text("From unit") })
+                    OutlinedTextField(unitTo, { unitTo = it }, Modifier.weight(1f), label = { Text("To unit") })
+                }
+                Text("इकाइयाँ: m, km, cm, mm, mi, ft · kg, g, mg, lb · s, min, h, day · K, °C, °F · Pa, kPa, bar, atm · J, kJ, cal, kcal, Wh, kWh · L, mL, m³ · m/s, km/h, mph", color = muted, fontSize = 10.sp)
+                Button(onClick = {
+                    unitResult = runCatching {
+                        val value = ScienceUnitConverter.convert(unitValue.toDouble(), unitFrom.trim(), unitTo.trim())
+                        "$unitValue $unitFrom = $value $unitTo"
+                    }.getOrElse { "रूपांतरण नहीं हुआ: " + (it.message ?: "इनपुट जाँचें") }
+                }, modifier = Modifier.fillMaxWidth()) { Text("इकाई बदलें") }
+                if (unitResult.isNotBlank()) SelectionContainer { Text(unitResult, color = white, fontWeight = FontWeight.SemiBold) }
+                Text("अलग dimensions (जैसे kg से m) को converter अस्वीकार करता है।", color = muted, fontSize = 10.sp)
+            }
+        }
+        Card(colors = CardDefaults.cardColors(containerColor = charcoal)) {
             Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                Text("FORMULA LIBRARY · " + ScienceFormulaCatalog.VERSION, color = mint, fontWeight = FontWeight.Bold)
-                ScienceFormulaCatalog.formulas.forEach { formula ->
+                Text("FORMULA LIBRARY · " + ScienceFormulaCatalog.VERSION + " + " + AdvancedScienceFormulaCatalog.VERSION, color = mint, fontWeight = FontWeight.Bold)
+                OutlinedTextField(formulaQuery, { formulaQuery = it }, Modifier.fillMaxWidth(), label = { Text("सूत्र खोजें: Physics, Biology, Chemistry, Maths...") })
+                Text(visibleScienceFormulas.size.toString() + " सूत्र उपलब्ध · मूल और विस्तारित curated catalogue", color = muted, fontSize = 10.sp)
+                visibleScienceFormulas.forEach { formula ->
                     Text(formula.discipline + " · " + formula.topic + " · " + formula.name, color = white, fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                     Text(formula.equation, color = mint, fontSize = 13.sp)
+                    Text("चर/इकाइयाँ: " + formula.variables.joinToString { it.symbol + " = " + it.meaning + " [" + it.siUnit + "]" }, color = muted, fontSize = 10.sp)
                     Text("मान्यताएँ: " + formula.assumptions + "\nसीमा: " + formula.validity, color = muted, fontSize = 10.sp)
                     Text("स्रोत: " + formula.sourceName + " · " + formula.sourceUrl, color = muted, fontSize = 9.sp)
                     HorizontalDivider(color = line)
+                }
+            }
+        }
+        Card(colors = CardDefaults.cardColors(containerColor = charcoal)) {
+            Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                Text("SCIENTIFIC CONSTANTS · " + ScientificConstantsCatalog.VERSION, color = mint, fontWeight = FontWeight.Bold)
+                ScientificConstantsCatalog.constants.forEach { constant ->
+                    Text(constant.name + " (" + constant.symbol + ") = " + constant.value + " " + constant.unit, color = white, fontSize = 11.sp)
+                    Text("अनिश्चितता: " + constant.uncertainty + " · " + constant.source, color = muted, fontSize = 9.sp)
                 }
             }
         }
