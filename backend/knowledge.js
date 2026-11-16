@@ -44,7 +44,7 @@ export async function searchKnowledge(query, limit = 4) {
   const records = await loadRecords();
   const ranked = records.map(record => {
     const titleTerms = new Set(terms(record.title));
-    const keywordTerms = new Set(terms(record.keywords || [] .join ? record.keywords.join(" ") : record.keywords));
+    const keywordTerms = new Set(terms(Array.isArray(record.keywords) ? record.keywords.join(" ") : record.keywords));
     const contentTerms = new Set(terms([record.domain, record.subdomain, record.summary, record.content].join(" ")));
     let score = 0;
     let matched = 0;
