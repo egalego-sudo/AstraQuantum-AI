@@ -449,8 +449,8 @@ async function research(input) {
     });
   }
   }
-  const rejectedIrrelevantCount = sources.length - rankResearchSources(sources, researchQueries, 0.12).length;
   const rankedSources = rankResearchSources(sources, researchQueries, 0.12);
+  const rejectedIrrelevantCount = sources.length - rankedSources.length;
   const sourcePriority = { "europe-pmc": 0, "arxiv-preprint": 1, "openalex-index": 2, "crossref-metadata": 3, "encyclopedia": 4 };
   rankedSources.sort((a, b) => b.relevance.score - a.relevance.score || (sourcePriority[a.type] ?? 9) - (sourcePriority[b.type] ?? 9));
   const seen = new Set();
