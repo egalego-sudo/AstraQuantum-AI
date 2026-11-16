@@ -67,7 +67,7 @@ export async function searchKnowledge(query, limit = 4) {
 export function validateKnowledgeCitations(answer, records = []) {
   const byId = new Map(records.map(record => [record.id, record]));
   const citedIds = new Set();
-  const safeAnswer = String(answer || "").replace(/\\[KB:([^\\]\\s]+)\\]/g, (marker, id) => {
+  const safeAnswer = String(answer || "").replace(/\[KB:([^\]\s]+)\]/g, (marker, id) => {
     if (!byId.has(id)) return "[unverified knowledge-base reference removed]";
     citedIds.add(id);
     return marker;
@@ -83,5 +83,5 @@ export function validateKnowledgeCitations(answer, records = []) {
       references.push("- [KB:" + id + "] " + record.title + " — " + (source.publisher || "Source") + ": " + source.url);
     }
   }
-  return safeAnswer + (references.length ? "\\n\\nVerified knowledge-base sources:\\n" + references.join("\\n") : "");
+  return safeAnswer + (references.length ? "\n\nVerified knowledge-base sources:\n" + references.join("\n") : "");
 }
