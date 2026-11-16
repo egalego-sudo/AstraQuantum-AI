@@ -52,17 +52,16 @@ import java.net.URL
 import java.net.URLEncoder
 import java.util.Locale
 
-// ASTRA Premium Cosmic Glass palette
-// ChatGPT-inspired neutral dark interface, with ASTRA identity retained.
-private val ink = Color(0xFF212121)
-private val charcoal = Color(0xFF2F2F2F)
-private val graphite = Color(0xFF3A3A3A)
-private val paper = Color(0xFF212121)
-private val white = Color(0xFFECECEC)
-private val muted = Color(0xFFB4B4B4)
-private val line = Color(0xFF454545)
-private val violet = Color(0xFF8E8EA0)
-private val mint = Color(0xFFD6D6D6)
+// ASTRA QUANTUM COSMIC GLASS palette — approved deep-space identity.
+private val ink = Color(0xFF070B1B)
+private val charcoal = Color(0xCC101A31)
+private val graphite = Color(0xFF1A2B4D)
+private val paper = Color(0xFF0B1226)
+private val white = Color(0xFFEAF4FF)
+private val muted = Color(0xFFA9B9D6)
+private val line = Color(0xFF263B63)
+private val violet = Color(0xFF9B8CFF)
+private val mint = Color(0xFF6CF2D5)
 
 class MainActivity : ComponentActivity() {
     private var speechText by mutableStateOf("")
@@ -223,12 +222,13 @@ private fun AstraApp(
         projectInput = ""
     }
 
-    Box(Modifier.fillMaxSize().background(ink)) {
+    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF02030D), Color(0xFF080D27), Color(0xFF170A32), Color(0xFF050B1B))))) {
+        CosmicNebulaBackground(Modifier.fillMaxSize())
         Column(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(Color(0xFF252525), Color(0xFF212121)))).padding(horizontal = 20.dp, vertical = 16.dp)) {
+        Column(Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(Color(0xC9101834), Color(0xB30A1025), Color.Transparent))).padding(horizontal = 20.dp, vertical = 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(white), contentAlignment = Alignment.Center) {
-                    Text("A", color = ink, fontWeight = FontWeight.Black, fontSize = 24.sp)
+                    Text("✦", color = ink, fontWeight = FontWeight.Black, fontSize = 24.sp)
                 }
                 Spacer(Modifier.width(11.dp))
                 Column(Modifier.weight(1f)) {
@@ -236,8 +236,8 @@ private fun AstraApp(
                     Text("QUANTUM AI PLUS", color = muted, fontSize = 10.sp, letterSpacing = 2.sp)
                     Text("Creator by Bittu Pandit", color = mint, fontSize = 9.sp, fontWeight = FontWeight.SemiBold)
                 }
-                Surface(color = graphite, shape = CircleShape) {
-                    Text("● GROQ", color = white, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp))
+                Surface(color = Color(0xAA152448), shape = CircleShape) {
+                    Text("✦ GROQ", color = mint, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp))
                 }
             }
             Spacer(Modifier.height(14.dp))
@@ -412,7 +412,7 @@ private fun AstraApp(
                                     }
                                     Spacer(Modifier.width(10.dp))
                                 }
-                                Column(Modifier.widthIn(max = 310.dp).clip(RoundedCornerShape(if (isAi) 8.dp else 20.dp)).background(if (isAi) Color.Transparent else Color(0xFF303030)).padding(horizontal = 14.dp, vertical = 11.dp)) {
+                                Column(Modifier.widthIn(max = 310.dp).clip(RoundedCornerShape(if (isAi) 8.dp else 20.dp)).background(if (isAi) Color(0xAA182747) else Color(0xCC123A52)).padding(horizontal = 14.dp, vertical = 11.dp)) {
                                     if (isAi) Text("ASTRA", color = muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                                     SelectionContainer { Text(item.text, color = white, fontSize = 14.sp, lineHeight = 22.sp) }
                                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -439,9 +439,9 @@ private fun AstraApp(
                             maxLines = 4,
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedTextColor = white, unfocusedTextColor = white,
-                                focusedBorderColor = Color(0xFF555555), unfocusedBorderColor = Color(0xFF555555),
-                                focusedContainerColor = Color(0xFF303030), unfocusedContainerColor = Color(0xFF303030),
-                                cursorColor = white
+                                focusedBorderColor = mint, unfocusedBorderColor = line,
+                                focusedContainerColor = Color(0xCC101A34), unfocusedContainerColor = Color(0xCC101A34),
+                                cursorColor = mint
                             )
                         )
                         Button(
