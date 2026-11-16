@@ -69,8 +69,8 @@ fun InstantAppBuilderScreen(backendUrl: String, initialWebsiteMode: Boolean = fa
         Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("ASTRA INSTANT BUILDER", color = builderText, fontSize = 17.sp, fontWeight = FontWeight.Black)
-        Text("YOUR IDEA → READY-TO-PREVIEW PROJECT", color = builderAccent, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+        Text("ASTRA WEB APP BUILDER", color = builderText, fontSize = 17.sp, fontWeight = FontWeight.Black)
+        Text("WEB PROTOTYPE → LIVE PREVIEW", color = builderAccent, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (websiteMode) {
                 OutlinedButton(onClick = { websiteMode = false; html = ""; status = "ऐप बनाने का आइडिया लिखें।" }) { Text("ऐप बनाएं") }
@@ -82,7 +82,7 @@ fun InstantAppBuilderScreen(backendUrl: String, initialWebsiteMode: Boolean = fa
         }
         Text(
             if (websiteMode) "अपनी वेबसाइट का नाम, उद्देश्य और जरूरी पेज बताइए। ASTRA मोबाइल-फ्रेंडली वेबसाइट का डिजाइन और कोड बनाकर यहीं Preview दिखाएगा।"
-            else "सिर्फ बताइए कि कैसी ऐप चाहिए। ASTRA उसका शुरुआती HTML/CSS/JavaScript प्रोटोटाइप बनाएगा और यहीं Preview दिखाएगा।",
+            else "यह विकल्प केवल HTML/CSS/JavaScript वेब-ऐप प्रोटोटाइप बनाता है। यह Native Android प्रोजेक्ट या APK नहीं बनाता। APK निर्माण अलग सुविधा है और अभी उपलब्ध नहीं है।",
             color = builderMuted, fontSize = 12.sp, lineHeight = 18.sp
         )
         OutlinedTextField(
@@ -118,7 +118,7 @@ fun InstantAppBuilderScreen(backendUrl: String, initialWebsiteMode: Boolean = fa
                         val result = withContext(Dispatchers.IO) { buildPrototype(backendUrl, idea, websiteMode) }
                         html = result
                         showPreview = true
-                        status = if (websiteMode) "वेबसाइट तैयार है। नीचे Preview देखें।" else "ऐप प्रोटोटाइप तैयार है। नीचे Preview देखें।"
+                        status = if (websiteMode) "वेबसाइट तैयार है। नीचे Preview देखें।" else "वेब ऐप प्रोटोटाइप तैयार है। नीचे Preview देखें।"
                     } catch (error: Exception) {
                         status = "बनाने में समस्या: " + (error.message ?: "कनेक्शन त्रुटि")
                     } finally {
@@ -134,7 +134,7 @@ fun InstantAppBuilderScreen(backendUrl: String, initialWebsiteMode: Boolean = fa
             if (busy) {
                 CircularProgressIndicator(color = builderInk, modifier = Modifier.height(18.dp))
                 Text(if (websiteMode) "  वेबसाइट बन रही है…" else "  ऐप तैयार हो रही है…")
-            } else Text(if (websiteMode) "✦  वेबसाइट बनाइए" else "✦  ऐप बनाइए")
+            } else Text(if (websiteMode) "✦  वेबसाइट बनाइए" else "✦  वेब ऐप प्रोटोटाइप बनाइए")
         }
         Text(status, color = builderMuted, fontSize = 12.sp)
         if (html.isNotBlank()) {
@@ -142,7 +142,7 @@ fun InstantAppBuilderScreen(backendUrl: String, initialWebsiteMode: Boolean = fa
                 Button(onClick = { showPreview = true }, colors = ButtonDefaults.buttonColors(containerColor = builderCard)) { Text("▶ चलाकर देखें") }
                 OutlinedButton(onClick = {
                     copyGeneratedCode(context, html, websiteMode)
-                    status = if (websiteMode) "वेबसाइट का HTML कोड कॉपी हो गया।" else "ऐप का HTML कोड कॉपी हो गया।"
+                    status = if (websiteMode) "वेबसाइट का HTML कोड कॉपी हो गया।" else "वेब ऐप प्रोटोटाइप का HTML कोड कॉपी हो गया।"
                 }) { Text("कोड कॉपी करें") }
             }
             if (showPreview) {
@@ -185,7 +185,7 @@ fun InstantAppBuilderScreen(backendUrl: String, initialWebsiteMode: Boolean = fa
             }
             Text(
                 if (websiteMode) "यह आपकी वेबसाइट का तैयार HTML/CSS/JavaScript प्रोजेक्ट है और Preview यहीं चलता है। इसे सार्वजनिक इंटरनेट पर लाइव करने के लिए अलग hosting/publish चरण जोड़ना होगा; अभी वेबसाइट अपने-आप ऑनलाइन प्रकाशित नहीं होती।"
-                else "यह वेब-ऐप प्रोटोटाइप है। अभी इससे सीधे Android APK या Play Store पैकेज नहीं बनता; वह अलग निर्माण चरण होगा।",
+                else "यह केवल वेब-ऐप प्रोटोटाइप है। इससे Android APK या Play Store पैकेज नहीं बनता। Native Android APK Generator अभी इस संस्करण में उपलब्ध नहीं है।",
                 color = builderMuted, fontSize = 11.sp, lineHeight = 16.sp
             )
         }
