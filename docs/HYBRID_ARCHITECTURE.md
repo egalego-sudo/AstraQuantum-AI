@@ -30,6 +30,15 @@ ASTRA must remain useful when the network is unavailable. It must automatically 
 6. Label each answer ON-DEVICE, ONLINE · GROQ, or CACHED; never silently present cached information as live.
 7. Queue only safe, idempotent tasks for later sync. Do not automatically replay payments, messages, or other consequential actions.
 
+## First on-device model selection
+
+- Runtime: Google LiteRT-LM Android Kotlin API, pinned to 0.19.0 for the initial integration.
+- Model: litert-community/Qwen3-0.6B, dynamic INT4 artifact Qwen3-0.6B_dynamic_wi4b32_afp32.litertlm.
+- Approximate download: 328 MiB; model license: Apache 2.0.
+- Model is downloaded on demand into app-private storage and is not bundled in the APK.
+- Initial integration uses GPU with CPU fallback. The model card reports around 1.9–2.1 GB peak process footprint on tested phones for the newer export; actual performance and memory use must be verified on the target device.
+- The initial offline model handles text only. Offline image understanding is not included in this first integration.
+
 ## Local model integration gates
 
 - Choose an Android-compatible runtime after checking its current supported Android versions, model format, license, ABI support, and maintenance status.
@@ -60,4 +69,4 @@ ASTRA must remain useful when the network is unavailable. It must automatically 
 - Secrets: no provider API key appears in the Android source, APK resources, or logs.
 
 ## Current implementation boundary
-The current app has remote Groq chat/vision, local saved notes/projects/chat history, and an educational classical product-state qubit model. It does not yet contain an on-device LLM, offline image-understanding model, general quantum circuit simulator, or real quantum hardware integration. Those capabilities must be implemented and tested before being advertised as available.
+The current source now includes a LiteRT-LM on-device Qwen3-0.6B model downloader, GPU/CPU engine initialization, an Offline AI screen, and text-chat fallback when the remote backend fails and the local model is installed. The source change still requires a successful CI build and a real airplane-mode inference test before offline LLM capability can be called verified. Remote Groq vision remains online-only; offline image understanding is not implemented. The quantum module remains an educational classical product-state model, not a general quantum circuit simulator or real quantum hardware integration.
