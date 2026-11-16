@@ -20,7 +20,8 @@ internal object AppUpdateRepository {
         val versionName: String,
         val patchSizeBytes: Long,
         val apkSizeBytes: Long,
-        val deltaCompatible: Boolean
+        val deltaCompatible: Boolean,
+        val baseApkSha256: String?
     )
 
     data class PreparedUpdate(
@@ -45,18 +46,37 @@ internal object AppUpdateRepository {
         val signatureText = String(downloadBytes(signatureUrl, 16 * 1024), Charsets.UTF_8)
         val verified = UpdateMetadataVerifier.verify(context, metadataBytes, signatureText)
         val json = verified.json
-        val patchUrl = json.getString("patchUrl")
         val apkUrl = json.getString("apkUrl")
-        check(urls.values.any { it == patchUrl } && urls.values.any { it == apkUrl }) {
-            "Signed update URLs do not match assets in the latest release."
+        check(urls.values.any { it == apkUrl }) { "Signed APK URL does not match an asset in the latest release." }
+        val installedHash = sha256(File(context.applicationInfo.sourceDir))
+        val patches = json.optJSONArray("patches")
+        var selectedPatchUrl = ""
+        var selectedBaseHash: String? = null
+        var selectedPatchSize = 0L
+        if (patches != null) {
+            for (i in 0 until patches.length()) {
+                val item = patches.getJSONObject(i)
+                val candidateUrl = item.getString("patchUrl")
+                check(urls.values.any { it == candidateUrl }) { "Signed patch URL does not match an asset in the latest release." }
+                if (installedHash.equals(item.getString("baseApkSha256"), true)) {
+                    selectedPatchUrl = candidateUrl
+                    selectedBaseHash = item.getString("baseApkSha256")
+                    selectedPatchSize = item.optLong("patchSizeBytes", 0L)
+                    break
+                }
+            }
+        } else if (json.has("patchUrl") && json.has("baseApkSha256") &&
+            installedHash.equals(json.getString("baseApkSha256"), true)) {
+            selectedPatchUrl = json.getString("patchUrl")
+            check(urls.values.any { it == selectedPatchUrl }) { "Signed legacy patch URL does not match a release asset." }
+            selectedBaseHash = json.getString("baseApkSha256")
+            selectedPatchSize = sizes["ASTRA-build150-to-current.patch"] ?: 0L
         }
         return AvailableUpdate(
-            verified, patchUrl, apkUrl,
-            json.getLong("targetVersionCode"),
-            json.getString("targetVersionName"),
-            sizes["ASTRA-build150-to-current.patch"] ?: 0L,
-            sizes["ASTRA-QUANTUM-AI.apk"] ?: 0L,
-            sha256(File(context.applicationInfo.sourceDir)).equals(json.getString("baseApkSha256"), true)
+            verified, selectedPatchUrl, apkUrl,
+            json.getLong("targetVersionCode"), json.getString("targetVersionName"),
+            selectedPatchSize, sizes["ASTRA-QUANTUM-AI.apk"] ?: 0L,
+            selectedBaseHash != null, selectedBaseHash
         )
     }
 
@@ -64,7 +84,8 @@ internal object AppUpdateRepository {
         val json = update.metadata.json
         val installedApk = File(context.applicationInfo.sourceDir)
         val installedHash = sha256(installedApk)
-        val useDelta = installedHash.equals(json.getString("baseApkSha256"), true)
+        val useDelta = update.deltaCompatible && update.baseApkSha256 != null &&
+            installedHash.equals(update.baseApkSha256, true)
         val directory = File(context.cacheDir, "updates")
         check(directory.exists() || directory.mkdirs()) { "Cannot create update download folder." }
         val downloaded = File(directory, if (useDelta) "astra-update.patch" else "astra-update.apk")
@@ -79,7 +100,7 @@ internal object AppUpdateRepository {
         val verifiedApk = if (useDelta) {
             ApkDeltaEngine.reconstructAndVerify(
                 context, downloaded,
-                json.getString("baseApkSha256"),
+                update.baseApkSha256!!,
                 json.getString("targetApkSha256"),
                 expectedPackage,
                 expectedVersion,
