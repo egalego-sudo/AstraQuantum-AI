@@ -202,6 +202,10 @@ private fun AstraApp(
     var offlineTestAnswer by remember { mutableStateOf("") }
     var researchResult by remember { mutableStateOf("") }
     var researchBusy by remember { mutableStateOf(false) }
+    var scienceQuestion by remember { mutableStateOf("") }
+    var scienceAnswer by remember { mutableStateOf("") }
+    var scienceBusy by remember { mutableStateOf(false) }
+    var scienceResearchBusy by remember { mutableStateOf(false) }
     var actionRequest by remember { mutableStateOf("") }
     var actionPlan by remember { mutableStateOf("") }
     var actionBusy by remember { mutableStateOf(false) }
@@ -565,15 +569,55 @@ private fun AstraApp(
                 }
             }
             "Science Lab" -> ScienceLabScreen()
-            "Science QA" -> SimplePage("SEVEN-LAYER ADVANCED REASONING", "सात तर्क-गुणवत्ता परतें मौजूदा AI मॉडल को निर्देश देती हैं। ये नया foundation model, मानव IQ स्कोर या स्वतंत्र सत्यापन सेवा नहीं हैं।") {
+            "Science QA" -> SimplePage("ASTRA SCIENTIFIC QUESTION & REASONING", "वैज्ञानिक प्रश्न पूछें। ASTRA उत्तर में स्थापित तथ्य, गणना/मॉडल, मान्यताएँ, सीमाएँ और अनिश्चितता अलग रखने का प्रयास करेगा। शोध-स्रोतों की जाँच अलग बटन से करें।") {
+                OutlinedTextField(scienceQuestion, { scienceQuestion = it }, Modifier.fillMaxWidth(), label = { Text("विज्ञान का प्रश्न लिखें…") }, minLines = 2)
+                Button(enabled = scienceQuestion.isNotBlank() && !scienceBusy, onClick = {
+                    scienceBusy = true
+                    scienceAnswer = "वैज्ञानिक विश्लेषण तैयार हो रहा है…"
+                    val q = scienceQuestion.trim()
+                    val scientificPrompt = """
+                        आप ASTRA Scientific Reasoning Assistant हैं। उपयोगकर्ता के प्रश्न का उत्तर हिंदी में दें।
+                        अनिवार्य ढाँचा:
+                        1. संक्षिप्त उत्तर।
+                        2. स्थापित वैज्ञानिक तथ्य बनाम मॉडल/सैद्धांतिक व्याख्या।
+                        3. जहाँ लागू हो, समीकरण, प्रतीक, SI इकाइयाँ और चरणबद्ध गणना।
+                        4. मान्यताएँ और वैधता-सीमा।
+                        5. विरोधी साक्ष्य, वैकल्पिक व्याख्या और क्या अज्ञात है।
+                        6. विश्वास-स्तर का कारण; बिना स्रोत देखे स्रोत या प्रयोग गढ़ें नहीं।
+                        नई परिकल्पना को खोज/सिद्ध तथ्य न कहें। यदि पर्याप्त डेटा नहीं है तो स्पष्ट कहें।
+                        प्रश्न: $q
+                    """.trimIndent()
+                    activity.lifecycleScope.launch {
+                        scienceAnswer = withContext(Dispatchers.IO) { askBackend(backend, scientificPrompt) }
+                        scienceBusy = false
+                    }
+                }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = violet, contentColor = Color.White)) {
+                    Text(if (scienceBusy) "विश्लेषण जारी…" else "ASTRA से वैज्ञानिक उत्तर लें")
+                }
+                OutlinedButton(enabled = scienceQuestion.isNotBlank() && !scienceResearchBusy, onClick = {
+                    scienceResearchBusy = true
+                    scienceAnswer = "वैज्ञानिक साहित्य और उपलब्ध Open Access दस्तावेज़ खोजे जा रहे हैं…"
+                    val q = scienceQuestion.trim()
+                    activity.lifecycleScope.launch {
+                        scienceAnswer = withContext(Dispatchers.IO) { askResearch(backend, q) }
+                        scienceResearchBusy = false
+                    }
+                }, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (scienceResearchBusy) "शोध जारी…" else "शोध-पत्र और स्रोत जाँचें")
+                }
+                if (scienceAnswer.isNotBlank()) {
+                    SelectionContainer { Text(scienceAnswer, color = white, lineHeight = 20.sp) }
+                    TextButton(onClick = { copyText(scienceAnswer) }) { Text("उत्तर/रिपोर्ट कॉपी करें", color = mint) }
+                }
+                Text("सावधानी: AI उत्तर वैज्ञानिक निर्णय का विकल्प नहीं। वास्तविक खोज के लिए पुनरुत्पादन, डेटा और स्वतंत्र विशेषज्ञ समीक्षा आवश्यक है।", color = muted, fontSize = 10.sp)
                 val modules = listOf(
                     "01 · DEEP REASONING" to "वास्तविक प्रश्न, लक्ष्य, बाधाएँ और मूल कारण पहचानना; तथ्य, मान्यताएँ और अज्ञात अलग रखना।",
-                    "02 · MULTI-LAYER THINKING" to "समस्या के लिए उपयोगी वैज्ञानिक, व्यावहारिक, गणितीय और दीर्घकालिक दृष्टिकोण जोड़ना।",
-                    "03 · SELF-CORRECTION" to "उत्तर में विरोधाभास, छूटे चरण, गणना त्रुटि और अप्रमाणित निष्कर्ष जाँचना।",
-                    "04 · SCIENTIFIC VERIFICATION" to "स्थापित तथ्य, मॉडल-निर्भर निष्कर्ष, परिकल्पना और अज्ञात अलग करना; नकली स्रोत न बनाना।",
-                    "05 · CREATIVE INTELLIGENCE" to "जहाँ उपयोगी हो, वैकल्पिक समाधान बनाना, उनके लाभ-हानि की तुलना करना।",
-                    "06 · CONTEXT & MEMORY REASONING" to "उपलब्ध संदर्भ और नवीनतम निर्णयों का उपयोग; निजी नोट्स को सार्वजनिक प्रमाण न मानना।",
-                    "07 · STRATEGIC PLANNING" to "बड़े लक्ष्य को क्रमबद्ध, जाँचने योग्य चरणों और सफलता-मापदंडों में बाँटना।"
+                    "02 · MULTI-LAYER THINKING" to "वैज्ञानिक, गणितीय और व्यावहारिक दृष्टिकोण जोड़ना।",
+                    "03 · SELF-CORRECTION" to "विरोधाभास, छूटे चरण और गणना त्रुटि जाँचना।",
+                    "04 · SCIENTIFIC VERIFICATION" to "स्थापित तथ्य, मॉडल-निर्भर निष्कर्ष, परिकल्पना और अज्ञात अलग रखना।",
+                    "05 · CREATIVE INTELLIGENCE" to "वैकल्पिक समाधान और परिकल्पनाएँ बनाना, बिना उन्हें प्रमाणित खोज बताना।",
+                    "06 · CONTEXT & MEMORY REASONING" to "उपलब्ध संदर्भ का उपयोग; निजी नोट्स को सार्वजनिक प्रमाण न मानना।",
+                    "07 · STRATEGIC PLANNING" to "लक्ष्य को जाँचने योग्य चरणों और सफलता-मापदंडों में बाँटना।"
                 )
                 modules.forEach { item ->
                     Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF303030)), shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
@@ -583,7 +627,6 @@ private fun AstraApp(
                         }
                     }
                 }
-                Text("स्थिति: पाँचों निर्देश AI Chat के प्रत्येक ऑनलाइन/ऑफलाइन प्रश्न के साथ जोड़े जाते हैं। यह गुणवत्ता-सुधार परत है, पूर्ण स्वतंत्र सत्यापन की गारंटी नहीं।", color = mint, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             }
             "Research" -> SimplePage("DEEP RESEARCH ENGINE", "Wikipedia, Crossref, OpenAlex, Europe PMC और arXiv में समानांतर शोध खोज। उपलब्ध Open Access full text पढ़ने का प्रयास, स्रोतों की तुलना और प्रमाण-सहित रिपोर्ट। यह पूरे इंटरनेट की exhaustive खोज या 100% सत्यता की गारंटी नहीं है।") {
                 OutlinedTextField(prompt, { prompt = it }, Modifier.fillMaxWidth(), label = { Text("किस विषय या दावे की जाँच करें?") })
