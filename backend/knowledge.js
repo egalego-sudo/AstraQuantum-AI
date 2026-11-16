@@ -13,7 +13,7 @@ function terms(value) {
   return String(value || "")
     .normalize("NFKC")
     .toLocaleLowerCase()
-    .match(/[\p{L}\p{N}]+/gu) || [];
+    .match(/[\p{L}\p{M}\p{N}]+/gu) || [];
 }
 
 async function loadRecords() {

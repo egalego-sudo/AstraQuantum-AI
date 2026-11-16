@@ -79,5 +79,50 @@
     "source_type": "official_reference",
     "priority": "high",
     "usage": "Android platform and API behavior; pin API level and documentation version."
+  },
+  {
+    "id": "openstax-physics",
+    "name": "OpenStax University Physics",
+    "domain": "science/physics",
+    "url": "https://openstax.org/subjects/science",
+    "source_type": "open_textbook",
+    "priority": "high",
+    "usage": "Open educational textbook chapters; cite exact chapter/section and edition."
+  },
+  {
+    "id": "openstax-biology",
+    "name": "OpenStax Biology 2e",
+    "domain": "science/biology",
+    "url": "https://openstax.org/details/books/biology-2e",
+    "source_type": "open_textbook",
+    "priority": "high",
+    "usage": "Open educational biology textbook; cite exact chapter/section and edition."
+  },
+  {
+    "id": "pubchem",
+    "name": "PubChem",
+    "domain": "science/chemistry",
+    "url": "https://pubchem.ncbi.nlm.nih.gov/",
+    "source_type": "official_reference",
+    "priority": "high",
+    "usage": "Chemical substance records; distinguish computed properties from measured data and cite record IDs."
+  },
+  {
+    "id": "nhgri",
+    "name": "National Human Genome Research Institute",
+    "domain": "science/genetics",
+    "url": "https://www.genome.gov/",
+    "source_type": "official_reference",
+    "priority": "high",
+    "usage": "Genetics and genomics explainers and glossary; cite the specific page."
+  },
+  {
+    "id": "nasa-earth",
+    "name": "NASA Earth Science",
+    "domain": "science/earth-and-space",
+    "url": "https://science.nasa.gov/earth/",
+    "source_type": "official_reference",
+    "priority": "high",
+    "usage": "Earth and space science facts; retain publication/update date for changing values."
   }
 ]

@@ -18,7 +18,7 @@ This directory is the versioned foundation for QUANTUM AI's source-attributed kn
 
 - `schema/knowledge-record.schema.json`: record contract.
 - `sources/source-registry.json`: initial public-source registry and intended use.
-- `seed/foundations.jsonl`: small, reviewed starter set of stable foundational facts with source links.
+- `seed/foundations.jsonl`: 22 starter records in English and Hindi, with source links.
 - Future ingested material should be placed in domain-specific partitions (for example `science/`, `math/`, `computing/`, `history/`) with provenance retained.
 
 ## Retrieval pipeline (implementation plan)
@@ -34,8 +34,12 @@ This directory is the versioned foundation for QUANTUM AI's source-attributed kn
 
 ## Current status
 
-This commit establishes the repository data contract and a small starter corpus. It does **not** yet connect this directory to the running backend, create embeddings, train model weights, or claim a large-scale corpus. Those require separate implementation, tests and a build.
+The current starter corpus contains 22 records across English and Hindi, including mathematics, physics, chemistry, biology, astronomy and computing. It establishes a repository data contract and a small reviewed seed set; it is not yet a comprehensive encyclopedia. It does **not** yet connect this directory to the running backend, create embeddings, train model weights, or claim a large-scale corpus. Those require separate implementation, tests and a build.
 
 ## Record fields
 
 Every record includes a stable ID, topic, language, claim/text, source references, evidence type, review status and optional validity dates. Source provenance must travel with the record into the final answer.
+
+## Search behavior
+
+The backend currently uses bounded local lexical retrieval with title/keyword weighting, Unicode-aware tokenization and a small bilingual stop-word list. It returns at most eight records (normally four are passed into generation). This is not semantic/vector search; Hindi-English transliteration and broad paraphrase matching remain future work.
