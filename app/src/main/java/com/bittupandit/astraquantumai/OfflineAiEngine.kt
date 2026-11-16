@@ -25,7 +25,7 @@ class OfflineAiEngine(context: Context) {
 
     suspend fun downloadModel(onProgress: (Int) -> Unit) = withContext(Dispatchers.IO) {
         if (isModelInstalled) {
-            onProgress(100)
+            withContext(Dispatchers.Main) { onProgress(100) }
             return@withContext
         }
         val partial = File(modelDirectory, "$MODEL_FILE.part")
@@ -51,7 +51,7 @@ class OfflineAiEngine(context: Context) {
                         total += count
                         require(total <= MAX_MODEL_BYTES) { "मॉडल फ़ाइल का आकार अपेक्षा से बड़ा है।" }
                         output.write(buffer, 0, count)
-                        if (declaredLength > 0) onProgress(((total * 100L) / declaredLength).toInt().coerceIn(0, 99))
+                        if (declaredLength > 0) withContext(Dispatchers.Main) { onProgress(((total * 100L) / declaredLength).toInt().coerceIn(0, 99)) }
                     }
                     output.fd.sync()
                 }
@@ -60,7 +60,7 @@ class OfflineAiEngine(context: Context) {
                 "डाउनलोड अधूरा या गलत है (${partial.length()} bytes)। दोबारा प्रयास करें।"
             }
             check(partial.renameTo(modelFile)) { "मॉडल फ़ाइल सुरक्षित नहीं की जा सकी।" }
-            onProgress(100)
+            withContext(Dispatchers.Main) { onProgress(100) }
         } catch (error: Exception) {
             partial.delete()
             throw error
