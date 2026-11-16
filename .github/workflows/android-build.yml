@@ -56,6 +56,21 @@ jobs:
           echo "$ASTRA_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/keystore/astra-upload.jks"
           test -s "$RUNNER_TEMP/keystore/astra-upload.jks"
 
+      - name: Validate persistent release signing credentials
+        if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_ALIAS != '' && env.ASTRA_KEY_PASSWORD != ''
+        run: |
+          if ! keytool -list -keystore "$RUNNER_TEMP/keystore/astra-upload.jks" -storepass "$ASTRA_KEYSTORE_PASSWORD" -alias "$ASTRA_KEY_ALIAS" >/dev/null 2>&1; then
+            echo "::error::ASTRA_KEYSTORE_PASSWORD or ASTRA_KEY_ALIAS is incorrect for the uploaded keystore."
+            exit 1
+          fi
+          cp "$RUNNER_TEMP/keystore/astra-upload.jks" "$RUNNER_TEMP/keystore/credential-check.jks"
+          if ! keytool -keypasswd -alias "$ASTRA_KEY_ALIAS" -keystore "$RUNNER_TEMP/keystore/credential-check.jks" -storepass "$ASTRA_KEYSTORE_PASSWORD" -keypass "$ASTRA_KEY_PASSWORD" -new "$ASTRA_KEY_PASSWORD" >/dev/null 2>&1; then
+            echo "::error::ASTRA_KEY_PASSWORD is incorrect for the selected key alias."
+            exit 1
+          fi
+          rm -f "$RUNNER_TEMP/keystore/credential-check.jks"
+          echo "Persistent signing credentials validated successfully."
+
       - name: Build permanently signed release APK
         if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_ALIAS != '' && env.ASTRA_KEY_PASSWORD != ''
         env:
