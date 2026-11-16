@@ -30,6 +30,20 @@ class ScienceCalculatorTest {
     @Test fun calculatesWaveSpeed() {
         assertEquals(340.0, ScienceCalculator.waveSpeed(170.0, 2.0).value, 1e-12)
     }
+    @Test fun calculatesNewtonianGravity() {
+        assertEquals(6.67430e-11, ScienceCalculator.gravitationalForce(1.0, 1.0, 1.0).value, 1e-20)
+    }
+    @Test fun calculatesWorkAtRightAngleAsZero() {
+        assertEquals(0.0, ScienceCalculator.workByConstantForce(10.0, 5.0, 90.0).value, 1e-12)
+    }
+    @Test fun calculatesDensityAndPressure() {
+        assertEquals(1000.0, ScienceCalculator.density(1.0, 0.001).value, 1e-9)
+        assertEquals(100.0, ScienceCalculator.pressure(200.0, 2.0).value, 1e-12)
+    }
+    @Test fun calculatesElectricalPowerAndPhotonEnergy() {
+        assertEquals(60.0, ScienceCalculator.electricPower(12.0, 5.0).value, 1e-12)
+        assertEquals(6.62607015e-34, ScienceCalculator.photonEnergy(1.0).value, 1e-45)
+    }
     @Test fun rejectsInvalidPhysicalInputs() {
         try { ScienceCalculator.idealGasPressure(1.0, 0.0, 1.0); fail("Expected validation error") }
         catch (_: IllegalArgumentException) { }
