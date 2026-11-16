@@ -308,8 +308,13 @@ private fun copyGeneratedCode(context: Context, value: String, websiteMode: Bool
 
 
 private fun createNativeAndroidProjectZip(appNameInput: String): ByteArray {
-    val appName = appNameInput.trim().take(48).ifBlank { "My Astra App" }
-    val slug = appName.lowercase().replace(Regex("[^a-z0-9]+"), "_").trim('_').ifBlank { "my_astra_app" }
+    val appName = appNameInput.trim()
+        .replace(Regex("[^\\p{L}\\p{N} _-]"), " ")
+        .replace(Regex("\\s+"), " ")
+        .take(40)
+        .ifBlank { "My Astra App" }
+    val slugRaw = appName.lowercase().replace(Regex("[^a-z0-9]+"), "_").trim('_').ifBlank { "my_astra_app" }
+    val slug = if (slugRaw.firstOrNull()?.isLetter() == true) slugRaw else "app_$slugRaw"
     val packageName = "com.example." + slug.take(32)
     val packagePath = packageName.replace('.', '/')
     val files = linkedMapOf(
