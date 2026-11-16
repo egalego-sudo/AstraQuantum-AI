@@ -206,107 +206,97 @@ private fun AstraApp(
         HorizontalDivider(color = line)
         when (page) {
             "Home" -> {
-                Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 14.dp)) {
+                Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 14.dp, vertical = 10.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text("WELCOME TO YOUR UNIVERSE", color = mint, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp)
-                            Text("नमस्ते! ASTRA तैयार है", color = white, fontSize = 21.sp, fontWeight = FontWeight.ExtraBold)
-                            Text("आपकी सोच से आगे की AI दुनिया", color = muted, fontSize = 11.sp)
+                        Text("☰", color = white, fontSize = 25.sp)
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("ASTRA", color = white, fontSize = 24.sp, fontWeight = FontWeight.Black, letterSpacing = 3.sp)
+                            Text("QUANTUM AI", color = Color(0xFFFFD84D), fontSize = 18.sp, fontWeight = FontWeight.Black, letterSpacing = 1.5.sp)
+                            Text("Smarter Search. Deeper Knowledge.", color = white, fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
                         }
-                        Box(Modifier.size(54.dp).clip(CircleShape).background(Brush.linearGradient(listOf(violet, white, mint))), contentAlignment = Alignment.Center) {
-                            Text("✦", color = ink, fontSize = 28.sp, fontWeight = FontWeight.Black)
-                        }
+                        Text("●", color = Color(0xFFFF4D68), fontSize = 18.sp)
                     }
-                    Spacer(Modifier.height(16.dp))
-                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xA5101B3A)), shape = RoundedCornerShape(26.dp), modifier = Modifier.fillMaxWidth()) {
-                        Box {
-                            QuantumArtwork(Modifier.align(Alignment.CenterEnd).size(170.dp))
-                            Column(Modifier.padding(18.dp)) {
-                                Text("ASTRA QUANTUM AI", color = mint, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
-                                Spacer(Modifier.height(7.dp))
-                                Text("Think beyond.\nExplore the unknown.", color = white, fontSize = 25.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 30.sp)
-                                Spacer(Modifier.height(8.dp))
-                                Text("एक ही जगह बातचीत, खोज और नए विचार।", color = muted, fontSize = 11.sp)
-                                Spacer(Modifier.height(15.dp))
-                                Button(onClick = { page = "AI Chat" }, colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink), shape = RoundedCornerShape(13.dp)) {
-                                    Text("AI से बात करें  →", fontWeight = FontWeight.Bold)
-                                }
+                    Spacer(Modifier.height(8.dp))
+                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xCC07152F)), shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
+                        Box(Modifier.fillMaxWidth().height(174.dp)) {
+                            HomeCosmicArtwork(Modifier.fillMaxSize())
+                            Column(Modifier.align(Alignment.BottomStart).padding(14.dp)) {
+                                Text("WELCOME TO YOUR UNIVERSE", color = mint, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.3.sp)
+                                Text("नमस्ते! ASTRA तैयार है", color = white, fontSize = 19.sp, fontWeight = FontWeight.ExtraBold)
+                                Text("आपकी सोच से आगे की AI दुनिया", color = Color(0xFFE1E9FF), fontSize = 11.sp)
                             }
                         }
                     }
-                    Spacer(Modifier.height(15.dp))
-                    Text("ASK ASTRA", color = mint, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
-                    Spacer(Modifier.height(7.dp))
-                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xB5101A31)), shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
+                    Spacer(Modifier.height(12.dp))
+                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xE6101D3C)), shape = RoundedCornerShape(24.dp), modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(12.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("⌕", color = Color(0xFF65DFFF), fontSize = 27.sp, fontWeight = FontWeight.Bold)
+                                Spacer(Modifier.width(8.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text("Ask anything…", color = white, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    Text("सवाल यहाँ लिखें…", color = muted, fontSize = 10.sp)
+                                }
+                                TextButton(onClick = onListen) { Text("🎙", color = mint, fontSize = 20.sp) }
+                            }
                             OutlinedTextField(
                                 value = prompt, onValueChange = { prompt = it }, modifier = Modifier.fillMaxWidth(),
-                                placeholder = { Text("अपना सवाल यहाँ लिखें…", color = muted) },
-                                shape = RoundedCornerShape(13.dp), minLines = 1, maxLines = 3,
+                                placeholder = { Text("अपना सवाल लिखें…", color = muted) },
+                                shape = RoundedCornerShape(14.dp), minLines = 1, maxLines = 2,
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedTextColor = white, unfocusedTextColor = white,
                                     focusedBorderColor = mint, unfocusedBorderColor = line,
                                     cursorColor = mint, focusedContainerColor = Color(0x66101834), unfocusedContainerColor = Color(0x66101834)
                                 )
                             )
-                            Spacer(Modifier.height(8.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                OutlinedButton(onClick = onListen, modifier = Modifier.weight(1f), colors = ButtonDefaults.outlinedButtonColors(contentColor = mint), shape = RoundedCornerShape(12.dp)) { Text("🎙 बोलें") }
-                                Button(enabled = prompt.isNotBlank(), onClick = { page = "AI Chat" }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink), shape = RoundedCornerShape(12.dp)) { Text("पूछें  ↑", fontWeight = FontWeight.Bold) }
+                            Spacer(Modifier.height(7.dp))
+                            Button(enabled = prompt.isNotBlank(), onClick = { page = "AI Chat" }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF087CFF), contentColor = Color.White), shape = RoundedCornerShape(14.dp)) {
+                                Text("ASTRA से पूछें  →", fontWeight = FontWeight.Bold)
                             }
                         }
                     }
-                    Spacer(Modifier.height(17.dp))
+                    Spacer(Modifier.height(15.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("EXPLORE THE UNIVERSE", color = violet, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                        Text("EXPLORE THE UNIVERSE", color = Color(0xFFFFD84D), fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 1.1.sp)
                         Spacer(Modifier.weight(1f))
-                        Text("8 MODULES", color = muted, fontSize = 9.sp)
+                        Text("9 FEATURES", color = muted, fontSize = 9.sp)
                     }
                     Spacer(Modifier.height(9.dp))
                     val modules = listOf(
-                        AstraModule("AI Chat", "बातचीत और उत्तर", "✳"),
-                        AstraModule("Research", "वेब पर गहरी खोज", "⌕"),
-                        AstraModule("Memory", "निजी नोट्स", "◈"),
-                        AstraModule("Voice", "बोलें और सुनें", "◖"),
-                        AstraModule("Files", "फाइल विश्लेषण", "▧"),
-                        AstraModule("Quantum", "Qubit Lab", "◎"),
-                        AstraModule("Projects", "अपने प्रोजेक्ट", "▤"),
-                        AstraModule("Settings", "ऐप नियंत्रण", "⚙")
+                        AstraModule("AI Chat", "बातचीत", "●"),
+                        AstraModule("Smart Search", "स्मार्ट खोज", "⌕"),
+                        AstraModule("Research", "गहन शोध", "▤"),
+                        AstraModule("Verification", "स्रोत जाँच", "✓"),
+                        AstraModule("Quantum", "क्वांटम लैब", "⚛"),
+                        AstraModule("AI Tools", "एआई टूल्स", "✧"),
+                        AstraModule("Memory", "मेरी यादें", "◈"),
+                        AstraModule("Projects", "प्रोजेक्ट्स", "▣"),
+                        AstraModule("Settings", "सेटिंग्स", "⚙")
                     )
-                    modules.chunked(2).forEachIndexed { rowIndex, pair ->
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                            pair.forEachIndexed { colIndex, module ->
-                                Card(onClick = { page = module.title }, modifier = Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = Color(0xA5101A31)), shape = RoundedCornerShape(18.dp)) {
-                                    Column(Modifier.fillMaxWidth().padding(13.dp)) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Box(Modifier.size(34.dp).clip(RoundedCornerShape(11.dp)).background(if ((rowIndex + colIndex) % 2 == 0) Color(0x553CCFFF) else Color(0x559B8CFF)), contentAlignment = Alignment.Center) {
-                                                Text(module.symbol, color = white, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                                            }
-                                            Spacer(Modifier.weight(1f))
-                                            Text("↗", color = mint, fontSize = 15.sp)
-                                        }
-                                        Spacer(Modifier.height(10.dp))
-                                        Text(module.title, color = white, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                        Text(module.subtitle, color = muted, fontSize = 10.sp)
+                    modules.chunked(3).forEachIndexed { rowIndex, group ->
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            group.forEachIndexed { colIndex, module ->
+                                val colors = listOf(Color(0xFF075EEB), Color(0xFF00A85A), Color(0xFF7B19D8), Color(0xFFE66A00), Color(0xFF008BAA), Color(0xFF29A900), Color(0xFFE81776), Color(0xFF3436D8), Color(0xFF47536E))
+                                val cardColor = colors[rowIndex * 3 + colIndex]
+                                Card(onClick = { page = when(module.title) { "Smart Search", "Verification" -> "Research"; "AI Tools" -> "Projects"; else -> module.title } }, modifier = Modifier.weight(1f).height(112.dp), colors = CardDefaults.cardColors(containerColor = cardColor.copy(alpha = .94f)), shape = RoundedCornerShape(20.dp)) {
+                                    Column(Modifier.fillMaxSize().padding(9.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                                        Text(module.symbol, color = Color.White, fontSize = 25.sp, fontWeight = FontWeight.Black)
+                                        Spacer(Modifier.height(5.dp))
+                                        Text(module.title, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 11.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                                        Text(module.subtitle, color = Color.White.copy(alpha = .92f), fontSize = 9.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                                     }
                                 }
                             }
                         }
-                        if (rowIndex < 3) Spacer(Modifier.height(9.dp))
-                    }
-                    Spacer(Modifier.height(15.dp))
-                    Card(colors = CardDefaults.cardColors(containerColor = Color(0x771B1640)), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
-                        Row(Modifier.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("✧", color = mint, fontSize = 24.sp)
-                            Spacer(Modifier.width(10.dp))
-                            Column(Modifier.weight(1f)) {
-                                Text("YOUR IDEAS. YOUR UNIVERSE.", color = white, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                                Text("हर खोज की शुरुआत एक सवाल से होती है।", color = muted, fontSize = 10.sp)
-                            }
-                        }
+                        if (rowIndex < 2) Spacer(Modifier.height(8.dp))
                     }
                     Spacer(Modifier.height(12.dp))
-                    Text("Creator by Bittu Pandit", color = mint, fontSize = 10.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    Text("✦  Powered by Quantum AI Technology", color = Color(0xFF36E7F5), fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    Spacer(Modifier.height(8.dp))
+                    Surface(color = Color(0xDD17142F), shape = RoundedCornerShape(30.dp), modifier = Modifier.fillMaxWidth()) {
+                        Text("♛  Creator by Bittu Pandit", color = Color(0xFFFFD84D), fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(12.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    }
                     Spacer(Modifier.height(8.dp))
                 }
             }
@@ -516,6 +506,32 @@ private fun CosmicNebulaBackground(modifier: Modifier = Modifier) {
         drawCircle(Brush.radialGradient(listOf(Color(0xFFB9A5FF).copy(alpha = .78f), Color(0xFF5436A0).copy(alpha = .50f), Color.Transparent), planet, pr * 2.1f), pr * 2.1f, planet)
         drawCircle(Brush.radialGradient(listOf(Color(0xFF6D58B8), Color(0xFF18234D), Color(0xFF070D20)), planet, pr), pr, planet)
         drawCircle(Color(0xFFB5A6FF).copy(alpha = .55f), pr * 1.12f, planet, style = Stroke(width = 1.dp.toPx()))
+    }
+}
+
+@Composable
+private fun HomeCosmicArtwork(modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val w = size.width
+        val h = size.height
+        val earth = Offset(w * .82f, h * .56f)
+        val er = h * .40f
+        drawCircle(Color(0xFF1768D5).copy(alpha = .28f), er * 1.45f, earth)
+        drawCircle(Brush.radialGradient(listOf(Color(0xFF48D9FF), Color(0xFF1264C8), Color(0xFF061A45)), earth, er), er, earth)
+        drawArc(Color(0xFF4BE6A2).copy(alpha = .85f), 205f, 105f, false, Offset(earth.x-er, earth.y-er), androidx.compose.ui.geometry.Size(er*2, er*2), style = Stroke(width = er*.22f))
+        val robot = Offset(w * .20f, h * .53f)
+        val rr = h * .28f
+        drawCircle(Color(0xFF158DFF).copy(alpha = .22f), rr * 1.65f, robot)
+        drawRoundRect(Brush.linearGradient(listOf(Color(0xFFDAF8FF), Color(0xFF397BBE), Color(0xFF101E49)), Offset(robot.x-rr, robot.y-rr), Offset(robot.x+rr, robot.y+rr)), Offset(robot.x-rr*.72f, robot.y-rr*.9f), androidx.compose.ui.geometry.Size(rr*1.44f, rr*1.75f), androidx.compose.ui.geometry.CornerRadius(rr*.45f))
+        drawRoundRect(Color(0xFF07152F), Offset(robot.x-rr*.53f, robot.y-rr*.20f), androidx.compose.ui.geometry.Size(rr*1.06f, rr*.57f), androidx.compose.ui.geometry.CornerRadius(rr*.18f))
+        drawCircle(Color(0xFF43E8FF), rr*.13f, Offset(robot.x-rr*.25f, robot.y+rr*.05f))
+        drawCircle(Color(0xFF43E8FF), rr*.13f, Offset(robot.x+rr*.25f, robot.y+rr*.05f))
+        drawArc(Color(0xFFB68CFF), 205f, 230f, false, Offset(w*.28f, h*.12f), androidx.compose.ui.geometry.Size(w*.66f, h*.72f), style = Stroke(width = 2.dp.toPx()))
+        for (i in 0..24) {
+            val x = (i * 47f % w)
+            val y = (i * 31f % h)
+            drawCircle(Color.White.copy(alpha = .55f), if (i%4==0) 1.8.dp.toPx() else 1.dp.toPx(), Offset(x,y))
+        }
     }
 }
 
