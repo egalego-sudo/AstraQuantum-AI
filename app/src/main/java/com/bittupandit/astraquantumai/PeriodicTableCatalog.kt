@@ -1,6 +1,6 @@
 package com.bittupandit.astraquantumai
 
-/** Compact periodic-table records. Atomic masses are standard abridged values, not isotope masses. */
+/** Complete 118-element name/symbol index. Mass is nullable where no standard atomic weight is assigned. */
 data class ElementRecord(
     val atomicNumber: Int,
     val symbol: String,
@@ -12,7 +12,7 @@ data class ElementRecord(
 )
 
 object PeriodicTableCatalog {
-    const val VERSION = "0.1.0"
+    const val VERSION = "0.2.0"
     val elements = listOf(
         ElementRecord(1,"H","Hydrogen",1.008,1,1,"Nonmetal"),
         ElementRecord(2,"He","Helium",4.002602,18,1,"Noble gas"),
@@ -34,19 +34,112 @@ object PeriodicTableCatalog {
         ElementRecord(18,"Ar","Argon",39.948,18,3,"Noble gas"),
         ElementRecord(19,"K","Potassium",39.0983,1,4,"Alkali metal"),
         ElementRecord(20,"Ca","Calcium",40.078,2,4,"Alkaline earth metal"),
+        ElementRecord(21,"Sc","Scandium",44.955908,3,4,"Transition metal"),
+        ElementRecord(22,"Ti","Titanium",47.867,4,4,"Transition metal"),
+        ElementRecord(23,"V","Vanadium",50.9415,5,4,"Transition metal"),
+        ElementRecord(24,"Cr","Chromium",51.9961,6,4,"Transition metal"),
+        ElementRecord(25,"Mn","Manganese",54.938044,7,4,"Transition metal"),
         ElementRecord(26,"Fe","Iron",55.845,8,4,"Transition metal"),
+        ElementRecord(27,"Co","Cobalt",58.933194,9,4,"Transition metal"),
+        ElementRecord(28,"Ni","Nickel",58.6934,10,4,"Transition metal"),
         ElementRecord(29,"Cu","Copper",63.546,11,4,"Transition metal"),
+        ElementRecord(30,"Zn","Zinc",65.38,12,4,"Transition metal"),
+        ElementRecord(31,"Ga","Gallium",69.723,13,4,"Post-transition metal"),
+        ElementRecord(32,"Ge","Germanium",72.630,14,4,"Metalloid"),
+        ElementRecord(33,"As","Arsenic",74.921595,15,4,"Metalloid"),
+        ElementRecord(34,"Se","Selenium",78.971,16,4,"Nonmetal"),
+        ElementRecord(35,"Br","Bromine",79.904,17,4,"Halogen"),
+        ElementRecord(36,"Kr","Krypton",83.798,18,4,"Noble gas"),
+        ElementRecord(37,"Rb","Rubidium",85.4678,1,5,"Alkali metal"),
+        ElementRecord(38,"Sr","Strontium",87.62,2,5,"Alkaline earth metal"),
+        ElementRecord(39,"Y","Yttrium",88.90584,3,5,"Transition metal"),
+        ElementRecord(40,"Zr","Zirconium",91.224,4,5,"Transition metal"),
+        ElementRecord(41,"Nb","Niobium",92.90637,5,5,"Transition metal"),
+        ElementRecord(42,"Mo","Molybdenum",95.95,6,5,"Transition metal"),
+        ElementRecord(43,"Tc","Technetium",null,7,5,"Transition metal"),
+        ElementRecord(44,"Ru","Ruthenium",101.07,8,5,"Transition metal"),
+        ElementRecord(45,"Rh","Rhodium",102.90550,9,5,"Transition metal"),
+        ElementRecord(46,"Pd","Palladium",106.42,10,5,"Transition metal"),
         ElementRecord(47,"Ag","Silver",107.8682,11,5,"Transition metal"),
+        ElementRecord(48,"Cd","Cadmium",112.414,12,5,"Transition metal"),
+        ElementRecord(49,"In","Indium",114.818,13,5,"Post-transition metal"),
+        ElementRecord(50,"Sn","Tin",118.710,14,5,"Post-transition metal"),
+        ElementRecord(51,"Sb","Antimony",121.760,15,5,"Metalloid"),
+        ElementRecord(52,"Te","Tellurium",127.60,16,5,"Metalloid"),
+        ElementRecord(53,"I","Iodine",126.90447,17,5,"Halogen"),
+        ElementRecord(54,"Xe","Xenon",131.293,18,5,"Noble gas"),
+        ElementRecord(55,"Cs","Caesium",132.90545196,1,6,"Alkali metal"),
+        ElementRecord(56,"Ba","Barium",137.327,2,6,"Alkaline earth metal"),
+        ElementRecord(57,"La","Lanthanum",138.90547,null,6,"Lanthanide"),
+        ElementRecord(58,"Ce","Cerium",140.116,null,6,"Lanthanide"),
+        ElementRecord(59,"Pr","Praseodymium",140.90766,null,6,"Lanthanide"),
+        ElementRecord(60,"Nd","Neodymium",144.242,null,6,"Lanthanide"),
+        ElementRecord(61,"Pm","Promethium",null,null,6,"Lanthanide"),
+        ElementRecord(62,"Sm","Samarium",150.36,null,6,"Lanthanide"),
+        ElementRecord(63,"Eu","Europium",151.964,null,6,"Lanthanide"),
+        ElementRecord(64,"Gd","Gadolinium",157.25,null,6,"Lanthanide"),
+        ElementRecord(65,"Tb","Terbium",158.925354,null,6,"Lanthanide"),
+        ElementRecord(66,"Dy","Dysprosium",162.500,null,6,"Lanthanide"),
+        ElementRecord(67,"Ho","Holmium",164.930329,null,6,"Lanthanide"),
+        ElementRecord(68,"Er","Erbium",167.259,null,6,"Lanthanide"),
+        ElementRecord(69,"Tm","Thulium",168.934219,null,6,"Lanthanide"),
+        ElementRecord(70,"Yb","Ytterbium",173.045,null,6,"Lanthanide"),
+        ElementRecord(71,"Lu","Lutetium",174.9668,null,6,"Lanthanide"),
+        ElementRecord(72,"Hf","Hafnium",178.49,4,6,"Transition metal"),
+        ElementRecord(73,"Ta","Tantalum",180.94788,5,6,"Transition metal"),
+        ElementRecord(74,"W","Tungsten",183.84,6,6,"Transition metal"),
+        ElementRecord(75,"Re","Rhenium",186.207,7,6,"Transition metal"),
+        ElementRecord(76,"Os","Osmium",190.23,8,6,"Transition metal"),
+        ElementRecord(77,"Ir","Iridium",192.217,9,6,"Transition metal"),
+        ElementRecord(78,"Pt","Platinum",195.084,10,6,"Transition metal"),
         ElementRecord(79,"Au","Gold",196.966569,11,6,"Transition metal"),
         ElementRecord(80,"Hg","Mercury",200.592,12,6,"Transition metal"),
+        ElementRecord(81,"Tl","Thallium",204.38,13,6,"Post-transition metal"),
         ElementRecord(82,"Pb","Lead",207.2,14,6,"Post-transition metal"),
-        ElementRecord(92,"U","Uranium",238.02891,null,7,"Actinide")
+        ElementRecord(83,"Bi","Bismuth",208.98040,15,6,"Post-transition metal"),
+        ElementRecord(84,"Po","Polonium",null,16,6,"Post-transition metal"),
+        ElementRecord(85,"At","Astatine",null,17,6,"Halogen"),
+        ElementRecord(86,"Rn","Radon",null,18,6,"Noble gas"),
+        ElementRecord(87,"Fr","Francium",null,1,7,"Alkali metal"),
+        ElementRecord(88,"Ra","Radium",null,2,7,"Alkaline earth metal"),
+        ElementRecord(89,"Ac","Actinium",null,null,7,"Actinide"),
+        ElementRecord(90,"Th","Thorium",232.0377,null,7,"Actinide"),
+        ElementRecord(91,"Pa","Protactinium",231.03588,null,7,"Actinide"),
+        ElementRecord(92,"U","Uranium",238.02891,null,7,"Actinide"),
+        ElementRecord(93,"Np","Neptunium",null,null,7,"Actinide"),
+        ElementRecord(94,"Pu","Plutonium",null,null,7,"Actinide"),
+        ElementRecord(95,"Am","Americium",null,null,7,"Actinide"),
+        ElementRecord(96,"Cm","Curium",null,null,7,"Actinide"),
+        ElementRecord(97,"Bk","Berkelium",null,null,7,"Actinide"),
+        ElementRecord(98,"Cf","Californium",null,null,7,"Actinide"),
+        ElementRecord(99,"Es","Einsteinium",null,null,7,"Actinide"),
+        ElementRecord(100,"Fm","Fermium",null,null,7,"Actinide"),
+        ElementRecord(101,"Md","Mendelevium",null,null,7,"Actinide"),
+        ElementRecord(102,"No","Nobelium",null,null,7,"Actinide"),
+        ElementRecord(103,"Lr","Lawrencium",null,null,7,"Actinide"),
+        ElementRecord(104,"Rf","Rutherfordium",null,4,7,"Transition metal"),
+        ElementRecord(105,"Db","Dubnium",null,5,7,"Transition metal"),
+        ElementRecord(106,"Sg","Seaborgium",null,6,7,"Transition metal"),
+        ElementRecord(107,"Bh","Bohrium",null,7,7,"Transition metal"),
+        ElementRecord(108,"Hs","Hassium",null,8,7,"Transition metal"),
+        ElementRecord(109,"Mt","Meitnerium",null,9,7,"Transition metal"),
+        ElementRecord(110,"Ds","Darmstadtium",null,10,7,"Transition metal"),
+        ElementRecord(111,"Rg","Roentgenium",null,11,7,"Transition metal"),
+        ElementRecord(112,"Cn","Copernicium",null,12,7,"Transition metal"),
+        ElementRecord(113,"Nh","Nihonium",null,13,7,"Post-transition metal"),
+        ElementRecord(114,"Fl","Flerovium",null,14,7,"Post-transition metal"),
+        ElementRecord(115,"Mc","Moscovium",null,15,7,"Post-transition metal"),
+        ElementRecord(116,"Lv","Livermorium",null,16,7,"Post-transition metal"),
+        ElementRecord(117,"Ts","Tennessine",null,17,7,"Halogen"),
+        ElementRecord(118,"Og","Oganesson",null,18,7,"Noble gas")
     )
 
     fun byAtomicNumber(number: Int): ElementRecord? = elements.firstOrNull { it.atomicNumber == number }
     fun search(query: String): List<ElementRecord> {
         val q = query.trim().lowercase()
         if (q.isEmpty()) return elements
-        return elements.filter { it.name.lowercase().contains(q) || it.symbol.lowercase() == q || it.atomicNumber.toString() == q }
+        return elements.filter {
+            it.name.lowercase().contains(q) || it.symbol.lowercase() == q || it.atomicNumber.toString() == q
+        }
     }
 }
