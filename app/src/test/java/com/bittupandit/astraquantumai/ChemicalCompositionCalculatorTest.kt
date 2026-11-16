@@ -21,6 +21,6 @@ class ChemicalCompositionCalculatorTest {
     @Test(expected = IllegalArgumentException::class)
     fun rejectsUnknownElement() { ChemicalCompositionCalculator.analyze("Xx2") }
     @Test(expected = IllegalArgumentException::class)
-    fun rejectsElementsWithoutStandardAtomicWeight() { ChemicalCompositionCalculator.analyze("Uuo") }
+    fun rejectsElementsWithoutStandardAtomicWeight() { ChemicalCompositionCalculator.analyze("Tc") }
     @Test fun formulaHasPositiveMass() { assertTrue(ChemicalCompositionCalculator.analyze("CO2").molarMassGPerMol > 40.0) }
 }
