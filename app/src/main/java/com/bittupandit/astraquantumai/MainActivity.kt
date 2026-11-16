@@ -452,7 +452,14 @@ private fun AstraApp(
                             Text("AI CONVERSATION", color = white, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                             Text(status, color = muted, fontSize = 9.sp)
                         }
-                        TextButton(onClick = { chat = listOf(ChatLine("ASTRA", "नई बातचीत शुरू हुई। अपना सवाल पूछिए।")) }) { Text("नई चैट", color = muted) }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(if (useMemoryInChat) "संदर्भ चालू" else "संदर्भ बंद", color = if (useMemoryInChat) mint else muted, fontSize = 9.sp)
+                            Switch(checked = useMemoryInChat, onCheckedChange = {
+                                useMemoryInChat = it
+                                prefs.edit().putBoolean("use_memory_in_chat", it).apply()
+                            })
+                            TextButton(onClick = { chat = listOf(ChatLine("ASTRA", "नई बातचीत शुरू हुई। अपना सवाल पूछिए।")) }) { Text("नई चैट", color = muted) }
+                        }
                     }
                     LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(vertical = 10.dp)) {
                         items(chat) { item ->
@@ -513,16 +520,13 @@ private fun AstraApp(
                             onClick = {
                                 val imageUri = pickedUri?.takeIf { pickedMime in listOf("image/jpeg", "image/png", "image/webp") }
                                 val question = prompt.trim().ifBlank { "इस फोटो में क्या दिखाई दे रहा है? विस्तार से हिंदी में विश्लेषण करें।" }
-                                val rawQuestionWithMemory = if (useMemoryInChat && (memories.isNotBlank() || projects.isNotBlank() || chat.size > 1)) {
-                                    val recentConversation = chat.takeLast(12).joinToString("\n") { line ->
-                                        (if (line.from == "ASTRA") "ASTRA: " else "उपयोगकर्ता: ") + line.text.take(1800)
-                                    }
-                                    question + "\n\n[उपयोगकर्ता की अनुमति से स्थानीय Long-Term Context]" +
-                                        "\nSaved Memory:\n" + memories.take(8000) +
-                                        "\nSaved Projects / checkpoints:\n" + projects.take(8000) +
-                                        "\nहाल की बातचीत का संदर्भ:\n" + recentConversation.take(10000) +
-                                        "\nनिर्देश: पुराने संदर्भ को केवल तभी उपयोग करें जब वर्तमान प्रश्न से संबंधित हो। पुरानी योजना जहाँ रुकी थी वहाँ से आगे बढ़ने में मदद करें। संदर्भ को सार्वजनिक प्रमाण न मानें; विरोधाभास हो तो उपयोगकर्ता से स्पष्ट करें।"
-                                } else question
+                                val rawQuestionWithMemory = ContextIntelligence.buildPrompt(
+                                    question = question,
+                                    history = chat.map { ContextTurn(it.from, it.text) },
+                                    memories = memories,
+                                    projects = projects,
+                                    includePersonalContext = useMemoryInChat
+                                )
                                 val questionWithMemory = ScientificIntelligence.enhancePrompt(rawQuestionWithMemory)
                                 chat = chat + ChatLine("You", question + if (imageUri != null) "  [फोटो: $pickedFile]" else "")
                                 prompt = ""
