@@ -455,33 +455,58 @@ private fun AstraApp(
                     TextButton(onClick = { copyText(fileAnalysis) }) { Text("कॉपी करें", color = white) }
                 }
             }
-            "Quantum" -> SimplePage("QUANTUM LAB · MULTI-QUBIT", "1 से 16 Qubit तक शैक्षिक multi-qubit probability सिमुलेशन। यह फोन पर चलने वाला क्लासिकल सिमुलेशन है, वास्तविक quantum hardware नहीं; अभी entanglement और quantum gates शामिल नहीं हैं।") {
+            "Quantum" -> SimplePage("ASTRA QUANTUM LAB · 32-QUBIT HYBRID", "32-Qubit Hybrid Learning Engine: फोन पर क्लासिकल गणना, on-demand probability और measurement sampling। यह वास्तविक quantum hardware या हर प्रकार के entangled circuit का exact simulator नहीं है; अभी स्वतंत्र Qubits के product-state प्रयोग करता है।") {
                 Text("Qubit की संख्या: ${qubitCount}", color = white, fontWeight = FontWeight.Bold)
-                Slider(value = qubitCount.toFloat(), onValueChange = { qubitCount = it.toInt().coerceIn(1, 16) }, valueRange = 1f..16f, steps = 14, colors = SliderDefaults.colors(thumbColor = white, activeTrackColor = white))
-                Text("State angle: ${qubitAngle.toInt()}°", color = white, fontWeight = FontWeight.Bold)
-                Slider(value = qubitAngle, onValueChange = { qubitAngle = it }, valueRange = 0f..180f, colors = SliderDefaults.colors(thumbColor = white, activeTrackColor = white))
+                Slider(value = qubitCount.toFloat(), onValueChange = { qubitCount = it.toInt().coerceIn(1, 32) }, valueRange = 1f..32f, steps = 30, colors = SliderDefaults.colors(thumbColor = white, activeTrackColor = white))
+                Text("Rotation angle: ${qubitAngle.toInt()}°", color = white, fontWeight = FontWeight.Bold)
+                Slider(value = qubitAngle, onValueChange = { qubitAngle = it }, valueRange = 0f..360f, steps = 35, colors = SliderDefaults.colors(thumbColor = white, activeTrackColor = white))
+                val basisStates = 1L shl qubitCount
+                val fullVectorGiB = (16.0 * basisStates.toDouble()) / (1024.0 * 1024.0 * 1024.0)
                 Card(colors = CardDefaults.cardColors(containerColor = graphite), shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                        Text("कुल basis states", color = muted, fontSize = 11.sp)
-                        Text("${1 shl qubitCount} अवस्थाएँ (2^${qubitCount})", color = white, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                        Text("अनुमानित state-vector memory: ${(16L * (1L shl qubitCount)) / 1024} KB", color = mint, fontSize = 11.sp)
+                        Text("कुल संभावित basis states", color = muted, fontSize = 11.sp)
+                        Text("${String.format(Locale.US, "%,d", basisStates)} (2^${qubitCount})", color = white, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        Text("हमारा product-state engine: on-demand गणना; पूरी state-vector RAM में नहीं रखता।", color = mint, fontSize = 11.sp)
+                        Text("तुलना के लिए full complex state-vector: लगभग ${"%.2f".format(Locale.US, fullVectorGiB)} GiB RAM", color = muted, fontSize = 11.sp)
                     }
                 }
                 Button(onClick = {
-                    val p0 = kotlin.math.cos(Math.toRadians((qubitAngle / 2.0).toDouble())).let { it * it }
+                    val theta = Math.toRadians(qubitAngle.toDouble())
+                    val p0 = kotlin.math.cos(theta / 2.0).let { it * it }
                     val p1 = 1.0 - p0
-                    val states = 1 shl qubitCount
                     val allZero = Math.pow(p0, qubitCount.toDouble())
                     val allOne = Math.pow(p1, qubitCount.toDouble())
+                    val expectedOnes = qubitCount * p1
                     val mostLikely = if (p0 >= p1) "0".repeat(qubitCount) else "1".repeat(qubitCount)
                     val mostLikelyProbability = maxOf(allZero, allOne)
-                    qubitResult = "प्रति Qubit: P(0) = ${"%.4f".format(p0)} | P(1) = ${"%.4f".format(p1)}\n" +
-                        "कुल अवस्थाएँ: $states\n" +
-                        "सभी शून्य: ${"%.6f".format(allZero)}\n" +
-                        "सभी एक: ${"%.6f".format(allOne)}\n" +
-                        "सबसे संभावित छोर-अवस्था: |$mostLikely⟩ = ${"%.6f".format(mostLikelyProbability)}\n" +
-                        "नोट: यह स्वतंत्र Qubit का product-state मॉडल है।"
-                }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("मल्टी-Qubit संभावना निकालें") }
+                    qubitResult = "प्रति Qubit: P(0) = ${"%.4f".format(Locale.US, p0)} | P(1) = ${"%.4f".format(Locale.US, p1)}\n" +
+                        "कुल basis states: ${String.format(Locale.US, "%,d", basisStates)}\n" +
+                        "सभी शून्य की संभावना: ${"%.8f".format(Locale.US, allZero)}\n" +
+                        "सभी एक की संभावना: ${"%.8f".format(Locale.US, allOne)}\n" +
+                        "अपेक्षित 1 की संख्या: ${"%.3f".format(Locale.US, expectedOnes)} / ${qubitCount}\n" +
+                        "सबसे संभावित छोर-अवस्था: |${mostLikely}⟩ = ${"%.8f".format(Locale.US, mostLikelyProbability)}\n" +
+                        "मॉडल: स्वतंत्र Qubits का product-state; गणना O(n), n ≤ 32।"
+                }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("32-Qubit probability निकालें") }
+                OutlinedButton(onClick = {
+                    val theta = Math.toRadians(qubitAngle.toDouble())
+                    val p1 = kotlin.math.sin(theta / 2.0).let { it * it }
+                    val shots = 1000
+                    var totalOnes = 0
+                    var allZeroShots = 0
+                    var allOneShots = 0
+                    repeat(shots) {
+                        var ones = 0
+                        repeat(qubitCount) { if (kotlin.random.Random.nextDouble() < p1) ones++ }
+                        totalOnes += ones
+                        if (ones == 0) allZeroShots++
+                        if (ones == qubitCount) allOneShots++
+                    }
+                    qubitResult = "Measurement sampling · ${String.format(Locale.US, "%,d", shots)} shots\n" +
+                        "औसत 1 प्रति shot: ${"%.3f".format(Locale.US, totalOnes.toDouble() / shots)} / ${qubitCount}\n" +
+                        "सभी 0 मिले: ${allZeroShots} बार (${"%.2f".format(Locale.US, allZeroShots * 100.0 / shots)}%)\n" +
+                        "सभी 1 मिले: ${allOneShots} बार (${"%.2f".format(Locale.US, allOneShots * 100.0 / shots)}%)\n" +
+                        "यह classical random sampling है, वास्तविक quantum measurement नहीं।"
+                }, modifier = Modifier.fillMaxWidth()) { Text("1,000 measurement shots चलाएँ", color = white) }
                 SelectionContainer { Text(qubitResult, color = white, lineHeight = 21.sp) }
             }
             "Projects" -> SimplePage("PROJECT WORKSPACE", "अपने प्रोजेक्ट के नोट्स सेव करें। ये इसी फोन में रहेंगे और ऐप दोबारा खोलने पर वापस मिलेंगे।") {
