@@ -34,3 +34,18 @@ test("ignores queries made only of common stop words", async () => {
   const results = await searchKnowledge("the is and का की है", 4);
   assert.deepEqual(results, []);
 });
+
+test("does not retrieve records that have not passed source review", async () => {
+  const results = await searchKnowledge("atomic number protons nucleus", 8);
+  assert.ok(!results.some(record => record.id === "chemistry.atomic-number"));
+  assert.ok(!results.some(record => record.id === "chemistry.atomic-number.hi"));
+});
+
+test("retrieved records are reviewed and have HTTPS provenance", async () => {
+  const results = await searchKnowledge("energy conservation isolated system", 8);
+  for (const record of results) {
+    assert.ok(["source_checked", "expert_reviewed"].includes(record.review_status));
+    assert.ok(record.sources.length > 0);
+    for (const source of record.sources) assert.match(source.url, /^https:\/\//);
+  }
+});

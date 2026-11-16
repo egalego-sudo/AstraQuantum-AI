@@ -24,7 +24,7 @@ async function loadRecords() {
     cachedRecords = raw.split(/\r?\n/).filter(Boolean).flatMap(line => {
       try {
         const record = JSON.parse(line);
-        if (!record || !record.id || !record.title || !record.content || !Array.isArray(record.sources) || seen.has(record.id)) return [];
+        if (!record || !record.id || !record.title || !record.content || !Array.isArray(record.sources) || !record.sources.length || !["source_checked", "expert_reviewed"].includes(record.review_status) || !record.sources.every(source => source && typeof source.publisher === "string" && typeof source.url === "string" && source.url.startsWith("https://")) || seen.has(record.id)) return [];
         seen.add(record.id);
         return [record];
       } catch {
