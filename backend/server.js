@@ -120,6 +120,93 @@ async function generate(input) {
 }
 
 
+
+const IBM_API_KEY = process.env.IBM_QUANTUM_API_KEY;
+const IBM_SERVICE_CRN = process.env.IBM_QUANTUM_SERVICE_CRN;
+const IBM_BASE_URL = process.env.IBM_QUANTUM_BASE_URL || "https://quantum.cloud.ibm.com";
+const IBM_API_VERSION = "2026-04-15";
+let ibmAccessToken = "";
+let ibmTokenExpiresAt = 0;
+
+async function getIbmAccessToken() {
+  if (!IBM_API_KEY || !IBM_SERVICE_CRN) {
+    throw new Error("वास्तविक Quantum Hardware के लिए Render Environment में IBM_QUANTUM_API_KEY और IBM_QUANTUM_SERVICE_CRN सेट करना बाकी है।");
+  }
+  if (ibmAccessToken && Date.now() < ibmTokenExpiresAt) return ibmAccessToken;
+  const form = new URLSearchParams({
+    grant_type: "urn:ibm:params:oauth:grant-type:apikey",
+    apikey: IBM_API_KEY
+  });
+  const response = await fetch("https://iam.cloud.ibm.com/identity/token", {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: form,
+    signal: AbortSignal.timeout(15000)
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || !data.access_token) throw new Error("IBM Quantum authentication failed. Check the server-side IBM API key.");
+  ibmAccessToken = data.access_token;
+  ibmTokenExpiresAt = Date.now() + Math.max(60, Number(data.expires_in || 3600) - 90) * 1000;
+  return ibmAccessToken;
+}
+
+async function ibmQuantumRequest(path, options = {}) {
+  const base = new URL(IBM_BASE_URL);
+  if (base.protocol !== "https:" || !["quantum.cloud.ibm.com", "eu-de.quantum.cloud.ibm.com"].includes(base.hostname)) {
+    throw new Error("IBM Quantum base URL must use an approved IBM Quantum region.");
+  }
+  const token = await getIbmAccessToken();
+  const response = await fetch(new URL("/api/v1" + path, base), {
+    ...options,
+    headers: {
+      accept: "application/json",
+      authorization: "Bearer " + token,
+      "service-crn": IBM_SERVICE_CRN,
+      "ibm-api-version": IBM_API_VERSION,
+      ...(options.body ? { "content-type": "application/json" } : {}),
+      ...(options.headers || {})
+    },
+    signal: AbortSignal.timeout(30000)
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = data?.errors?.[0]?.message || data?.message || "IBM Quantum request failed with HTTP " + response.status;
+    throw new Error(String(message).slice(0, 400));
+  }
+  return data;
+}
+
+async function quantumBackends() {
+  const data = await ibmQuantumRequest("/backends");
+  return { provider: "IBM Quantum", apiVersion: IBM_API_VERSION, backends: data.backends || data };
+}
+
+async function submitQuantumDemo(input) {
+  const backend = String(input.backend || "").trim();
+  if (!/^[A-Za-z0-9_-]{2,80}$/.test(backend)) throw new Error("मान्य IBM backend नाम लिखें।");
+  const qasm = 'OPENQASM 3.0; include "stdgates.inc"; bit[1] c; x $0; c[0] = measure $0;';
+  const data = await ibmQuantumRequest("/jobs", {
+    method: "POST",
+    body: JSON.stringify({
+      program_id: "sampler",
+      backend,
+      params: { pubs: [[qasm]], options: {}, version: 2 }
+    })
+  });
+  return {
+    provider: "IBM Quantum hardware",
+    backend,
+    job_id: data.id || data.job_id || "",
+    status: data.status || "submitted",
+    note: "यह job IBM के वास्तविक QPU/runtime पर भेजी गई है; परिणाम job status/result endpoint से जाँचे जाएँ।"
+  };
+}
+
+async function quantumJob(jobId) {
+  if (!/^[A-Za-z0-9_-]{4,120}$/.test(jobId)) throw new Error("Quantum job ID मान्य नहीं है।");
+  return await ibmQuantumRequest("/jobs/" + encodeURIComponent(jobId));
+}
+
 async function research(input) {
   const query = String(input.query || "").trim();
   if (!query || query.length > 500) throw new Error("Research query is empty or too long.");
@@ -181,16 +268,32 @@ const server = http.createServer(async (req, res) => {
       vision_model: VISION_MODEL
     });
   }
-  if (req.method !== "POST" || !["/v1/generate", "/v1/analyze", "/v1/research"].includes(pathname)) {
+  const isQuantumRoute = pathname === "/v1/quantum/backends" ||
+    pathname === "/v1/quantum/demo" || pathname.startsWith("/v1/quantum/jobs/");
+  if (!isQuantumRoute && !(req.method === "POST" && ["/v1/generate", "/v1/analyze", "/v1/research"].includes(pathname))) {
     return send(res, 404, { error: "Not found" });
   }
+  if (isQuantumRoute && !(
+    (req.method === "GET" && (pathname === "/v1/quantum/backends" || pathname.startsWith("/v1/quantum/jobs/"))) ||
+    (req.method === "POST" && pathname === "/v1/quantum/demo")
+  )) return send(res, 405, { error: "Method not allowed" });
   const ip = req.socket.remoteAddress || "unknown";
   const now = Date.now();
   const recent = (hits.get(ip) || []).filter(t => now - t < WINDOW_MS);
   if (recent.length >= MAX_REQUESTS) return send(res, 429, { error: "Rate limit reached. Try again in a minute." });
   recent.push(now); hits.set(ip, recent);
   try {
+    if (req.method === "GET" && pathname === "/v1/quantum/backends") {
+      return send(res, 200, await quantumBackends());
+    }
+    if (req.method === "GET" && pathname.startsWith("/v1/quantum/jobs/")) {
+      const jobId = pathname.slice("/v1/quantum/jobs/".length);
+      return send(res, 200, await quantumJob(jobId));
+    }
     const input = await readBody(req);
+    if (pathname === "/v1/quantum/demo") {
+      return send(res, 200, await submitQuantumDemo(input));
+    }
     if (pathname === "/v1/research") {
       const result = await research(input);
       return send(res, 200, result);
