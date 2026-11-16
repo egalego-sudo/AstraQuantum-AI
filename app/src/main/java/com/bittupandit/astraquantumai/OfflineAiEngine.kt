@@ -39,7 +39,7 @@ class OfflineAiEngine(context: Context) {
         }
         try {
             connection.connect()
-            check(connection.responseCode in 200..299) { "मॉडल डाउनलोड नहीं हो पाया · HTTP \${connection.responseCode}" }
+            check(connection.responseCode in 200..299) { "मॉडल डाउनलोड नहीं हो पाया · HTTP ${connection.responseCode}" }
             val declaredLength = connection.contentLengthLong
             connection.inputStream.use { input ->
                 FileOutputStream(partial).use { output ->
@@ -57,7 +57,7 @@ class OfflineAiEngine(context: Context) {
                 }
             }
             check(partial.length() in MIN_MODEL_BYTES..MAX_MODEL_BYTES) {
-                "डाउनलोड अधूरा या गलत है (\${partial.length()} bytes)। दोबारा प्रयास करें।"
+                "डाउनलोड अधूरा या गलत है (${partial.length()} bytes)। दोबारा प्रयास करें।"
             }
             check(partial.renameTo(modelFile)) { "मॉडल फ़ाइल सुरक्षित नहीं की जा सकी।" }
             onProgress(100)
