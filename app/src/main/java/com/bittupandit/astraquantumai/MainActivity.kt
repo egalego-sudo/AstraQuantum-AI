@@ -622,8 +622,10 @@ private fun AstraApp(
                     TextButton(onClick = { copyText(fileAnalysis) }) { Text("कॉपी करें", color = white) }
                 }
             }
-            "Quantum" -> SimplePage("ASTRA QUANTUM LAB · 10-QUBIT CIRCUITS", "Complex state-vector simulator: H, X, Y, Z, S, T, RX/RY/RZ 90°, CNOT और CZ gates; circuit building, probability amplitudes और measurement sampling। यह classical simulation है, physical quantum processor नहीं।") {
+            "Quantum" -> SimplePage("ASTRA QUANTUM ENGINE · 10 + 64 QUBIT MODES", "10-Qubit dense state-vector simulator और 64-Qubit sparse state-vector simulator। 64-Qubit mode structured circuits को exact रूप से चलाता है, जब non-zero amplitudes 100,000 तक सीमित रहें। दोनों classical simulations हैं, physical quantum processors नहीं।") {
                 QuantumCircuitLab()
+                HorizontalDivider(color = line, modifier = Modifier.padding(vertical = 10.dp))
+                Quantum64SparseLab()
                 HorizontalDivider(color = line, modifier = Modifier.padding(vertical = 10.dp))
                 Text("REAL QUANTUM HARDWARE · IBM QUANTUM", color = mint, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 Text("यह हिस्सा IBM के असली quantum compute service से जुड़ेगा। इसके लिए server पर IBM API key और Quantum instance CRN सुरक्षित रूप से configure होना जरूरी है।", color = muted, fontSize = 11.sp)
