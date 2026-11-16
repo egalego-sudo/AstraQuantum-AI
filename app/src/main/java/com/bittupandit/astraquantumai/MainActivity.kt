@@ -172,7 +172,8 @@ private fun AstraApp(
     var projects by remember { mutableStateOf(prefs.getString("projects", "") ?: "") }
     var chat by remember { mutableStateOf(restoreChatHistory(prefs.getString("chat_history", null))) }
     var qubitAngle by remember { mutableFloatStateOf(45f) }
-    var qubitResult by remember { mutableStateOf("Qubit तैयार है। कोण बदलकर मापन करें।") }
+    var qubitCount by remember { mutableIntStateOf(4) }
+    var qubitResult by remember { mutableStateOf("Qubit तैयार है। Qubit संख्या और कोण चुनकर गणना करें।") }
     var fileAnalysis by remember { mutableStateOf("") }
     var fileBusy by remember { mutableStateOf(false) }
 
@@ -454,15 +455,34 @@ private fun AstraApp(
                     TextButton(onClick = { copyText(fileAnalysis) }) { Text("कॉपी करें", color = white) }
                 }
             }
-            "Quantum" -> SimplePage("QUANTUM LAB · QUBIT", "यह एक शैक्षिक single-qubit probability मॉडल है, असली quantum hardware नहीं।") {
-                Text("State angle: ${qubitAngle.toInt()}°", color = white)
+            "Quantum" -> SimplePage("QUANTUM LAB · MULTI-QUBIT", "1 से 16 Qubit तक शैक्षिक multi-qubit probability सिमुलेशन। यह फोन पर चलने वाला क्लासिकल सिमुलेशन है, वास्तविक quantum hardware नहीं; अभी entanglement और quantum gates शामिल नहीं हैं।") {
+                Text("Qubit की संख्या: ${qubitCount}", color = white, fontWeight = FontWeight.Bold)
+                Slider(value = qubitCount.toFloat(), onValueChange = { qubitCount = it.toInt().coerceIn(1, 16) }, valueRange = 1f..16f, steps = 14, colors = SliderDefaults.colors(thumbColor = white, activeTrackColor = white))
+                Text("State angle: ${qubitAngle.toInt()}°", color = white, fontWeight = FontWeight.Bold)
                 Slider(value = qubitAngle, onValueChange = { qubitAngle = it }, valueRange = 0f..180f, colors = SliderDefaults.colors(thumbColor = white, activeTrackColor = white))
+                Card(colors = CardDefaults.cardColors(containerColor = graphite), shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                        Text("कुल basis states", color = muted, fontSize = 11.sp)
+                        Text("${1 shl qubitCount} अवस्थाएँ (2^${qubitCount})", color = white, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        Text("अनुमानित state-vector memory: ${(8L * (1L shl qubitCount)) / 1024} KB", color = mint, fontSize = 11.sp)
+                    }
+                }
                 Button(onClick = {
                     val p0 = kotlin.math.cos(Math.toRadians((qubitAngle / 2.0).toDouble())).let { it * it }
                     val p1 = 1.0 - p0
-                    qubitResult = "P(0) = ${"%.3f".format(p0)}   |   P(1) = ${"%.3f".format(p1)}"
-                }, colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("मापन संभावना निकालें") }
-                SelectionContainer { Text(qubitResult, color = white) }
+                    val states = 1 shl qubitCount
+                    val allZero = Math.pow(p0, qubitCount.toDouble())
+                    val allOne = Math.pow(p1, qubitCount.toDouble())
+                    val mostLikely = if (p0 >= p1) "0".repeat(qubitCount) else "1".repeat(qubitCount)
+                    val mostLikelyProbability = maxOf(allZero, allOne)
+                    qubitResult = "प्रति Qubit: P(0) = ${"%.4f".format(p0)} | P(1) = ${"%.4f".format(p1)}\n" +
+                        "कुल अवस्थाएँ: $states\n" +
+                        "सभी शून्य: ${"%.6f".format(allZero)}\n" +
+                        "सभी एक: ${"%.6f".format(allOne)}\n" +
+                        "सबसे संभावित छोर-अवस्था: |$mostLikely⟩ = ${"%.6f".format(mostLikelyProbability)}\n" +
+                        "नोट: यह स्वतंत्र Qubit का product-state मॉडल है।"
+                }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("मल्टी-Qubit संभावना निकालें") }
+                SelectionContainer { Text(qubitResult, color = white, lineHeight = 21.sp) }
             }
             "Projects" -> SimplePage("PROJECT WORKSPACE", "अपने प्रोजेक्ट के नोट्स सेव करें। ये इसी फोन में रहेंगे और ऐप दोबारा खोलने पर वापस मिलेंगे।") {
                 OutlinedTextField(projectInput, { projectInput = it }, Modifier.fillMaxWidth(), label = { Text("नया प्रोजेक्ट या नोट लिखें") }, minLines = 3)
