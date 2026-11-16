@@ -409,9 +409,15 @@ private fun AstraApp(
                             onClick = {
                                 val imageUri = pickedUri?.takeIf { pickedMime in listOf("image/jpeg", "image/png", "image/webp") }
                                 val question = prompt.trim().ifBlank { "इस फोटो में क्या दिखाई दे रहा है? विस्तार से हिंदी में विश्लेषण करें।" }
-                                val questionWithMemory = if (useMemoryInChat && memories.isNotBlank()) {
-                                    question + "\n\n[उपयोगकर्ता की अनुमति से निजी Memory संदर्भ]\n" + memories.take(10000) +
-                                        "\nइस निजी संदर्भ को केवल प्रासंगिक होने पर उपयोग करें; इसे सार्वजनिक तथ्य न मानें।"
+                                val questionWithMemory = if (useMemoryInChat && (memories.isNotBlank() || projects.isNotBlank() || chat.size > 1)) {
+                                    val recentConversation = chat.takeLast(12).joinToString("\n") { line ->
+                                        (if (line.from == "ASTRA") "ASTRA: " else "उपयोगकर्ता: ") + line.text.take(1800)
+                                    }
+                                    question + "\n\n[उपयोगकर्ता की अनुमति से स्थानीय Long-Term Context]" +
+                                        "\nSaved Memory:\n" + memories.take(8000) +
+                                        "\nSaved Projects / checkpoints:\n" + projects.take(8000) +
+                                        "\nहाल की बातचीत का संदर्भ:\n" + recentConversation.take(10000) +
+                                        "\nनिर्देश: पुराने संदर्भ को केवल तभी उपयोग करें जब वर्तमान प्रश्न से संबंधित हो। पुरानी योजना जहाँ रुकी थी वहाँ से आगे बढ़ने में मदद करें। संदर्भ को सार्वजनिक प्रमाण न मानें; विरोधाभास हो तो उपयोगकर्ता से स्पष्ट करें।"
                                 } else question
                                 chat = chat + ChatLine("You", question + if (imageUri != null) "  [फोटो: $pickedFile]" else "")
                                 prompt = ""
@@ -502,8 +508,8 @@ private fun AstraApp(
                 Button(enabled = memoryInput.isNotBlank(), onClick = { addMemory(memoryInput) }, colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("Memory में सेव करें") }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Column(Modifier.weight(1f)) {
-                        Text("AI चैट में Memory इस्तेमाल करें", color = white, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        Text("चालू करने पर सेव किए गए नोट चुने गए सवाल के साथ ASTRA backend को भेजे जाएँगे।", color = muted, fontSize = 10.sp)
+                        Text("AI चैट में Personal Context इस्तेमाल करें", color = white, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text("चालू करने पर Saved Memory, Projects और हाल की चैट का सीमित संदर्भ चुने गए सवाल के साथ ASTRA backend को भेजा जाएगा।", color = muted, fontSize = 10.sp)
                     }
                     Switch(checked = useMemoryInChat, onCheckedChange = {
                         useMemoryInChat = it
@@ -511,7 +517,7 @@ private fun AstraApp(
                     })
                 }
                 SelectionContainer { Text(memories.ifBlank { "अभी कोई Memory सेव नहीं है।" }, color = white) }
-                Text("गोपनीयता: Memory डिफ़ॉल्ट रूप से चैट में शामिल नहीं होती। केवल आपके हाथ से सेव किए नोट शामिल होंगे। ऐप डेटा हटाने पर ये मिट सकते हैं।", color = muted, fontSize = 10.sp)
+                Text("गोपनीयता: Personal Context डिफ़ॉल्ट रूप से चैट में शामिल नहीं होता। चालू करने पर सेव किए नोट, प्रोजेक्ट और हाल की चैट का संदर्भ भेजा जा सकता है। ऐप डेटा हटाने पर ये मिट सकते हैं।", color = muted, fontSize = 10.sp)
                 TextButton(onClick = {
                     memories = ""
                     useMemoryInChat = false
