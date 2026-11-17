@@ -1,16 +1,17 @@
 package com.bittupandit.astraquantumai
 
 /**
- * Builds a bounded, relevance-ranked prompt context from the current local chat.
- * Personal Memory and Projects are only included when the user's existing opt-in is enabled.
+ * Builds bounded context from the current local chat on every turn.
+ * Saved Personal Memory and Projects are included only when the user's opt-in is enabled.
  */
 internal data class ContextTurn(val role: String, val text: String)
 
 internal object ContextIntelligence {
     private const val MAX_TURNS = 12
-    private const val MAX_TOTAL_CHARS = 6000
-    private const val MAX_TURN_CHARS = 420
-    private const val MAX_PERSONAL_CHARS = 1200
+    private const val MAX_TOTAL_CHARS = 5600
+    private const val MAX_RECENT_TURN_CHARS = 1500
+    private const val MAX_OLDER_TURN_CHARS = 320
+    private const val MAX_PERSONAL_CHARS = 900
 
     private val stopWords = setOf(
         "the", "and", "for", "with", "that", "this", "from", "have", "what", "when",
@@ -31,9 +32,10 @@ internal object ContextIntelligence {
         projects: String = "",
         includePersonalContext: Boolean
     ): String {
-        if (!includePersonalContext) return question
         val cleanHistory = history.filter { it.text.isNotBlank() }
-        if (cleanHistory.isEmpty() && memories.isBlank() && projects.isBlank()) return question
+        val personalMemory = if (includePersonalContext) memories.trim().take(MAX_PERSONAL_CHARS) else ""
+        val projectNotes = if (includePersonalContext) projects.trim().take(MAX_PERSONAL_CHARS) else ""
+        if (cleanHistory.isEmpty() && personalMemory.isBlank() && projectNotes.isBlank()) return question
 
         val queryTokens = tokens(question)
         // Reserve room for both recent continuity and older, relevant facts. Previously,
@@ -62,22 +64,23 @@ internal object ContextIntelligence {
         rankedOlder.forEach { selected.add(it.first) }
 
         val ordered = selected.sorted().takeLast(MAX_TURNS)
+        val lastHistoryIndex = cleanHistory.lastIndex
         val transcript = buildString {
             ordered.forEach { index ->
                 val turn = cleanHistory[index]
-                val role = if (turn.role.equals("ASTRA", ignoreCase = true)) "ASTRA" else "उपयोगकर्ता"
+                val role = if (turn.role.equals("ASTRA", ignoreCase = true)) "QUANTUM AI" else "उपयोगकर्ता"
+                // Preserve the latest exchange in much greater detail so follow-ups can
+                // resolve references to unfinished answers without asking the user again.
+                val limit = if (index >= lastHistoryIndex - 1) MAX_RECENT_TURN_CHARS else MAX_OLDER_TURN_CHARS
                 append(role).append(": ")
-                append(turn.text.take(MAX_TURN_CHARS))
+                append(turn.text.take(limit))
                 append("\n")
             }
         }.takeLast(MAX_TOTAL_CHARS)
 
-        val personalMemory = memories.trim().take(MAX_PERSONAL_CHARS)
-        val projectNotes = projects.trim().take(MAX_PERSONAL_CHARS)
-
         return buildString {
             append(question.trim())
-            append("\n\n[ASTRA CONTEXT INTELLIGENCE · उपयोगकर्ता की स्थानीय संदर्भ-साझाकरण अनुमति सक्रिय]")
+            append("\n\n[QUANTUM AI CONTEXT INTELLIGENCE · वर्तमान बातचीत का संदर्भ स्वतः शामिल]")
             if (personalMemory.isNotBlank()) append("\nSaved Memory:\n").append(personalMemory)
             if (projectNotes.isNotBlank()) append("\nSaved Projects / checkpoints:\n").append(projectNotes)
             if (transcript.isNotBlank()) append("\nचयनित बातचीत संदर्भ (पुराने से नए क्रम में):\n").append(transcript)
