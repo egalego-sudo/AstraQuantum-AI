@@ -149,8 +149,11 @@ async function generate(input) {
   const boundedContent = fitContentToByteBudget(content, Buffer.byteLength(ASTRA_INSTRUCTIONS), GROQ_MAX_INPUT_BYTES);
   let boundedPromptText = boundedContent.filter(part => part.type === "input_text").map(part => part.text || "").join("\n");
   const estimatedInputBytes = estimateInputBytes(ASTRA_INSTRUCTIONS, boundedContent);
-  const requestedOutput = Math.min(4_096, Math.max(512, Number(input.maxOutputTokens) || 3_000));
-  const safeOutputTokens = Math.min(requestedOutput, Math.max(512, GROQ_TPM_LIMIT - estimatedInputBytes - GROQ_OUTPUT_RESERVE));
+  // UTF-8 byte counts are not model tokens. Using byte counts as a TPM
+  // estimate incorrectly collapsed large Hindi prompts to the 512-token floor.
+  // Keep the prompt byte ceiling separate and let Groq enforce its real token quota.
+  const requestedOutput = Math.min(4_096, Math.max(512, Number(input.maxOutputTokens) || 4_096));
+  const safeOutputTokens = requestedOutput;
   let effectiveInputBytes = estimatedInputBytes;
   let effectiveOutputTokens = safeOutputTokens;
   let compactedFor413 = false;
