@@ -233,9 +233,12 @@ private fun AstraApp(
         Toast.makeText(context, "कॉपी हो गया", Toast.LENGTH_SHORT).show()
     }
     fun addMemory(value: String) {
-        memories = (memories + if (memories.isBlank()) "" else "\n" + "• " + value).trim()
-        prefs.edit().putString("memories", memories).apply()
+        val note = value.trim()
+        if (note.isBlank()) return
+        memories = if (memories.isBlank()) "• " + note else memories.trimEnd() + "\n• " + note
+        prefs.edit().putString("memories", memories).commit()
         memoryInput = ""
+        Toast.makeText(context, "Memory सुरक्षित हो गई", Toast.LENGTH_SHORT).show()
     }
     fun addProject(value: String) {
         projects = (projects + if (projects.isBlank()) "" else "\n" + "• " + value).trim()
