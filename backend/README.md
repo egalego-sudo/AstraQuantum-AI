@@ -41,10 +41,10 @@ The `/v1/analyze` route is also accepted by the server and uses the same request
 - `POST /v1/research`
 - JSON body: `{"query":"research topic"}`
 - Searches six public knowledge/scholarly sources in parallel: OpenAlex, Crossref, Europe PMC, arXiv, Semantic Scholar and Wikipedia. Semantic Scholar is a metadata/abstract index and may rate-limit unauthenticated requests.
-- Deduplicates indexed records and supplies up to 24 records to the synthesis stage.
+- Deduplicates and ranks indexed records; up to 24 records are returned to the client, while the compact synthesis stage uses at most the top 8 evidence records.
 - Attempts full-text retrieval for up to three Europe PMC Open Access records and up to two arXiv HTML records, subject to availability and timeouts. A failed or unavailable full-text fetch remains labeled as abstract/metadata only.
-- Up to 12 DOI-bearing results are independently looked up in Crossref; the returned title is compared with the indexed title. The API returns `doi_verified` and `doi_verification` per source. This verifies a Crossref DOI record/title match only; it does not prove that every citation field or the paper's claims are correct.
-- The report asks for claim-level evidence classification: `SUPPORTED`, `PARTLY SUPPORTED`, `CONTRADICTED`, or `UNVERIFIED`, with source IDs and evidence level. This is model-assisted classification, not independent peer review or a guarantee of correctness.
+- Up to 12 DOI-bearing results are independently looked up in Crossref; the returned title is compared with the indexed title. The API returns `doi_verified`, `doi_verification`, `crossref_title`, and title similarity per source. Missing DOI records, lookup failures, missing titles, and title mismatches have distinct statuses. A title match verifies only the Crossref DOI record/title match; it does not prove that every citation field or the paper's claims are correct.
+- Research runs in explicit phases: source discovery/ranking, Crossref DOI record and title verification, bounded open-access full-text retrieval, then compact evidence synthesis. The pipeline metadata lists these phases and DOI status counts. The report asks for claim-level evidence classification: `SUPPORTED`, `PARTLY SUPPORTED`, `CONTRADICTED`, or `UNVERIFIED`, with source IDs and evidence level. This is model-assisted classification, not independent peer review or a guarantee of correctness.
 - Response fields include `text`, `sources`, and `research_meta`. Metadata reports source counts/types, which source types returned full text, coverage limitations, and how many records include an abstract or full text.
 - The Android client allows up to 150 seconds for this research request.
 - This is a bounded indexed-source search, not exhaustive internet search or a guarantee that every source, paper, or claim has been found. arXiv records are preprints unless their publication status is independently confirmed; Wikipedia is a tertiary source. Users should inspect primary sources and cited evidence.
@@ -65,7 +65,8 @@ The `/v1/analyze` route is also accepted by the server and uses the same request
 
 ## Limits and deployment notes
 
-- Prompt length: 100,000 characters (research evidence is included in the prompt).
+- Groq request budgeting: text input is conservatively bounded to a 5,000-byte ceiling including system instructions and overhead; output is capped at 1,800 tokens, with a further reserve based on the configured `GROQ_TPM_LIMIT` (default 8,000). This byte-based bound is a conservative guard, not an exact model tokenizer. A Groq HTTP 413 is never retried unchanged: the backend compacts the text once and reduces output to at most 800 tokens, then returns a clear error if still rejected.
+- Optional server overrides: `GROQ_TPM_LIMIT` and `GROQ_MAX_INPUT_BYTES` (the latter is clamped to a conservative 3,000–5,000 byte range).
 - Encoded file limit: 10 MiB in the backend; the Android app currently applies a smaller 7 MiB source-file limit.
 - Basic rate limit: 20 requests per IP per minute.
 - Apply provider-level access controls, stronger abuse protection, monitoring and operational review before public production use.

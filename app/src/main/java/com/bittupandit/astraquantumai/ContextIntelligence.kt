@@ -7,10 +7,10 @@ package com.bittupandit.astraquantumai
 internal data class ContextTurn(val role: String, val text: String)
 
 internal object ContextIntelligence {
-    private const val MAX_TURNS = 24
-    private const val MAX_TOTAL_CHARS = 14000
-    private const val MAX_TURN_CHARS = 520
-    private const val MAX_PERSONAL_CHARS = 5000
+    private const val MAX_TURNS = 12
+    private const val MAX_TOTAL_CHARS = 6000
+    private const val MAX_TURN_CHARS = 420
+    private const val MAX_PERSONAL_CHARS = 1200
 
     private val stopWords = setOf(
         "the", "and", "for", "with", "that", "this", "from", "have", "what", "when",
@@ -36,7 +36,11 @@ internal object ContextIntelligence {
         if (cleanHistory.isEmpty() && memories.isBlank() && projects.isBlank()) return question
 
         val queryTokens = tokens(question)
-        val recentStart = (cleanHistory.size - 16).coerceAtLeast(0)
+        // Reserve room for both recent continuity and older, relevant facts. Previously,
+        // selecting 16 recent turns and then taking the last 12 silently discarded every
+        // retrieved older turn. Keep at most 8 recent turns and fill the remaining slots
+        // with the strongest older matches.
+        val recentStart = (cleanHistory.size - 8).coerceAtLeast(0)
         val selected = cleanHistory.indices
             .filter { it >= recentStart }
             .toMutableSet()
@@ -54,7 +58,7 @@ internal object ContextIntelligence {
             }
             .filter { it.second > 0 }
             .sortedWith(compareByDescending<Pair<Int, Int>> { it.second }.thenByDescending { it.first })
-            .take(8)
+            .take((MAX_TURNS - selected.size).coerceAtLeast(0))
         rankedOlder.forEach { selected.add(it.first) }
 
         val ordered = selected.sorted().takeLast(MAX_TURNS)

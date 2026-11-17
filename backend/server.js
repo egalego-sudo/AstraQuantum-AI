@@ -2,6 +2,8 @@ import http from "node:http";
 import { PDFParse } from "pdf-parse";
 import { searchKnowledge, validateKnowledgeCitations } from "./knowledge.js";
 import { buildResearchQueries, rankResearchSources } from "./research-quality.js";
+import { fitContentToByteBudget, estimateInputBytes, truncateUtf8 } from "./token-budget.js";
+import { classifyCrossrefDoiResult } from "./doi-verification.js";
 
 const PORT = Number(process.env.PORT || 8080);
 const API_KEY = process.env.GROQ_API_KEY;
@@ -11,6 +13,11 @@ const ORIGIN = process.env.ALLOWED_ORIGIN || "*";
 const WINDOW_MS = 60_000;
 const MAX_REQUESTS = 20;
 const MAX_TRACKED_CLIENTS = 10_000;
+// Groq on-demand GPT-OSS currently advertises an 8K TPM ceiling on this tier.
+// Keep a conservative byte-based input ceiling plus explicit output reserve.
+const GROQ_TPM_LIMIT = Math.max(2_000, Number(process.env.GROQ_TPM_LIMIT || 8_000));
+const GROQ_MAX_INPUT_BYTES = Math.min(5_000, Math.max(3_000, Number(process.env.GROQ_MAX_INPUT_BYTES || 5_000)));
+const GROQ_OUTPUT_RESERVE = 900;
 const hits = new Map();
 
 function isRateLimited(clientKey, now = Date.now()) {
@@ -126,6 +133,14 @@ async function generate(input) {
       "\nUse [KB:record-id] only for claims directly supported by that record. Include its source URL. If it does not answer the question, ignore it. Do not treat retrieval as proof or invent missing details."
     : "";
   content.push({ type: "input_text", text: prompt + knowledgeContext });
+  const boundedContent = fitContentToByteBudget(content, Buffer.byteLength(ASTRA_INSTRUCTIONS), GROQ_MAX_INPUT_BYTES);
+  let boundedPromptText = boundedContent.filter(part => part.type === "input_text").map(part => part.text || "").join("\n");
+  const estimatedInputBytes = estimateInputBytes(ASTRA_INSTRUCTIONS, boundedContent);
+  const requestedOutput = Math.min(1_800, Math.max(512, Number(input.maxOutputTokens) || 1_200));
+  const safeOutputTokens = Math.min(requestedOutput, Math.max(512, GROQ_TPM_LIMIT - estimatedInputBytes - GROQ_OUTPUT_RESERVE));
+  let effectiveInputBytes = estimatedInputBytes;
+  let effectiveOutputTokens = safeOutputTokens;
+  let compactedFor413 = false;
 
   const requestWithRetry = async (url, options) => {
     let lastError = null;
@@ -151,10 +166,10 @@ async function generate(input) {
   const requestBody = {
     model,
     instructions: ASTRA_INSTRUCTIONS,
-    input: [{ role: "user", content }],
-    max_output_tokens: Math.min(8192, Math.max(2048, Number(input.maxOutputTokens) || 2048))
+    input: [{ role: "user", content: boundedContent }],
+    max_output_tokens: safeOutputTokens
   };
-  const response = await requestWithRetry("https://api.groq.com/openai/v1/responses", {
+  let response = await requestWithRetry("https://api.groq.com/openai/v1/responses", {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -162,7 +177,28 @@ async function generate(input) {
     },
     body: JSON.stringify(requestBody)
   });
-  const data = await response.json().catch(() => ({}));
+  let data = await response.json().catch(() => ({}));
+  // A Groq 413 is a hard per-request ceiling, not a transient rate limit.
+  // Never resend the same payload: compact it once and lower the output reserve.
+  if (response.status === 413) {
+    const compactContent = fitContentToByteBudget(boundedContent, Buffer.byteLength(ASTRA_INSTRUCTIONS), Math.floor(GROQ_MAX_INPUT_BYTES * 0.62));
+    boundedPromptText = compactContent.filter(part => part.type === "input_text").map(part => part.text || "").join("\n");
+    effectiveInputBytes = estimateInputBytes(ASTRA_INSTRUCTIONS, compactContent);
+    effectiveOutputTokens = Math.min(800, safeOutputTokens);
+    compactedFor413 = true;
+    const compactRequest = { ...requestBody, input: [{ role: "user", content: compactContent }], max_output_tokens: effectiveOutputTokens };
+    response = await requestWithRetry("https://api.groq.com/openai/v1/responses", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${API_KEY}` },
+      body: JSON.stringify(compactRequest)
+    });
+    data = await response.json().catch(() => ({}));
+    if (response.status === 413) {
+      const budgetError = new Error(`Groq request still exceeds the ${GROQ_TPM_LIMIT}-token request budget after automatic compaction. The same oversized request was not retried.`);
+      budgetError.statusCode = 413;
+      throw budgetError;
+    }
+  }
   if (!response.ok) {
     // If Groq's Responses endpoint is temporarily unavailable, try the
     // compatible Chat Completions endpoint before returning an error.
@@ -177,9 +213,9 @@ async function generate(input) {
           model,
           messages: [
             { role: "system", content: ASTRA_INSTRUCTIONS },
-            { role: "user", content: prompt + knowledgeContext }
+            { role: "user", content: boundedPromptText }
           ],
-          max_tokens: Math.min(8192, Math.max(2048, Number(input.maxOutputTokens) || 2048))
+          max_tokens: safeOutputTokens
         })
       });
       const fallbackData = await fallbackResponse.json().catch(() => ({}));
@@ -220,9 +256,9 @@ async function generate(input) {
         model,
         messages: [
           { role: "system", content: ASTRA_INSTRUCTIONS },
-          { role: "user", content: prompt + knowledgeContext }
+          { role: "user", content: boundedPromptText }
         ],
-        max_tokens: Math.min(8192, Math.max(2048, Number(input.maxOutputTokens) || 2048))
+        max_tokens: safeOutputTokens
       })
     });
     const fallbackData = await fallbackResponse.json().catch(() => ({}));
@@ -243,7 +279,19 @@ async function generate(input) {
     const incompleteReason = data?.incomplete_details?.reason || "not reported";
     throw new Error(`Groq returned an empty response after Responses API and Chat Completions fallback (status: ${responseStatus}; incomplete: ${incompleteReason}). Check model access, provider limits and server logs.`);
   }
-  return validateKnowledgeCitations(text, knowledgeHits);
+  const validatedText = validateKnowledgeCitations(text, knowledgeHits);
+  if (input.returnMetadata) return {
+    text: validatedText,
+    request_budget: {
+      tpm_limit: GROQ_TPM_LIMIT,
+      max_input_bytes: GROQ_MAX_INPUT_BYTES,
+      estimated_input_bytes: effectiveInputBytes,
+      max_output_tokens: effectiveOutputTokens,
+      safety_reserve_tokens: GROQ_OUTPUT_RESERVE,
+      compacted_after_413: compactedFor413
+    }
+  };
+  return validatedText;
 }
 
 
@@ -458,7 +506,7 @@ async function research(input) {
   }
   const atomEntries = arxivXml.match(/<entry[\s\S]*?<\/entry>/g) || [];
   for (const entry of atomEntries) {
-    const getTag = tag => xmlText(entry.match(new RegExp("<" + tag + "(?:\\s[^>]*)?>([\\s\\S]*?)<\\/" + tag + ">","i"))?.[1] || "");
+    const getTag = tag => xmlText(entry.match(new RegExp("<" + tag + "(?:\s[^>]*)?>([\s\S]*?)<\/" + tag + ">","i"))?.[1] || "");
     const id = getTag("id");
     const title = getTag("title").replace(/\s+/g, " ");
     if (!title || !id) continue;
@@ -494,17 +542,33 @@ async function research(input) {
   const doiCandidates = uniqueSources.filter(source => source.doi).slice(0, 12);
   const doiChecks = await Promise.all(doiCandidates.map(async source => {
     const doi = String(source.doi).replace(/^https?:\/\/doi\.org\//i, "").trim();
-    const record = await fetchJson("https://api.crossref.org/works/" + encodeURIComponent(doi), 12000);
-    const crossrefTitle = Array.isArray(record?.message?.title) ? record.message.title[0] : "";
-    return { doi, verified: Boolean(crossrefTitle && titleSimilarity(source.title, crossrefTitle) >= 0.7) };
+    try {
+      const response = await fetch("https://api.crossref.org/works/" + encodeURIComponent(doi), {
+        headers, signal: AbortSignal.timeout(12000)
+      });
+      if (!response.ok) return { doi, ...classifyCrossrefDoiResult({ httpStatus: response.status }), crossrefTitle: "" };
+      successfulProviderResponses++;
+      const payload = await response.json().catch(() => ({}));
+      const crossrefTitle = Array.isArray(payload?.message?.title) ? payload.message.title[0] : "";
+      const similarity = titleSimilarity(source.title, crossrefTitle);
+      return {
+        doi,
+        ...classifyCrossrefDoiResult({ httpStatus: response.status, crossrefTitle, titleSimilarity: similarity }),
+        crossrefTitle,
+        titleSimilarity: Number(similarity.toFixed(3))
+      };
+    } catch {
+      return { doi, ...classifyCrossrefDoiResult({ httpStatus: 0 }), crossrefTitle: "" };
+    }
   }));
   const doiCheckByDoi = new Map(doiChecks.map(check => [check.doi.toLowerCase(), check]));
   for (const source of uniqueSources) {
     const doi = String(source.doi || "").replace(/^https?:\/\/doi\.org\//i, "").toLowerCase();
     const check = doiCheckByDoi.get(doi);
     source.doiVerified = check ? check.verified : null;
-    source.doiVerification = !doi ? "NO_DOI" : !check ? "NOT_CHECKED_LIMIT" :
-      check.verified ? "CROSSREF_TITLE_MATCH" : "CROSSREF_NOT_FOUND_OR_TITLE_MISMATCH";
+    source.doiVerification = !doi ? "NO_DOI" : !check ? "NOT_CHECKED_LIMIT" : check.status;
+    source.doiCrossrefTitle = check?.crossrefTitle || "";
+    source.doiTitleSimilarity = check?.titleSimilarity ?? null;
   }
   if (!uniqueSources.length) {
     if (successfulProviderResponses === 0) {
@@ -538,20 +602,25 @@ async function research(input) {
   const fullTextByDoi = new Map(fullTextResults.filter(Boolean).map(s => [s.doi || s.pmcid || s.url, s]));
   const enrichedSources = uniqueSources.map(source => fullTextByDoi.get(source.doi || source.pmcid || source.url) || source);
   const sourcesWithIds = enrichedSources.map((source, index) => ({ ...source, id: index + 1 }));
-  const evidence = sourcesWithIds.map(source =>
+  // Discovery and DOI checks may return many records; synthesize from a compact,
+  // relevance-ranked evidence set so the free-tier request stays within its hard ceiling.
+  const synthesisSources = sourcesWithIds.slice(0, 8);
+  const evidence = truncateUtf8(synthesisSources.map(source =>
     "[" + source.id + "] " + source.type + " | " + source.title + " | " + (source.year || "date unavailable") +
     (source.authors ? " | " + source.authors : "") +
     (source.journal ? " | " + source.journal : "") +
-    " | relevance score: " + source.relevance.score + " | matched terms: " + source.relevance.matched_terms.join(", ") +
-    " | source quality: " + source.quality +
+    " | relevance: " + source.relevance.score +
+    " | quality: " + source.quality +
     " | DOI verification: " + (source.doiVerification || "NO_DOI") +
+    (source.doiCrossrefTitle ? " | Crossref title: " + source.doiCrossrefTitle : "") +
     "\nURL: " + source.url +
-    "\n" + (source.fullText || source.abstract || "केवल bibliographic metadata उपलब्ध; abstract/full text उपलब्ध नहीं।")
-  ).join("\n\n");
+    "\n" + String(source.fullText || source.abstract || "केवल bibliographic metadata उपलब्ध; abstract/full text उपलब्ध नहीं।").slice(0, 650)
+  ).join("\n\n"), 2_800);
   const sourceTypes = [...new Set(sourcesWithIds.map(source => source.type))];
-  const answer = await generate({
+  const synthesis = await generate({
     skipKnowledgeRetrieval: true,
-    maxOutputTokens: 6000,
+    returnMetadata: true,
+    maxOutputTokens: 1_500,
     prompt: "आप ASTRA Deep Research Engine हैं। इस प्रश्न पर गहन, संतुलित और प्रमाण-आधारित रिपोर्ट तैयार करें: " + query +
       "\n\nस्रोतों का सीमित live retrieval किया गया है। यह पूरा इंटरनेट, exhaustive literature review या सभी प्रकाशित/अप्रकाशित सामग्री नहीं है। केवल नीचे उपलब्ध सामग्री पर दावे करें।" +
       "\nहर तथ्यात्मक दावे के तुरंत बाद संबंधित [source id] दें। स्रोत metadata स्वयं दावे का प्रमाण नहीं है। abstract या indexed summary को full-text पढ़ा हुआ न बताएं। arXiv को preprint कहें। Wikipedia को tertiary source मानें।" +
@@ -572,12 +641,13 @@ async function research(input) {
       "\n\nRetrieved evidence:\n" + evidence
   });
   return {
-    text: answer,
+    text: synthesis.text,
     sources: sourcesWithIds.map(source => ({
       id: source.id, type: source.type, title: source.title, url: source.url,
       relevance_score: source.relevance.score, matched_terms: source.relevance.matched_terms,
       year: source.year || "", doi: source.doi || "",
       doi_verified: source.doiVerified, doi_verification: source.doiVerification || "NO_DOI",
+      crossref_title: source.doiCrossrefTitle || "", doi_title_similarity: source.doiTitleSimilarity,
       fullTextFetched: Boolean(source.fullTextFetched), quality: source.quality
     })),
     research_meta: {
@@ -588,6 +658,10 @@ async function research(input) {
       providers_attempted: ["OpenAlex", "Crossref", "Europe PMC", "arXiv", "Semantic Scholar", "Wikipedia"],
       doi_checks_attempted: doiChecks.length,
       doi_title_matches: doiChecks.filter(check => check.verified).length,
+      doi_verification_status_counts: doiChecks.reduce((counts, check) => ({ ...counts, [check.status]: (counts[check.status] || 0) + 1 }), {}),
+      synthesis_source_count: synthesisSources.length,
+      research_pipeline: ["source_discovery_and_ranking", "crossref_doi_record_and_title_verification", "bounded_open_access_full_text_fetch", "compact_evidence_report_synthesis"],
+      request_budget: synthesis.request_budget,
       open_full_texts_fetched: fullTextResults.filter(Boolean).length,
       full_text_types: [...new Set(fullTextResults.filter(Boolean).map(s => s.type))],
       sources_with_abstract_or_full_text: sourcesWithIds.filter(s => s.abstract || s.fullText).length,

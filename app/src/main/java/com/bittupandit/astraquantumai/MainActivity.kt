@@ -549,7 +549,7 @@ private fun AstraApp(
                                 busy = true
                                 status = when {
                                     imageUri != null -> "VISION AI फोटो का विश्लेषण कर रहा है…"
-                                    deepResearchMode -> "DEEP RESEARCH · 5 PUBLIC SOURCES"
+                                    deepResearchMode -> "DEEP RESEARCH · 6 PUBLIC SOURCES"
                                     else -> "HYBRID ROUTER · ONLINE/OFFLINE"
                                 }
                                 activity.lifecycleScope.launch {
@@ -662,12 +662,12 @@ private fun AstraApp(
                     }
                 }
             }
-            "Research" -> SimplePage("DEEP RESEARCH ENGINE", "Wikipedia, Crossref, OpenAlex, Europe PMC और arXiv में समानांतर शोध खोज। उपलब्ध Open Access full text पढ़ने का प्रयास, स्रोतों की तुलना और प्रमाण-सहित रिपोर्ट। यह पूरे इंटरनेट की exhaustive खोज या 100% सत्यता की गारंटी नहीं है।") {
+            "Research" -> SimplePage("DEEP RESEARCH ENGINE", "Wikipedia, Crossref, OpenAlex, Europe PMC, arXiv और Semantic Scholar में समानांतर शोध खोज। उपलब्ध Open Access full text पढ़ने का प्रयास, स्रोतों की तुलना और प्रमाण-सहित रिपोर्ट। यह पूरे इंटरनेट की exhaustive खोज या 100% सत्यता की गारंटी नहीं है।") {
                 OutlinedTextField(prompt, { prompt = it }, Modifier.fillMaxWidth(), label = { Text("किस विषय या दावे की जाँच करें?") })
                 Text("खोज के स्रोत", color = mint, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 Button(enabled = prompt.isNotBlank() && !researchBusy, onClick = {
                     researchBusy = true
-                    researchResult = "पाँच सार्वजनिक शोध-स्रोतों में खोज, रिकॉर्ड मिलान और उपलब्ध Open Access full text की जाँच जारी है… यह कुछ समय ले सकता है।"
+                    researchResult = "छह सार्वजनिक शोध-स्रोतों में खोज, DOI रिकॉर्ड मिलान और उपलब्ध Open Access full text की जाँच जारी है… यह कुछ समय ले सकता है।"
                     val query = prompt.trim()
                     activity.lifecycleScope.launch {
                         researchResult = withContext(Dispatchers.IO) { askResearch(backend, query) }
@@ -1240,6 +1240,11 @@ private fun askResearch(baseUrl: String, query: String): String {
                     val item = sources.optJSONObject(index) ?: continue
                     append("\n[").append(item.optInt("id")).append("] ")
                     append(item.optString("title")).append(" (").append(item.optString("year")).append(")")
+                    val doi = item.optString("doi")
+                    if (doi.isNotBlank()) {
+                        append("\nDOI: ").append(doi)
+                        append(" · Crossref: ").append(item.optString("doi_verification", "NOT_REPORTED"))
+                    }
                     append("\n").append(item.optString("url")).append("\n")
                 }
             }
@@ -1251,6 +1256,15 @@ private fun askResearch(baseUrl: String, query: String): String {
                     append(meta.optInt("open_full_texts_fetched")).append(" पूरे टेक्स्ट दस्तावेज़ प्राप्त।")
                     append("\nपूरे टेक्स्ट के प्रकार: ").append(meta.optJSONArray("full_text_types")?.let { arr -> if (arr.length() == 0) "कोई नहीं" else (0 until arr.length()).joinToString(", ") { arr.optString(it) } } ?: "जानकारी उपलब्ध नहीं")
                     append("\nस्रोत प्रकार: ").append(meta.optJSONArray("source_types")?.let { arr -> (0 until arr.length()).joinToString(", ") { arr.optString(it) } } ?: "उपलब्ध")
+                    append("\nDOI सत्यापन: ").append(meta.optInt("doi_title_matches")).append(" शीर्षक-मिलान / ").append(meta.optInt("doi_checks_attempted")).append(" जाँच")
+                    append("\nरिपोर्ट में उपयोग किए गए स्रोत: ").append(meta.optInt("synthesis_source_count"))
+                    append("\nशोध चरण: ").append(meta.optJSONArray("research_pipeline")?.let { arr -> (0 until arr.length()).joinToString(" → ") { arr.optString(it) } } ?: "उपलब्ध नहीं")
+                    meta.optJSONObject("request_budget")?.let { budget ->
+                        append("\nGroq बजट: ").append(budget.optInt("estimated_input_bytes")).append("/")
+                            .append(budget.optInt("max_input_bytes")).append(" input bytes · ")
+                            .append(budget.optInt("max_output_tokens")).append(" output tokens")
+                        if (budget.optBoolean("compacted_after_413")) append(" · 413 के बाद compact किया गया")
+                    }
                     append("\nसीमा: ").append(meta.optString("coverage_note"))
                 }
                 if (sourceText.isNotBlank()) append("\n\nस्रोत सूची\n").append(sourceText)
