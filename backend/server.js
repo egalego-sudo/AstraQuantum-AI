@@ -1,7 +1,6 @@
 import http from "node:http";
 import { timingSafeEqual } from "node:crypto";
 import { clientAddress } from "./client-address.js";
-import { PDFParse } from "pdf-parse";
 import { searchKnowledge, validateKnowledgeCitations } from "./knowledge.js";
 import { buildResearchQueries, rankResearchSources } from "./research-quality.js";
 import { fitContentToByteBudget, estimateInputBytes, truncateUtf8 } from "./token-budget.js";
@@ -107,6 +106,7 @@ async function generate(input) {
         throw new Error("यह वैध PDF फ़ाइल नहीं लगती।");
       }
       let extracted = "";
+      const { PDFParse } = await import("pdf-parse");
       const parser = new PDFParse({ data: pdfBytes });
       try {
         const parsed = await parser.getText({ first: 60 });
