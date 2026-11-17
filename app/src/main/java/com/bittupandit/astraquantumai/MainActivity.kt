@@ -146,7 +146,7 @@ class MainActivity : ComponentActivity() {
             override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                 promptInProgress = false
                 deviceUnlocked = false
-                needsUnlock = true
+                needsUnlock = false
                 securityMessage = errString.toString()
             }
             override fun onAuthenticationFailed() { securityMessage = "पहचान नहीं हुई। दोबारा प्रयास करें।" }
