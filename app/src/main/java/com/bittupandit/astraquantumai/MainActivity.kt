@@ -74,6 +74,7 @@ private val muted = Color(0xFFB4B4B4)
 private val line = Color(0xFF454545)
 private val violet = Color(0xFF8E8EA0)
 private val mint = Color(0xFFD6D6D6)
+private const val TRUSTED_BACKEND_URL = "https://astraquantum-ai.onrender.com"
 
 class MainActivity : ComponentActivity() {
     private var speechText by mutableStateOf("")
@@ -286,7 +287,7 @@ private fun AstraApp(
     var prompt by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("GROQ AI · READY") }
-    var backend by remember { mutableStateOf(prefs.getString("backend_url", "https://astraquantum-ai.onrender.com") ?: "https://astraquantum-ai.onrender.com") }
+    var backend by remember { mutableStateOf(TRUSTED_BACKEND_URL) }
     var memoryInput by remember { mutableStateOf("") }
     var memories by remember { mutableStateOf(prefs.getString("memories", "") ?: "") }
     var useMemoryInChat by remember { mutableStateOf(prefs.getBoolean("use_memory_in_chat", false)) }
@@ -1095,12 +1096,12 @@ private fun AstraApp(
             }
             "Updates" -> AppUpdateScreen()
             "Settings" -> SimplePage("CONNECTION & SECURITY SETTINGS", "Groq API key Render के सुरक्षित Environment में रहती है। Private backend access token आवश्यक है।") {
-                OutlinedTextField(backend, { backend = it }, Modifier.fillMaxWidth(), label = { Text("Backend HTTPS URL") })
+                Text("Verified backend: $TRUSTED_BACKEND_URL", color = mint, fontSize = 12.sp)
                 OutlinedTextField(apiAccessToken, { apiAccessToken = it.trim() }, Modifier.fillMaxWidth(), label = { Text("Private API Access Token") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
                 Text("Token encrypted phone storage में सेव होगा। इसे किसी के साथ साझा न करें।", color = muted, fontSize = 10.sp)
                 Button(onClick = {
                     backend = backend.trim().trimEnd('/')
-                    prefs.edit().putString("backend_url", backend).putString("api_access_token", apiAccessToken.trim()).commit()
+                    prefs.edit().putString("api_access_token", apiAccessToken.trim()).commit()
                     AppSecurity.accessToken = apiAccessToken.trim()
                     status = "सुरक्षा सेटिंग सेव हुई"
                     Toast.makeText(context, "सुरक्षा सेटिंग सेव हुई", Toast.LENGTH_SHORT).show()
@@ -1277,11 +1278,16 @@ private fun QuantumArtwork(modifier: Modifier = Modifier, variant: Int = 0) {
     }
 }
 
+private fun isTrustedBackend(baseUrl: String): Boolean = runCatching {
+    val parsed = URL(baseUrl.trim().trimEnd('/'))
+    parsed.protocol == "https" && parsed.host.equals("astraquantum-ai.onrender.com", ignoreCase = true) && parsed.port == -1
+}.getOrDefault(false)
+
 private fun checkAstraBackend(baseUrl: String): String {
     if (baseUrl.isBlank()) return "त्रुटि: Backend URL खाली है।"
     return try {
         val clean = baseUrl.trim().trimEnd('/')
-        if (!URLUtil.isHttpsUrl(clean)) return "त्रुटि: केवल HTTPS backend स्वीकार है।"
+        if (!isTrustedBackend(clean)) return "त्रुटि: केवल आधिकारिक QUANTUM AI backend स्वीकार है।"
         val connection = (URL("$clean/health").openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
             connectTimeout = 8000
@@ -1306,7 +1312,7 @@ private fun quantumApiRequest(baseUrl: String, path: String, method: String, pay
     if (baseUrl.isBlank()) return "ASTRA backend URL सेव करें।"
     return try {
         val clean = baseUrl.trim().trimEnd('/')
-        if (!URLUtil.isHttpsUrl(clean)) return "सुरक्षा के लिए backend URL HTTPS होना चाहिए।"
+        if (!isTrustedBackend(clean)) return "सुरक्षा के लिए केवल आधिकारिक QUANTUM AI backend स्वीकार है।"
         val connection = (URL(clean + path).openConnection() as HttpURLConnection).apply {
             requestMethod = method
             connectTimeout = 20000
