@@ -2,6 +2,7 @@ import http from "node:http";
 import { PDFParse } from "pdf-parse";
 import { searchKnowledge, validateKnowledgeCitations } from "./knowledge.js";
 import { buildResearchQueries, rankResearchSources } from "./research-quality.js";
+import { fitContentToByteBudget, estimateInputBytes, truncateUtf8 } from "./token-budget.js";
 
 const PORT = Number(process.env.PORT || 8080);
 const API_KEY = process.env.GROQ_API_KEY;
@@ -11,6 +12,11 @@ const ORIGIN = process.env.ALLOWED_ORIGIN || "*";
 const WINDOW_MS = 60_000;
 const MAX_REQUESTS = 20;
 const MAX_TRACKED_CLIENTS = 10_000;
+// Groq on-demand GPT-OSS currently advertises an 8K TPM ceiling on this tier.
+// Keep a conservative byte-based input ceiling plus explicit output reserve.
+const GROQ_TPM_LIMIT = Math.max(2_000, Number(process.env.GROQ_TPM_LIMIT || 8_000));
+const GROQ_MAX_INPUT_BYTES = Math.min(5_000, Math.max(3_000, Number(process.env.GROQ_MAX_INPUT_BYTES || 5_000)));
+const GROQ_OUTPUT_RESERVE = 900;
 const hits = new Map();
 
 function isRateLimited(clientKey, now = Date.now()) {
@@ -126,6 +132,11 @@ async function generate(input) {
       "\nUse [KB:record-id] only for claims directly supported by that record. Include its source URL. If it does not answer the question, ignore it. Do not treat retrieval as proof or invent missing details."
     : "";
   content.push({ type: "input_text", text: prompt + knowledgeContext });
+  const boundedContent = fitContentToByteBudget(content, Buffer.byteLength(ASTRA_INSTRUCTIONS), GROQ_MAX_INPUT_BYTES);
+  const boundedPromptText = boundedContent.filter(part => part.type === "input_text").map(part => part.text || "").join("\\n");
+  const estimatedInputBytes = estimateInputBytes(ASTRA_INSTRUCTIONS, boundedContent);
+  const requestedOutput = Math.min(1_800, Math.max(512, Number(input.maxOutputTokens) || 1_200));
+  const safeOutputTokens = Math.min(requestedOutput, Math.max(512, GROQ_TPM_LIMIT - estimatedInputBytes - GROQ_OUTPUT_RESERVE));
 
   const requestWithRetry = async (url, options) => {
     let lastError = null;
@@ -151,10 +162,10 @@ async function generate(input) {
   const requestBody = {
     model,
     instructions: ASTRA_INSTRUCTIONS,
-    input: [{ role: "user", content }],
-    max_output_tokens: Math.min(8192, Math.max(2048, Number(input.maxOutputTokens) || 2048))
+    input: [{ role: "user", content: boundedContent }],
+    max_output_tokens: safeOutputTokens
   };
-  const response = await requestWithRetry("https://api.groq.com/openai/v1/responses", {
+  let response = await requestWithRetry("https://api.groq.com/openai/v1/responses", {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -162,7 +173,22 @@ async function generate(input) {
     },
     body: JSON.stringify(requestBody)
   });
-  const data = await response.json().catch(() => ({}));
+  let data = await response.json().catch(() => ({}));
+  // A Groq 413 is a hard per-request ceiling, not a transient rate limit.
+  // Never resend the same payload: compact it once and lower the output reserve.
+  if (response.status === 413) {
+    const compactContent = fitContentToByteBudget(boundedContent, Buffer.byteLength(ASTRA_INSTRUCTIONS), Math.floor(GROQ_MAX_INPUT_BYTES * 0.62));
+    const compactRequest = { ...requestBody, input: [{ role: "user", content: compactContent }], max_output_tokens: Math.min(800, safeOutputTokens) };
+    response = await requestWithRetry("https://api.groq.com/openai/v1/responses", {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${API_KEY}` },
+      body: JSON.stringify(compactRequest)
+    });
+    data = await response.json().catch(() => ({}));
+    if (response.status === 413) {
+      throw new Error(`Groq request still exceeds the ${GROQ_TPM_LIMIT}-token request budget after automatic compaction. The same oversized request was not retried.`);
+    }
+  }
   if (!response.ok) {
     // If Groq's Responses endpoint is temporarily unavailable, try the
     // compatible Chat Completions endpoint before returning an error.
@@ -177,7 +203,7 @@ async function generate(input) {
           model,
           messages: [
             { role: "system", content: ASTRA_INSTRUCTIONS },
-            { role: "user", content: prompt + knowledgeContext }
+            { role: "user", content: boundedPromptText }
           ],
           max_tokens: Math.min(8192, Math.max(2048, Number(input.maxOutputTokens) || 2048))
         })
@@ -220,7 +246,7 @@ async function generate(input) {
         model,
         messages: [
           { role: "system", content: ASTRA_INSTRUCTIONS },
-          { role: "user", content: prompt + knowledgeContext }
+          { role: "user", content: boundedPromptText }
         ],
         max_tokens: Math.min(8192, Math.max(2048, Number(input.maxOutputTokens) || 2048))
       })
