@@ -598,7 +598,7 @@ async function research(input) {
   const sourceTypes = [...new Set(sourcesWithIds.map(source => source.type))];
   const answer = await generate({
     skipKnowledgeRetrieval: true,
-    maxOutputTokens: 6000,
+    maxOutputTokens: 1_500,
     prompt: "आप ASTRA Deep Research Engine हैं। इस प्रश्न पर गहन, संतुलित और प्रमाण-आधारित रिपोर्ट तैयार करें: " + query +
       "\n\nस्रोतों का सीमित live retrieval किया गया है। यह पूरा इंटरनेट, exhaustive literature review या सभी प्रकाशित/अप्रकाशित सामग्री नहीं है। केवल नीचे उपलब्ध सामग्री पर दावे करें।" +
       "\nहर तथ्यात्मक दावे के तुरंत बाद संबंधित [source id] दें। स्रोत metadata स्वयं दावे का प्रमाण नहीं है। abstract या indexed summary को full-text पढ़ा हुआ न बताएं। arXiv को preprint कहें। Wikipedia को tertiary source मानें।" +
