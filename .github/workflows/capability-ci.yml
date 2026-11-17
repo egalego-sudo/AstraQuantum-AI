@@ -1,15 +1,6 @@
 name: QUANTUM AI Capability CI
 
 on:
-  push:
-    branches: [feature/quantum-ai-capability-expansion]
-    paths:
-      - "app/**"
-      - "backend/**"
-      - "docs/**"
-      - "*.gradle.kts"
-      - "settings.gradle.kts"
-      - ".github/workflows/capability-ci.yml"
   pull_request:
     branches: [main]
     paths:
@@ -24,7 +15,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: quantum-capability-ci-${{ github.event.pull_request.number || github.sha }}
+  group: quantum-capability-ci-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
