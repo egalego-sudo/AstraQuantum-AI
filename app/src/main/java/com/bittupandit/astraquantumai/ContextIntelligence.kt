@@ -1,16 +1,17 @@
 package com.bittupandit.astraquantumai
 
 /**
- * Builds a bounded, relevance-ranked prompt context from the current local chat.
- * Personal Memory and Projects are only included when the user's existing opt-in is enabled.
+ * Builds bounded context from the current local chat on every turn.
+ * Saved Personal Memory and Projects are included only when the user's opt-in is enabled.
  */
 internal data class ContextTurn(val role: String, val text: String)
 
 internal object ContextIntelligence {
     private const val MAX_TURNS = 12
-    private const val MAX_TOTAL_CHARS = 6000
-    private const val MAX_TURN_CHARS = 420
-    private const val MAX_PERSONAL_CHARS = 1200
+    private const val MAX_TOTAL_CHARS = 5600
+    private const val MAX_RECENT_TURN_CHARS = 1500
+    private const val MAX_OLDER_TURN_CHARS = 320
+    private const val MAX_PERSONAL_CHARS = 900
 
     private val stopWords = setOf(
         "the", "and", "for", "with", "that", "this", "from", "have", "what", "when",
@@ -31,9 +32,13 @@ internal object ContextIntelligence {
         projects: String = "",
         includePersonalContext: Boolean
     ): String {
+        // Respect the existing explicit privacy opt-in: no chat history, saved memory,
+        // or project notes are sent to the model while Personal Context is disabled.
         if (!includePersonalContext) return question
         val cleanHistory = history.filter { it.text.isNotBlank() }
-        if (cleanHistory.isEmpty() && memories.isBlank() && projects.isBlank()) return question
+        val personalMemory = memories.trim().take(MAX_PERSONAL_CHARS)
+        val projectNotes = projects.trim().take(MAX_PERSONAL_CHARS)
+        if (cleanHistory.isEmpty() && personalMemory.isBlank() && projectNotes.isBlank()) return question
 
         val queryTokens = tokens(question)
         // Reserve room for both recent continuity and older, relevant facts. Previously,
@@ -62,29 +67,31 @@ internal object ContextIntelligence {
         rankedOlder.forEach { selected.add(it.first) }
 
         val ordered = selected.sorted().takeLast(MAX_TURNS)
+        val lastHistoryIndex = cleanHistory.lastIndex
         val transcript = buildString {
             ordered.forEach { index ->
                 val turn = cleanHistory[index]
-                val role = if (turn.role.equals("ASTRA", ignoreCase = true)) "ASTRA" else "उपयोगकर्ता"
+                val role = if (turn.role.equals("ASTRA", ignoreCase = true)) "QUANTUM AI" else "उपयोगकर्ता"
+                // Preserve the latest exchange in much greater detail so follow-ups can
+                // resolve references to unfinished answers without asking the user again.
+                val limit = if (index >= lastHistoryIndex - 1) MAX_RECENT_TURN_CHARS else MAX_OLDER_TURN_CHARS
                 append(role).append(": ")
-                append(turn.text.take(MAX_TURN_CHARS))
+                append(turn.text.take(limit))
                 append("\n")
             }
         }.takeLast(MAX_TOTAL_CHARS)
 
-        val personalMemory = memories.trim().take(MAX_PERSONAL_CHARS)
-        val projectNotes = projects.trim().take(MAX_PERSONAL_CHARS)
-
         return buildString {
             append(question.trim())
-            append("\n\n[ASTRA CONTEXT INTELLIGENCE · उपयोगकर्ता की स्थानीय संदर्भ-साझाकरण अनुमति सक्रिय]")
+            append("\n\n[QUANTUM AI CONTEXT INTELLIGENCE · वर्तमान बातचीत का संदर्भ स्वतः शामिल]")
             if (personalMemory.isNotBlank()) append("\nSaved Memory:\n").append(personalMemory)
             if (projectNotes.isNotBlank()) append("\nSaved Projects / checkpoints:\n").append(projectNotes)
             if (transcript.isNotBlank()) append("\nचयनित बातचीत संदर्भ (पुराने से नए क्रम में):\n").append(transcript)
             append(
                 "\nसंदर्भ-पालन के अनिवार्य नियम: दिए गए संदर्भ में पहले से मौजूद संख्याएँ, इकाइयाँ, नाम, शर्तें और निर्णय दोबारा उपयोग करें। " +
-                    "उपयोगकर्ता से वही जानकारी फिर न माँगें यदि वह संदर्भ में मौजूद है। संदर्भ में कोई मान न मिले तो केवल वही विशिष्ट कमी बताएँ; " +
-                    "यह दावा न करें कि उपयोगकर्ता ने कभी मान नहीं दिए। विरोधाभासी मान हों तो दोनों का उल्लेख करके स्पष्टता माँगें। " +
+                    "उपयोगकर्ता से वही जानकारी फिर न माँगें यदि वह संदर्भ में मौजूद है। 'इसे जारी रखें', 'वह हिस्सा', 'किस प्रश्न की बात' जैसे अनुवर्ती वाक्य हों तो सबसे हाल के प्रासंगिक उपयोगकर्ता और QUANTUM AI संदेशों से संदर्भ पहचानें। " +
+                    "यदि पिछला QUANTUM AI उत्तर अधूरा दिखता है, तो उसी बिंदु से आगे बढ़ें; उपयोगकर्ता से प्रश्न दोबारा न पूछें। " +
+                    "संदर्भ में कोई मान न मिले तो केवल वही विशिष्ट कमी बताएँ; यह दावा न करें कि उपयोगकर्ता ने कभी मान नहीं दिए। विरोधाभासी मान हों तो दोनों का उल्लेख करके स्पष्टता माँगें। " +
                     "संदर्भ निजी बातचीत है, बाहरी वैज्ञानिक प्रमाण नहीं। अनुमान लगाकर तथ्य न गढ़ें।"
             )
         }
