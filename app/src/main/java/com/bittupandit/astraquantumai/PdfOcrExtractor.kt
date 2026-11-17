@@ -11,6 +11,7 @@ import android.os.ParcelFileDescriptor
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.google.mlkit.vision.text.devanagari.DevanagariTextRecognizerOptions
 import com.google.android.gms.tasks.Task
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
@@ -33,7 +34,8 @@ object PdfOcrExtractor {
         val descriptor = context.contentResolver.openFileDescriptor(uri, "r")
             ?: throw IllegalArgumentException("PDF फ़ाइल खोली नहीं जा सकी।")
         val renderer = PdfRenderer(descriptor)
-        val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+        val latinRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+        val devanagariRecognizer = TextRecognition.getClient(DevanagariTextRecognizerOptions.Builder().build())
         try {
             require(renderer.pageCount > 0) { "PDF में कोई पेज नहीं मिला।" }
             val pageLimit = min(renderer.pageCount, MAX_PAGES)
@@ -50,8 +52,24 @@ object PdfOcrExtractor {
                     try {
                         Canvas(bitmap).drawColor(Color.WHITE)
                         page.render(bitmap, Rect(0, 0, width, height), null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                        val recognized = recognizer.process(InputImage.fromBitmap(bitmap, 0)).awaitResult()
-                        val pageText = recognized.text.trim()
+                        val image = InputImage.fromBitmap(bitmap, 0)
+                        val latin = latinRecognizer.process(image).awaitResult()
+                        val devanagari = devanagariRecognizer.process(image).awaitResult()
+                        data class OcrLine(val top: Int, val left: Int, val text: String)
+                        val lines = buildList {
+                            latin.textBlocks.flatMap { it.lines }.forEach { line ->
+                                if (line.text.none { it in '\u0900'..'\u097F' }) {
+                                    add(OcrLine(line.boundingBox?.top ?: 0, line.boundingBox?.left ?: 0, line.text))
+                                }
+                            }
+                            devanagari.textBlocks.flatMap { it.lines }.forEach { line ->
+                                if (line.text.any { it in '\u0900'..'\u097F' }) {
+                                    add(OcrLine(line.boundingBox?.top ?: 0, line.boundingBox?.left ?: 0, line.text))
+                                }
+                            }
+                        }
+                        val pageText = lines.sortedWith(compareBy<OcrLine> { it.top }.thenBy { it.left })
+                            .joinToString("\n") { it.text }.trim()
                         if (pageText.isNotBlank()) {
                             val remaining = MAX_CHARS - output.length
                             if (remaining <= 0) break
@@ -75,7 +93,8 @@ object PdfOcrExtractor {
             }
             output.toString()
         } finally {
-            recognizer.close()
+            latinRecognizer.close()
+            devanagariRecognizer.close()
             renderer.close()
             descriptor.close()
         }
