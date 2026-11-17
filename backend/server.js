@@ -12,7 +12,10 @@ const MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-20b";
 const VISION_MODEL = process.env.GROQ_VISION_MODEL || "qwen/qwen3.8-27b";
 const ORIGIN = process.env.ALLOWED_ORIGIN || "*";
 const WINDOW_MS = 60_000;
-const MAX_REQUESTS = Math.max(1, Number(process.env.API_MAX_REQUESTS_PER_MINUTE || 20));
+const configuredMaxRequests = Number(process.env.API_MAX_REQUESTS_PER_MINUTE ?? 20);
+const MAX_REQUESTS = Number.isFinite(configuredMaxRequests)
+  ? Math.min(1_000, Math.max(1, Math.floor(configuredMaxRequests)))
+  : 20;
 const MAX_TRACKED_CLIENTS = 10_000;
 // Groq on-demand GPT-OSS currently advertises an 8K TPM ceiling on this tier.
 // Keep a conservative byte-based input ceiling plus explicit output reserve.
