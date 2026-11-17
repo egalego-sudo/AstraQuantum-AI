@@ -63,6 +63,16 @@ RESPONSE STANDARD
 - Match the user's language and requested level of detail.
 - Accuracy is more important than confidence or impressive wording.
 """
-    fun enhancePrompt(userPrompt: String): String =
-        INSTRUCTIONS.trim() + "\n\n[CURRENT USER REQUEST]\n" + userPrompt
+    fun enhancePrompt(userPrompt: String): String = buildString {
+        // Keep the user's actual question first. The backend applies a strict input
+        // byte budget and truncates from the end, so putting the request last could
+        // silently remove it when reasoning/context instructions are long.
+        append("[CURRENT USER REQUEST]\n")
+        append(userPrompt.trim())
+        append("\n\n")
+        append(INSTRUCTIONS.trim())
+        append("\n\n[ANSWERING RULE]\n")
+        append("Answer the current request directly if it is understandable. Never ask the user to complete or rewrite a clear question. ")
+        append("For short questions, give a short answer. Ask for clarification only if an essential fact is genuinely missing.")
+    }
 }
