@@ -1165,7 +1165,7 @@ private fun AstraApp(
                 }
                 Text("App Lock पहली बार में सुरक्षा के लिए चालू रहता है। इसे बदलने के लिए पहले ऐप अनलॉक करें।", color = muted, fontSize = 10.sp)
                 OutlinedTextField(apiAccessToken, { apiAccessToken = it.trim() }, Modifier.fillMaxWidth(), label = { Text("Private API Access Token") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
-                Text("Token encrypted phone storage में सेव होगा। इसे किसी के साथ साझा न करें।", color = muted, fontSize = 10.sp)
+                Text("यह Render के APP_ACCESS_TOKEN से मेल खाने वाला 64-अक्षरों का hexadecimal token है—Groq की gsk_ API Key नहीं। Token encrypted phone storage में सेव होगा; इसे साझा न करें।", color = muted, fontSize = 10.sp)
                 Button(enabled = apiAccessToken.matches(Regex("^[a-f0-9]{64}$")), onClick = {
                     val saved = prefs.edit().putString("api_access_token", apiAccessToken.trim()).commit()
                     if (saved) {
