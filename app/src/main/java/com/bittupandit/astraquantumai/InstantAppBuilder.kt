@@ -210,8 +210,7 @@ fun InstantAppBuilderScreen(backendUrl: String, initialWebsiteMode: Boolean = fa
                                             request: WebResourceRequest?
                                         ): Boolean {
                                             val uri = request?.url ?: return true
-                                            // Keep preview navigation inside its synthetic origin.
-                                            return uri.scheme != "https" || uri.host != "astra.local"
+                                            return !PreviewSecurityPolicy.allowsNavigation(uri.toString())
                                         }
                                     }
                                     settings.javaScriptEnabled = true
