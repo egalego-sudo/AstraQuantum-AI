@@ -74,9 +74,13 @@ This plan is an engineering checklist, not a claim that every capability is comp
 **Existing foundation**
 - Android speech-to-text and text-to-speech, online image analysis, and text-based PDF extraction.
 
+**Incremental implementation on this branch**
+- Added a bounded on-device OCR fallback for scanned PDFs, using Latin and Devanagari recognition models.
+- OCR processes one page at a time, up to 60 pages and 80,000 characters, and is attempted only when the backend reports that the PDF has no readable text.
+
 **Work to verify/improve**
-- Test JPEG, PNG, WEBP, text PDFs, large files, unsupported types and network failures.
-- Clearly identify that scanned PDF OCR, offline vision and audio-file understanding are not yet supported unless implemented and tested.
+- Test JPEG, PNG, WEBP, text PDFs, scanned Hindi/English PDFs, large files, unsupported types and network failures on a real Android device.
+- Offline vision and audio-file understanding remain unsupported.
 - Preserve file-size and privacy safeguards.
 
 **Acceptance**
@@ -87,8 +91,12 @@ This plan is an engineering checklist, not a claim that every capability is comp
 **Existing foundation**
 - Science Lab includes reaction balancing, molar-mass/composition, linear and quadratic equations, force calculation, unit conversion and formula catalog.
 
+**Incremental implementation on this branch**
+- Added a bounded deterministic arithmetic-expression parser and a dedicated Calculator screen.
+- Added tests for precedence, parentheses, powers, decimals, scientific notation, division by zero, invalid code-like input, overflow and input limits.
+
 **Work to verify/improve**
-- Add deterministic tests for supported calculators, edge cases, invalid input, units and rounding.
+- Run the new tests and add deterministic tests for the remaining Science Lab calculators, edge cases, units and rounding.
 - Keep deterministic calculations separate from model-generated estimates.
 - Expand only with a defined domain, tested parser and explicit limits.
 
