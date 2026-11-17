@@ -2,26 +2,42 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { clientAddress } from "./client-address.js";
 
-test("uses the right-most address in the forwarded proxy chain", () => {
+test("prefers Cloudflare's visitor IP over caller-controlled forwarded values", () => {
   const req = {
-    headers: { "x-forwarded-for": "198.51.100.99, 203.0.113.8, 192.0.2.44" },
+    headers: {
+      "cf-connecting-ip": "203.0.113.25",
+      "x-forwarded-for": "198.51.100.99, 203.0.113.8"
+    },
     socket: { remoteAddress: "10.0.0.1" }
   };
-  assert.equal(clientAddress(req), "192.0.2.44");
+  assert.equal(clientAddress(req), "203.0.113.25");
 });
 
-test("trims whitespace and ignores empty forwarded entries", () => {
+test("does not trust X-Forwarded-For when the Cloudflare header is missing", () => {
   const req = {
-    headers: { "x-forwarded-for": " 198.51.100.4, , 203.0.113.7 " },
+    headers: { "x-forwarded-for": "198.51.100.99, 203.0.113.8" },
     socket: { remoteAddress: "10.0.0.1" }
   };
-  assert.equal(clientAddress(req), "203.0.113.7");
+  assert.equal(clientAddress(req), "10.0.0.1");
 });
 
-test("falls back to the socket address when no forwarded chain exists", () => {
-  assert.equal(clientAddress({ headers: {}, socket: { remoteAddress: "127.0.0.1" } }), "127.0.0.1");
+test("falls back to the socket address when the Cloudflare value is invalid", () => {
+  const req = {
+    headers: { "cf-connecting-ip": "not-an-ip" },
+    socket: { remoteAddress: "127.0.0.1" }
+  };
+  assert.equal(clientAddress(req), "127.0.0.1");
 });
 
-test("has a safe fallback for missing request address data", () => {
+test("supports valid IPv6 Cloudflare addresses", () => {
+  const req = {
+    headers: { "cf-connecting-ip": "2001:db8::7" },
+    socket: { remoteAddress: "127.0.0.1" }
+  };
+  assert.equal(clientAddress(req), "2001:db8::7");
+});
+
+test("has a safe fallback for missing or invalid request address data", () => {
   assert.equal(clientAddress({ headers: {} }), "unknown");
+  assert.equal(clientAddress({ headers: {}, socket: { remoteAddress: "bad" } }), "unknown");
 });
