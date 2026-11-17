@@ -484,7 +484,7 @@ async function research(input) {
     return true;
   }).slice(0, 24);
   const normalizeTitle = value => String(value || "").toLowerCase()
-    .normalize("NFKD").replace(/[\\u0300-\\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+    .normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
   const titleSimilarity = (left, right) => {
     const a = new Set(normalizeTitle(left).split(" ").filter(Boolean));
     const b = new Set(normalizeTitle(right).split(" ").filter(Boolean));
@@ -493,14 +493,14 @@ async function research(input) {
   };
   const doiCandidates = uniqueSources.filter(source => source.doi).slice(0, 12);
   const doiChecks = await Promise.all(doiCandidates.map(async source => {
-    const doi = String(source.doi).replace(/^https?:\\/\\/doi\\.org\\//i, "").trim();
+    const doi = String(source.doi).replace(/^https?:\/\/doi\.org\//i, "").trim();
     const record = await fetchJson("https://api.crossref.org/works/" + encodeURIComponent(doi), 12000);
     const crossrefTitle = Array.isArray(record?.message?.title) ? record.message.title[0] : "";
     return { doi, verified: Boolean(crossrefTitle && titleSimilarity(source.title, crossrefTitle) >= 0.7) };
   }));
   const doiCheckByDoi = new Map(doiChecks.map(check => [check.doi.toLowerCase(), check]));
   for (const source of uniqueSources) {
-    const doi = String(source.doi || "").replace(/^https?:\\/\\/doi\\.org\\//i, "").toLowerCase();
+    const doi = String(source.doi || "").replace(/^https?:\/\/doi\.org\//i, "").toLowerCase();
     const check = doiCheckByDoi.get(doi);
     source.doiVerified = check ? check.verified : null;
     source.doiVerification = !doi ? "NO_DOI" : !check ? "NOT_CHECKED_LIMIT" :
