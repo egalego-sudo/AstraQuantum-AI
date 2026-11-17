@@ -1410,7 +1410,7 @@ internal fun askBackend(baseUrl: String, prompt: String, mimeType: String? = nul
     if (baseUrl.isBlank()) return "Private API Access Token सेटिंग्स में सेव करें।"
     return try {
         val clean = baseUrl.trim().trimEnd('/')
-        if (!URLUtil.isHttpsUrl(clean)) return "सुरक्षा के लिए backend URL HTTPS होना चाहिए।"
+        if (!isTrustedBackend(clean)) return "सुरक्षा के लिए केवल आधिकारिक QUANTUM AI backend स्वीकार है।"
         val connection = (URL("$clean/v1/generate").openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
             connectTimeout = 15000
