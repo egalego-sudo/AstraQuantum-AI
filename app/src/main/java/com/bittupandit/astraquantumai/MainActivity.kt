@@ -82,6 +82,38 @@ class MainActivity : ComponentActivity() {
     private var speaking: TextToSpeech? = null
     private var deviceUnlocked by mutableStateOf(false)
     private var securityMessage by mutableStateOf("Fingerprint या फोन का Screen Lock सत्यापित करें।")
+    private var needsUnlock = true
+    private var promptInProgress = false
+    private var authPrompt: BiometricPrompt? = null
+    private var authPromptInfo: BiometricPrompt.PromptInfo? = null
+
+    private fun authenticateDevice() {
+        if (promptInProgress || deviceUnlocked) return
+        val authenticators = BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
+        if (BiometricManager.from(this).canAuthenticate(authenticators) == BiometricManager.BIOMETRIC_SUCCESS) {
+            val prompt = authPrompt
+            val info = authPromptInfo
+            if (prompt != null && info != null) {
+                promptInProgress = true
+                prompt.authenticate(info)
+            }
+        } else {
+            securityMessage = "पहले फोन की Settings में Screen Lock (PIN / Pattern / Password) सेट करें।"
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (!isChangingConfigurations) {
+            deviceUnlocked = false
+            needsUnlock = true
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (needsUnlock && !promptInProgress) authenticateDevice()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -101,21 +133,28 @@ class MainActivity : ComponentActivity() {
                 pickedMime = contentResolver.getType(it) ?: "application/octet-stream"
             }
         }
+        window.setFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE, android.view.WindowManager.LayoutParams.FLAG_SECURE)
         val authenticators = BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
-        val biometricPrompt = BiometricPrompt(this, ContextCompat.getMainExecutor(this), object : BiometricPrompt.AuthenticationCallback() {
-            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) { deviceUnlocked = true; securityMessage = "" }
-            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) { deviceUnlocked = false; securityMessage = errString.toString() }
+        authPrompt = BiometricPrompt(this, ContextCompat.getMainExecutor(this), object : BiometricPrompt.AuthenticationCallback() {
+            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                promptInProgress = false
+                needsUnlock = false
+                deviceUnlocked = true
+                securityMessage = ""
+            }
+            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                promptInProgress = false
+                deviceUnlocked = false
+                needsUnlock = true
+                securityMessage = errString.toString()
+            }
             override fun onAuthenticationFailed() { securityMessage = "पहचान नहीं हुई। दोबारा प्रयास करें।" }
         })
-        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+        authPromptInfo = BiometricPrompt.PromptInfo.Builder()
             .setTitle("QUANTUM AI सुरक्षा लॉक")
             .setSubtitle("Fingerprint या फोन का PIN / Pattern / Password")
             .setAllowedAuthenticators(authenticators)
             .build()
-        fun authenticateDevice() {
-            if (BiometricManager.from(this).canAuthenticate(authenticators) == BiometricManager.BIOMETRIC_SUCCESS) biometricPrompt.authenticate(promptInfo)
-            else securityMessage = "पहले फोन की Settings में Screen Lock (PIN / Pattern / Password) सेट करें।"
-        }
         setContent {
             MaterialTheme(colorScheme = darkColorScheme(
                 primary = white, onPrimary = ink, secondary = violet,
