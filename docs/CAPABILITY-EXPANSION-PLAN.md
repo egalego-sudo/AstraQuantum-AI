@@ -60,9 +60,12 @@ This plan is an engineering checklist, not a claim that every capability is comp
 - Encrypted local app preferences, opt-in personal-context sharing, recent chat history and project notes.
 - Context selection is bounded and runs locally before the request is sent.
 
+**Incremental implementation on this branch**
+- Added an editable saved-memory field so a user can inspect, correct or remove individual notes, and save changes to encrypted local preferences.
+- The existing explicit opt-in remains separate; turning it off prevents personal context from being added to chat prompts.
+
 **Work to verify/improve**
-- Test secure migration from legacy preferences, process restart, app update, empty/corrupt records and opt-out behavior.
-- Make it easy to inspect, edit and delete saved memories.
+- Test secure migration from legacy preferences, process restart, app update, empty/corrupt records and opt-out behavior on a real device.
 - Never send personal memory to the backend while opt-in is off.
 
 **Acceptance**
