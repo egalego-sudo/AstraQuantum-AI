@@ -133,7 +133,7 @@ async function generate(input) {
     : "";
   content.push({ type: "input_text", text: prompt + knowledgeContext });
   const boundedContent = fitContentToByteBudget(content, Buffer.byteLength(ASTRA_INSTRUCTIONS), GROQ_MAX_INPUT_BYTES);
-  const boundedPromptText = boundedContent.filter(part => part.type === "input_text").map(part => part.text || "").join("\n");
+  let boundedPromptText = boundedContent.filter(part => part.type === "input_text").map(part => part.text || "").join("\n");
   const estimatedInputBytes = estimateInputBytes(ASTRA_INSTRUCTIONS, boundedContent);
   const requestedOutput = Math.min(1_800, Math.max(512, Number(input.maxOutputTokens) || 1_200));
   const safeOutputTokens = Math.min(requestedOutput, Math.max(512, GROQ_TPM_LIMIT - estimatedInputBytes - GROQ_OUTPUT_RESERVE));
@@ -178,6 +178,7 @@ async function generate(input) {
   // Never resend the same payload: compact it once and lower the output reserve.
   if (response.status === 413) {
     const compactContent = fitContentToByteBudget(boundedContent, Buffer.byteLength(ASTRA_INSTRUCTIONS), Math.floor(GROQ_MAX_INPUT_BYTES * 0.62));
+    boundedPromptText = compactContent.filter(part => part.type === "input_text").map(part => part.text || "").join("\n");
     const compactRequest = { ...requestBody, input: [{ role: "user", content: compactContent }], max_output_tokens: Math.min(800, safeOutputTokens) };
     response = await requestWithRetry("https://api.groq.com/openai/v1/responses", {
       method: "POST",
@@ -205,7 +206,7 @@ async function generate(input) {
             { role: "system", content: ASTRA_INSTRUCTIONS },
             { role: "user", content: boundedPromptText }
           ],
-          max_tokens: Math.min(8192, Math.max(2048, Number(input.maxOutputTokens) || 2048))
+          max_tokens: safeOutputTokens
         })
       });
       const fallbackData = await fallbackResponse.json().catch(() => ({}));
