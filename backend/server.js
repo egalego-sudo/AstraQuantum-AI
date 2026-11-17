@@ -194,7 +194,9 @@ async function generate(input) {
     });
     data = await response.json().catch(() => ({}));
     if (response.status === 413) {
-      throw new Error(`Groq request still exceeds the ${GROQ_TPM_LIMIT}-token request budget after automatic compaction. The same oversized request was not retried.`);
+      const budgetError = new Error(`Groq request still exceeds the ${GROQ_TPM_LIMIT}-token request budget after automatic compaction. The same oversized request was not retried.`);
+      budgetError.statusCode = 413;
+      throw budgetError;
     }
   }
   if (!response.ok) {
