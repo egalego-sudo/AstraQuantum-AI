@@ -1343,7 +1343,7 @@ private fun askResearch(baseUrl: String, query: String): String {
     if (baseUrl.isBlank()) return "ASTRA backend URL सेव करें।"
     return try {
         val clean = baseUrl.trim().trimEnd('/')
-        if (!URLUtil.isHttpsUrl(clean)) return "सुरक्षा के लिए backend URL HTTPS होना चाहिए।"
+        if (!isTrustedBackend(clean)) return "सुरक्षा के लिए केवल आधिकारिक QUANTUM AI backend स्वीकार है।"
         val connection = (URL(clean + "/v1/research").openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
             connectTimeout = 20000
@@ -1407,7 +1407,7 @@ private fun askResearch(baseUrl: String, query: String): String {
 }
 
 internal fun askBackend(baseUrl: String, prompt: String, mimeType: String? = null, base64: String? = null): String {
-    if (baseUrl.isBlank()) return "ASTRA से जुड़ने के लिए Backend HTTPS URL सेव करें।"
+    if (baseUrl.isBlank()) return "Private API Access Token सेटिंग्स में सेव करें।"
     return try {
         val clean = baseUrl.trim().trimEnd('/')
         if (!URLUtil.isHttpsUrl(clean)) return "सुरक्षा के लिए backend URL HTTPS होना चाहिए।"
