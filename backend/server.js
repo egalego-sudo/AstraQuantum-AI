@@ -259,7 +259,7 @@ async function generate(input) {
     const continuationContent = fitContentToByteBudget(
       [{ type: "input_text", text: buildContinuationPrompt(prompt, text) }],
       Buffer.byteLength(ASTRA_INSTRUCTIONS),
-      Math.floor(GROQ_MAX_INPUT_BYTES * 0.55)
+      GROQ_MAX_INPUT_BYTES
     );
     const continuationResponse = await requestWithRetry("https://api.groq.com/openai/v1/responses", {
       method: "POST",
