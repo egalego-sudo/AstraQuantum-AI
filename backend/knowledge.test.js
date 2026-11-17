@@ -20,6 +20,23 @@ test("retrieves scientific concepts across the expanded corpus", async () => {
   assert.ok(results.some(record => record.id === "biology.dna"));
 });
 
+
+test("retrieves the reviewed English Calvin-Benson cycle terminology", async () => {
+  const results = await searchKnowledge("Calvin cycle Rubisco RuBP 3-PGA G3P ATP NADPH", 8);
+  const match = results.find(record => record.id === "biology.photosynthesis.calvin-cycle");
+  assert.ok(match, "English Calvin-Benson cycle record should be retrieved");
+  assert.match(match.content, /glyceraldehyde-3-phosphate/i);
+  assert.match(match.content, /does not directly produce glucose/i);
+  assert.ok(match.sources.some(source => source.publisher === "OpenStax Biology 2e"));
+});
+
+test("retrieves the reviewed Hindi Calvin-Benson cycle record", async () => {
+  const results = await searchKnowledge("प्रकाश संश्लेषण कैल्विन चक्र RuBP G3P", 8);
+  const match = results.find(record => record.id === "biology.photosynthesis.calvin-cycle.hi");
+  assert.ok(match, "Hindi Calvin-Benson cycle record should be retrieved");
+  assert.match(match.content, /ग्लूकोज़ नहीं/);
+});
+
 test("respects the maximum result limit", async () => {
   const results = await searchKnowledge("विज्ञान भौतिकी प्रकाश", 100);
   assert.ok(results.length <= 8);
