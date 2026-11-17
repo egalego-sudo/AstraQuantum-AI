@@ -549,7 +549,7 @@ private fun AstraApp(
                                 busy = true
                                 status = when {
                                     imageUri != null -> "VISION AI फोटो का विश्लेषण कर रहा है…"
-                                    deepResearchMode -> "DEEP RESEARCH · 5 PUBLIC SOURCES"
+                                    deepResearchMode -> "DEEP RESEARCH · 6 PUBLIC SOURCES"
                                     else -> "HYBRID ROUTER · ONLINE/OFFLINE"
                                 }
                                 activity.lifecycleScope.launch {
@@ -662,12 +662,12 @@ private fun AstraApp(
                     }
                 }
             }
-            "Research" -> SimplePage("DEEP RESEARCH ENGINE", "Wikipedia, Crossref, OpenAlex, Europe PMC और arXiv में समानांतर शोध खोज। उपलब्ध Open Access full text पढ़ने का प्रयास, स्रोतों की तुलना और प्रमाण-सहित रिपोर्ट। यह पूरे इंटरनेट की exhaustive खोज या 100% सत्यता की गारंटी नहीं है।") {
+            "Research" -> SimplePage("DEEP RESEARCH ENGINE", "Wikipedia, Crossref, OpenAlex, Europe PMC, arXiv और Semantic Scholar में समानांतर शोध खोज। उपलब्ध Open Access full text पढ़ने का प्रयास, स्रोतों की तुलना और प्रमाण-सहित रिपोर्ट। यह पूरे इंटरनेट की exhaustive खोज या 100% सत्यता की गारंटी नहीं है।") {
                 OutlinedTextField(prompt, { prompt = it }, Modifier.fillMaxWidth(), label = { Text("किस विषय या दावे की जाँच करें?") })
                 Text("खोज के स्रोत", color = mint, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 Button(enabled = prompt.isNotBlank() && !researchBusy, onClick = {
                     researchBusy = true
-                    researchResult = "पाँच सार्वजनिक शोध-स्रोतों में खोज, रिकॉर्ड मिलान और उपलब्ध Open Access full text की जाँच जारी है… यह कुछ समय ले सकता है।"
+                    researchResult = "छह सार्वजनिक शोध-स्रोतों में खोज, DOI रिकॉर्ड मिलान और उपलब्ध Open Access full text की जाँच जारी है… यह कुछ समय ले सकता है।"
                     val query = prompt.trim()
                     activity.lifecycleScope.launch {
                         researchResult = withContext(Dispatchers.IO) { askResearch(backend, query) }
