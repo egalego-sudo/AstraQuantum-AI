@@ -1240,6 +1240,11 @@ private fun askResearch(baseUrl: String, query: String): String {
                     val item = sources.optJSONObject(index) ?: continue
                     append("\n[").append(item.optInt("id")).append("] ")
                     append(item.optString("title")).append(" (").append(item.optString("year")).append(")")
+                    val doi = item.optString("doi")
+                    if (doi.isNotBlank()) {
+                        append("\nDOI: ").append(doi)
+                        append(" · Crossref: ").append(item.optString("doi_verification", "NOT_REPORTED"))
+                    }
                     append("\n").append(item.optString("url")).append("\n")
                 }
             }
@@ -1251,6 +1256,9 @@ private fun askResearch(baseUrl: String, query: String): String {
                     append(meta.optInt("open_full_texts_fetched")).append(" पूरे टेक्स्ट दस्तावेज़ प्राप्त।")
                     append("\nपूरे टेक्स्ट के प्रकार: ").append(meta.optJSONArray("full_text_types")?.let { arr -> if (arr.length() == 0) "कोई नहीं" else (0 until arr.length()).joinToString(", ") { arr.optString(it) } } ?: "जानकारी उपलब्ध नहीं")
                     append("\nस्रोत प्रकार: ").append(meta.optJSONArray("source_types")?.let { arr -> (0 until arr.length()).joinToString(", ") { arr.optString(it) } } ?: "उपलब्ध")
+                    append("\nDOI सत्यापन: ").append(meta.optInt("doi_title_matches")).append(" शीर्षक-मिलान / ").append(meta.optInt("doi_checks_attempted")).append(" जाँच")
+                    append("\nरिपोर्ट में उपयोग किए गए स्रोत: ").append(meta.optInt("synthesis_source_count"))
+                    append("\nशोध चरण: ").append(meta.optJSONArray("research_pipeline")?.let { arr -> (0 until arr.length()).joinToString(" → ") { arr.optString(it) } } ?: "उपलब्ध नहीं")
                     append("\nसीमा: ").append(meta.optString("coverage_note"))
                 }
                 if (sourceText.isNotBlank()) append("\n\nस्रोत सूची\n").append(sourceText)
