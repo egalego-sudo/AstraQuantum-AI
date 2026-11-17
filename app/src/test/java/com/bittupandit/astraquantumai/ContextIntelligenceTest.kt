@@ -5,7 +5,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ContextIntelligenceTest {
-    @Test fun personalMemoryOptOutStillKeepsConversationContinuity() {
+    @Test fun personalContextOptOutKeepsConversationPrivate() {
         val result = ContextIntelligence.buildPrompt(
             question = "इसी गणना को आगे बढ़ाओ",
             history = listOf(
@@ -16,9 +16,9 @@ class ContextIntelligenceTest {
             projects = "private project",
             includePersonalContext = false
         )
-        assertTrue(result.contains("इसी गणना को आगे बढ़ाओ"))
-        assertTrue(result.contains("E=4 eV"))
-        assertTrue(result.contains("kappa = 7.24e9"))
+        assertTrue(result == "इसी गणना को आगे बढ़ाओ")
+        assertFalse(result.contains("E=4 eV"))
+        assertFalse(result.contains("kappa = 7.24e9"))
         assertFalse(result.contains("private note"))
         assertFalse(result.contains("private project"))
     }
@@ -64,7 +64,7 @@ class ContextIntelligenceTest {
         val result = ContextIntelligence.buildPrompt(
             question = "आपका पिछला उत्तर जहाँ कट गया था वहीं से जारी रखें",
             history = history,
-            includePersonalContext = false
+            includePersonalContext = true
         )
         assertTrue(result.contains(unfinishedAnswer.take(1450)))
         assertTrue(result.contains("अधूरा दिखता है"))
