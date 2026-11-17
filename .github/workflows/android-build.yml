@@ -24,6 +24,7 @@ jobs:
   build:
     name: Build ASTRA APKs
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     env:
       ASTRA_KEYSTORE_BASE64: ${{ secrets.ASTRA_KEYSTORE_BASE64 }}
       ASTRA_KEYSTORE_PASSWORD: ${{ secrets.ASTRA_KEYSTORE_PASSWORD }}
@@ -176,7 +177,7 @@ jobs:
         if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
         env:
           ASTRA_KEYSTORE_PATH: ${{ runner.temp }}/keystore/astra-upload.jks
-        run: gradle --no-daemon assembleRelease
+        run: gradle --no-daemon --max-workers=2 assembleRelease
 
       - name: Upload signed update APK
         if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
