@@ -11,7 +11,6 @@ import android.os.Bundle
 import android.speech.RecognizerIntent
 import android.speech.tts.TextToSpeech
 import android.util.Base64
-import android.webkit.URLUtil
 import android.widget.Toast
 import android.widget.TextView
 import androidx.activity.ComponentActivity
