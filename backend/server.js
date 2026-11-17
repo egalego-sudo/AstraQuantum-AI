@@ -384,7 +384,7 @@ async function research(input) {
       }))
     ]);
     return { wikiData, crossrefData, openAlexData, europeData, arxivXml };
-  })));
+  }));
   const sources = [];
   for (const { wikiData, crossrefData, openAlexData, europeData, arxivXml } of queryResults) {
 
