@@ -88,7 +88,15 @@ class MainActivity : FragmentActivity() {
     private var authPrompt: BiometricPrompt? = null
     private var authPromptInfo: BiometricPrompt.PromptInfo? = null
 
+    private fun isAppLockEnabled(): Boolean = getSharedPreferences("quantum_app_security", Context.MODE_PRIVATE).getBoolean("app_lock_enabled", true)
+
     private fun authenticateDevice() {
+        if (!isAppLockEnabled()) {
+            promptInProgress = false
+            needsUnlock = false
+            deviceUnlocked = true
+            return
+        }
         if (promptInProgress || deviceUnlocked) return
         val authenticators = BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
         if (BiometricManager.from(this).canAuthenticate(authenticators) == BiometricManager.BIOMETRIC_SUCCESS) {
@@ -105,7 +113,7 @@ class MainActivity : FragmentActivity() {
 
     override fun onStop() {
         super.onStop()
-        if (!isChangingConfigurations) {
+        if (!isChangingConfigurations && isAppLockEnabled()) {
             deviceUnlocked = false
             needsUnlock = true
         }
@@ -113,7 +121,10 @@ class MainActivity : FragmentActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (needsUnlock && !promptInProgress) authenticateDevice()
+        if (!isAppLockEnabled()) {
+            deviceUnlocked = true
+            needsUnlock = false
+        } else if (needsUnlock && !promptInProgress) authenticateDevice()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -279,6 +290,8 @@ private fun AstraApp(
     val prefs = remember { securePreferences(context) }
     AppSecurity.accessToken = prefs.getString("api_access_token", "") ?: ""
     var apiAccessToken by remember { mutableStateOf(prefs.getString("api_access_token", "") ?: "") }
+    val appSecurityPrefs = remember { context.getSharedPreferences("quantum_app_security", Context.MODE_PRIVATE) }
+    var appLockEnabled by remember { mutableStateOf(appSecurityPrefs.getBoolean("app_lock_enabled", true)) }
     val offlineEngine = remember { OfflineAiEngine(context) }
     var page by remember { mutableStateOf("Home") }
     var showSplash by remember { mutableStateOf(true) }
@@ -1133,8 +1146,26 @@ private fun AstraApp(
             "Updates" -> AppUpdateScreen()
             "Settings" -> SimplePage("CONNECTION & SECURITY SETTINGS", "Groq API key Render के सुरक्षित Environment में रहती है। Private backend access token आवश्यक है।") {
                 Text("Verified backend: $TRUSTED_BACKEND_URL", color = mint, fontSize = 12.sp)
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                    Column(Modifier.weight(1f)) {
+                        Text("App Lock", color = white, fontWeight = FontWeight.SemiBold)
+                        Text(if (appLockEnabled) "Fingerprint / फोन PIN लॉक चालू है" else "ऐप सीधे खुलेगा; Memory और निजी डेटा का encryption चालू रहेगा", color = muted, fontSize = 11.sp)
+                    }
+                    Switch(checked = appLockEnabled, onCheckedChange = { enabled ->
+                        val saved = appSecurityPrefs.edit().putBoolean("app_lock_enabled", enabled).commit()
+                        if (saved) {
+                            appLockEnabled = enabled
+                            status = if (enabled) "App Lock चालू किया गया" else "App Lock बंद किया गया; डेटा encryption चालू है"
+                            Toast.makeText(context, status, Toast.LENGTH_SHORT).show()
+                        } else {
+                            status = "App Lock सेटिंग सेव नहीं हो पाई"
+                            Toast.makeText(context, status, Toast.LENGTH_LONG).show()
+                        }
+                    })
+                }
+                Text("App Lock पहली बार में सुरक्षा के लिए चालू रहता है। इसे बदलने के लिए पहले ऐप अनलॉक करें।", color = muted, fontSize = 10.sp)
                 OutlinedTextField(apiAccessToken, { apiAccessToken = it.trim() }, Modifier.fillMaxWidth(), label = { Text("Private API Access Token") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
-                Text("Token encrypted phone storage में सेव होगा। इसे किसी के साथ साझा न करें।", color = muted, fontSize = 10.sp)
+                Text("यह Render के APP_ACCESS_TOKEN से मेल खाने वाला 64-अक्षरों का hexadecimal token है—Groq की gsk_ API Key नहीं। Token encrypted phone storage में सेव होगा; इसे साझा न करें।", color = muted, fontSize = 10.sp)
                 Button(enabled = apiAccessToken.matches(Regex("^[a-f0-9]{64}$")), onClick = {
                     val saved = prefs.edit().putString("api_access_token", apiAccessToken.trim()).commit()
                     if (saved) {
