@@ -47,4 +47,19 @@ class ContextIntelligenceTest {
         )
         assertTrue(result.contains("तापमान 300 K"))
     }
+
+    @Test fun boundsOptInContextEvenForVeryLongHistoriesAndMemory() {
+        val history = List(100) { index ->
+            ContextTurn(if (index % 2 == 0) "You" else "ASTRA", "विषय $index " + "विस्तृत संदर्भ ".repeat(100))
+        }
+        val result = ContextIntelligence.buildPrompt(
+            question = "आगे बढ़ो",
+            history = history,
+            memories = "निजी स्मृति ".repeat(500),
+            projects = "प्रोजेक्ट नोट ".repeat(500),
+            includePersonalContext = true
+        )
+        assertTrue(result.length < 9_000)
+        assertTrue(result.contains("आगे बढ़ो"))
+    }
 }
