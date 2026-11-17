@@ -3,6 +3,7 @@ import { PDFParse } from "pdf-parse";
 import { searchKnowledge, validateKnowledgeCitations } from "./knowledge.js";
 import { buildResearchQueries, rankResearchSources } from "./research-quality.js";
 import { fitContentToByteBudget, estimateInputBytes, truncateUtf8 } from "./token-budget.js";
+import { classifyCrossrefDoiResult } from "./doi-verification.js";
 
 const PORT = Number(process.env.PORT || 8080);
 const API_KEY = process.env.GROQ_API_KEY;
@@ -543,20 +544,19 @@ async function research(input) {
       const response = await fetch("https://api.crossref.org/works/" + encodeURIComponent(doi), {
         headers, signal: AbortSignal.timeout(12000)
       });
-      if (response.status === 404) return { doi, verified: false, status: "CROSSREF_DOI_NOT_FOUND", crossrefTitle: "" };
-      if (!response.ok) return { doi, verified: false, status: "CROSSREF_LOOKUP_FAILED", crossrefTitle: "" };
+      if (!response.ok) return { doi, ...classifyCrossrefDoiResult({ httpStatus: response.status }), crossrefTitle: "" };
       successfulProviderResponses++;
       const payload = await response.json().catch(() => ({}));
       const crossrefTitle = Array.isArray(payload?.message?.title) ? payload.message.title[0] : "";
-      if (!crossrefTitle) return { doi, verified: false, status: "CROSSREF_RECORD_WITHOUT_TITLE", crossrefTitle: "" };
       const similarity = titleSimilarity(source.title, crossrefTitle);
       return {
-        doi, verified: similarity >= 0.7,
-        status: similarity >= 0.7 ? "CROSSREF_TITLE_MATCH" : "CROSSREF_TITLE_MISMATCH",
-        crossrefTitle, titleSimilarity: Number(similarity.toFixed(3))
+        doi,
+        ...classifyCrossrefDoiResult({ httpStatus: response.status, crossrefTitle, titleSimilarity: similarity }),
+        crossrefTitle,
+        titleSimilarity: Number(similarity.toFixed(3))
       };
     } catch {
-      return { doi, verified: false, status: "CROSSREF_LOOKUP_FAILED", crossrefTitle: "" };
+      return { doi, ...classifyCrossrefDoiResult({ httpStatus: 0 }), crossrefTitle: "" };
     }
   }));
   const doiCheckByDoi = new Map(doiChecks.map(check => [check.doi.toLowerCase(), check]));
