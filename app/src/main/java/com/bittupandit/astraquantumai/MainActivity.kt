@@ -1259,6 +1259,12 @@ private fun askResearch(baseUrl: String, query: String): String {
                     append("\nDOI सत्यापन: ").append(meta.optInt("doi_title_matches")).append(" शीर्षक-मिलान / ").append(meta.optInt("doi_checks_attempted")).append(" जाँच")
                     append("\nरिपोर्ट में उपयोग किए गए स्रोत: ").append(meta.optInt("synthesis_source_count"))
                     append("\nशोध चरण: ").append(meta.optJSONArray("research_pipeline")?.let { arr -> (0 until arr.length()).joinToString(" → ") { arr.optString(it) } } ?: "उपलब्ध नहीं")
+                    meta.optJSONObject("request_budget")?.let { budget ->
+                        append("\nGroq बजट: ").append(budget.optInt("estimated_input_bytes")).append("/")
+                            .append(budget.optInt("max_input_bytes")).append(" input bytes · ")
+                            .append(budget.optInt("max_output_tokens")).append(" output tokens")
+                        if (budget.optBoolean("compacted_after_413")) append(" · 413 के बाद compact किया गया")
+                    }
                     append("\nसीमा: ").append(meta.optString("coverage_note"))
                 }
                 if (sourceText.isNotBlank()) append("\n\nस्रोत सूची\n").append(sourceText)
