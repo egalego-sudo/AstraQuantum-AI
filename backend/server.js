@@ -133,7 +133,7 @@ async function generate(input) {
     : "";
   content.push({ type: "input_text", text: prompt + knowledgeContext });
   const boundedContent = fitContentToByteBudget(content, Buffer.byteLength(ASTRA_INSTRUCTIONS), GROQ_MAX_INPUT_BYTES);
-  const boundedPromptText = boundedContent.filter(part => part.type === "input_text").map(part => part.text || "").join("\\n");
+  const boundedPromptText = boundedContent.filter(part => part.type === "input_text").map(part => part.text || "").join("\n");
   const estimatedInputBytes = estimateInputBytes(ASTRA_INSTRUCTIONS, boundedContent);
   const requestedOutput = Math.min(1_800, Math.max(512, Number(input.maxOutputTokens) || 1_200));
   const safeOutputTokens = Math.min(requestedOutput, Math.max(512, GROQ_TPM_LIMIT - estimatedInputBytes - GROQ_OUTPUT_RESERVE));
@@ -484,7 +484,7 @@ async function research(input) {
   }
   const atomEntries = arxivXml.match(/<entry[\s\S]*?<\/entry>/g) || [];
   for (const entry of atomEntries) {
-    const getTag = tag => xmlText(entry.match(new RegExp("<" + tag + "(?:\\s[^>]*)?>([\\s\\S]*?)<\\/" + tag + ">","i"))?.[1] || "");
+    const getTag = tag => xmlText(entry.match(new RegExp("<" + tag + "(?:\s[^>]*)?>([\s\S]*?)<\/" + tag + ">","i"))?.[1] || "");
     const id = getTag("id");
     const title = getTag("title").replace(/\s+/g, " ");
     if (!title || !id) continue;
@@ -519,7 +519,7 @@ async function research(input) {
   };
   const doiCandidates = uniqueSources.filter(source => source.doi).slice(0, 12);
   const doiChecks = await Promise.all(doiCandidates.map(async source => {
-    const doi = String(source.doi).replace(/^https?:\\/\\/doi\\.org\\//i, "").trim();
+    const doi = String(source.doi).replace(/^https?:\/\/doi\.org\//i, "").trim();
     try {
       const response = await fetch("https://api.crossref.org/works/" + encodeURIComponent(doi), {
         headers, signal: AbortSignal.timeout(12000)
@@ -542,7 +542,7 @@ async function research(input) {
   }));
   const doiCheckByDoi = new Map(doiChecks.map(check => [check.doi.toLowerCase(), check]));
   for (const source of uniqueSources) {
-    const doi = String(source.doi || "").replace(/^https?:\\/\\/doi\\.org\\//i, "").toLowerCase();
+    const doi = String(source.doi || "").replace(/^https?:\/\/doi\.org\//i, "").toLowerCase();
     const check = doiCheckByDoi.get(doi);
     source.doiVerified = check ? check.verified : null;
     source.doiVerification = !doi ? "NO_DOI" : !check ? "NOT_CHECKED_LIMIT" : check.status;
@@ -592,9 +592,9 @@ async function research(input) {
     " | quality: " + source.quality +
     " | DOI verification: " + (source.doiVerification || "NO_DOI") +
     (source.doiCrossrefTitle ? " | Crossref title: " + source.doiCrossrefTitle : "") +
-    "\\nURL: " + source.url +
-    "\\n" + String(source.fullText || source.abstract || "केवल bibliographic metadata उपलब्ध; abstract/full text उपलब्ध नहीं।").slice(0, 650)
-  ).join("\\n\\n"), 2_800);
+    "\nURL: " + source.url +
+    "\n" + String(source.fullText || source.abstract || "केवल bibliographic metadata उपलब्ध; abstract/full text उपलब्ध नहीं।").slice(0, 650)
+  ).join("\n\n"), 2_800);
   const sourceTypes = [...new Set(sourcesWithIds.map(source => source.type))];
   const answer = await generate({
     skipKnowledgeRetrieval: true,
