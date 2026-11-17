@@ -1,6 +1,8 @@
 package com.bittupandit.astraquantumai
 
 import android.app.Activity
+import android.content.Context
+import android.content.SharedPreferences
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
@@ -9,10 +11,14 @@ import android.os.Bundle
 import android.speech.RecognizerIntent
 import android.speech.tts.TextToSpeech
 import android.util.Base64
-import android.webkit.URLUtil
 import android.widget.Toast
 import android.widget.TextView
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -40,6 +46,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
@@ -66,13 +73,48 @@ private val muted = Color(0xFFB4B4B4)
 private val line = Color(0xFF454545)
 private val violet = Color(0xFF8E8EA0)
 private val mint = Color(0xFFD6D6D6)
+private const val TRUSTED_BACKEND_URL = "https://astraquantum-ai.onrender.com"
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     private var speechText by mutableStateOf("")
     private var pickedFile by mutableStateOf("")
     private var pickedMime by mutableStateOf("")
     private var pickedUri by mutableStateOf<Uri?>(null)
     private var speaking: TextToSpeech? = null
+    private var deviceUnlocked by mutableStateOf(false)
+    private var securityMessage by mutableStateOf("Fingerprint या फोन का Screen Lock सत्यापित करें।")
+    private var needsUnlock = true
+    private var promptInProgress = false
+    private var authPrompt: BiometricPrompt? = null
+    private var authPromptInfo: BiometricPrompt.PromptInfo? = null
+
+    private fun authenticateDevice() {
+        if (promptInProgress || deviceUnlocked) return
+        val authenticators = BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
+        if (BiometricManager.from(this).canAuthenticate(authenticators) == BiometricManager.BIOMETRIC_SUCCESS) {
+            val prompt = authPrompt
+            val info = authPromptInfo
+            if (prompt != null && info != null) {
+                promptInProgress = true
+                prompt.authenticate(info)
+            }
+        } else {
+            securityMessage = "पहले फोन की Settings में Screen Lock (PIN / Pattern / Password) सेट करें।"
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (!isChangingConfigurations) {
+            deviceUnlocked = false
+            needsUnlock = true
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (needsUnlock && !promptInProgress) authenticateDevice()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -92,12 +134,34 @@ class MainActivity : ComponentActivity() {
                 pickedMime = contentResolver.getType(it) ?: "application/octet-stream"
             }
         }
+        window.setFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE, android.view.WindowManager.LayoutParams.FLAG_SECURE)
+        val authenticators = BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
+        authPrompt = BiometricPrompt(this, ContextCompat.getMainExecutor(this), object : BiometricPrompt.AuthenticationCallback() {
+            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                promptInProgress = false
+                needsUnlock = false
+                deviceUnlocked = true
+                securityMessage = ""
+            }
+            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                promptInProgress = false
+                deviceUnlocked = false
+                needsUnlock = false
+                securityMessage = errString.toString()
+            }
+            override fun onAuthenticationFailed() { securityMessage = "पहचान नहीं हुई। दोबारा प्रयास करें।" }
+        })
+        authPromptInfo = BiometricPrompt.PromptInfo.Builder()
+            .setTitle("QUANTUM AI सुरक्षा लॉक")
+            .setSubtitle("Fingerprint या फोन का PIN / Pattern / Password")
+            .setAllowedAuthenticators(authenticators)
+            .build()
         setContent {
             MaterialTheme(colorScheme = darkColorScheme(
                 primary = white, onPrimary = ink, secondary = violet,
                 background = ink, surface = charcoal, onSurface = white
             )) {
-                AstraApp(
+                if (deviceUnlocked) AstraApp(
                     activity = this,
                     speechText = speechText,
                     pickedFile = pickedFile,
@@ -108,28 +172,65 @@ class MainActivity : ComponentActivity() {
                         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "hi-IN")
-                            putExtra(RecognizerIntent.EXTRA_PROMPT, "ASTRA से हिंदी में बोलकर पूछें")
+                            putExtra(RecognizerIntent.EXTRA_PROMPT, "QUANTUM AI से हिंदी में बोलकर पूछें")
                         }
                         try {
-                            if (intent.resolveActivity(packageManager) != null) {
-                                speechLauncher.launch(intent)
-                            } else {
-                                Toast.makeText(this, "फोन में Speech Recognition सेवा उपलब्ध नहीं है। Google app या Speech Services by Google इंस्टॉल/अपडेट करें।", Toast.LENGTH_LONG).show()
-                            }
+                            if (intent.resolveActivity(packageManager) != null) speechLauncher.launch(intent)
+                            else Toast.makeText(this, "फोन में Speech Recognition सेवा उपलब्ध नहीं है।", Toast.LENGTH_LONG).show()
                         } catch (e: Exception) {
-                            Toast.makeText(this, "Voice Search शुरू नहीं हो सका: " + (e.localizedMessage ?: "Speech service उपलब्ध नहीं"), Toast.LENGTH_LONG).show()
+                            Toast.makeText(this, "Voice Search शुरू नहीं हो सका: " + (e.localizedMessage ?: "सेवा उपलब्ध नहीं"), Toast.LENGTH_LONG).show()
                         }
                     },
                     onPickFile = { fileLauncher.launch(arrayOf("image/jpeg", "image/png", "image/webp", "application/pdf")) }
-                )
+                ) else SecurityGate(message = securityMessage, onUnlock = { authenticateDevice() })
             }
         }
+        authenticateDevice()
     }
 
     override fun onDestroy() {
         speaking?.stop()
         speaking?.shutdown()
         super.onDestroy()
+    }
+}
+
+
+private fun securePreferences(context: Context): SharedPreferences {
+    val masterKey = MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build()
+    val secure = EncryptedSharedPreferences.create(context, "quantum_private_secure", masterKey,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM)
+    val legacy = context.getSharedPreferences("astra_private", Context.MODE_PRIVATE)
+    if (!secure.getBoolean("_secure_migration_complete", false)) {
+        val editor = secure.edit()
+        legacy.all.forEach { (key, value) ->
+            when (value) {
+                is String -> editor.putString(key, value)
+                is Boolean -> editor.putBoolean(key, value)
+                is Int -> editor.putInt(key, value)
+                is Long -> editor.putLong(key, value)
+                is Float -> editor.putFloat(key, value)
+                is Set<*> -> editor.putStringSet(key, value.filterIsInstance<String>().toSet())
+            }
+        }
+        editor.putBoolean("_secure_migration_complete", true)
+        check(editor.commit()) { "Secure migration failed" }
+        check(legacy.edit().clear().commit()) { "Legacy storage cleanup failed" }
+    }
+    return secure
+}
+private object AppSecurity { @Volatile var accessToken: String = "" }
+@Composable
+private fun SecurityGate(message: String, onUnlock: () -> Unit) {
+    Box(Modifier.fillMaxSize().background(ink), contentAlignment = Alignment.Center) {
+        Column(Modifier.fillMaxWidth().padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Text("QUANTUM AI", color = white, fontSize = 24.sp, fontWeight = FontWeight.Black)
+            Text("SECURITY LOCK", color = mint, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text(message, color = white, fontSize = 14.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            Button(onClick = onUnlock) { Text("Fingerprint / Screen Lock से खोलें") }
+            Text("Creator by Bittu Pandit", color = muted, fontSize = 11.sp)
+        }
     }
 }
 
@@ -175,7 +276,9 @@ private fun AstraApp(
             .usePlugin(TablePlugin.create(context))
             .build()
     }
-    val prefs = remember { context.getSharedPreferences("astra_private", 0) }
+    val prefs = remember { securePreferences(context) }
+    AppSecurity.accessToken = prefs.getString("api_access_token", "") ?: ""
+    var apiAccessToken by remember { mutableStateOf(prefs.getString("api_access_token", "") ?: "") }
     val offlineEngine = remember { OfflineAiEngine(context) }
     var page by remember { mutableStateOf("Home") }
     var showSplash by remember { mutableStateOf(true) }
@@ -183,7 +286,7 @@ private fun AstraApp(
     var prompt by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("GROQ AI · READY") }
-    var backend by remember { mutableStateOf(prefs.getString("backend_url", "https://astraquantum-ai.onrender.com") ?: "https://astraquantum-ai.onrender.com") }
+    var backend by remember { mutableStateOf(TRUSTED_BACKEND_URL) }
     var memoryInput by remember { mutableStateOf("") }
     var memories by remember { mutableStateOf(prefs.getString("memories", "") ?: "") }
     var useMemoryInChat by remember { mutableStateOf(prefs.getBoolean("use_memory_in_chat", false)) }
@@ -991,14 +1094,21 @@ private fun AstraApp(
                 TextButton(onClick = { projects = ""; prefs.edit().remove("projects").apply() }) { Text("सभी प्रोजेक्ट नोट मिटाएँ", color = muted) }
             }
             "Updates" -> AppUpdateScreen()
-            "Settings" -> SimplePage("CONNECTION SETTINGS", "Groq AI की API key ऐप में नहीं, Render के सुरक्षित Environment में रहती है।") {
-                OutlinedTextField(backend, { backend = it }, Modifier.fillMaxWidth(), label = { Text("Backend HTTPS URL") })
-                Button(onClick = {
-                    backend = backend.trim().trimEnd('/')
-                    prefs.edit().putString("backend_url", backend).apply()
-                    status = "Backend URL सेव हुआ"
-                    Toast.makeText(context, "Backend URL सेव हुआ", Toast.LENGTH_SHORT).show()
-                }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("सेटिंग सेव करें") }
+            "Settings" -> SimplePage("CONNECTION & SECURITY SETTINGS", "Groq API key Render के सुरक्षित Environment में रहती है। Private backend access token आवश्यक है।") {
+                Text("Verified backend: $TRUSTED_BACKEND_URL", color = mint, fontSize = 12.sp)
+                OutlinedTextField(apiAccessToken, { apiAccessToken = it.trim() }, Modifier.fillMaxWidth(), label = { Text("Private API Access Token") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
+                Text("Token encrypted phone storage में सेव होगा। इसे किसी के साथ साझा न करें।", color = muted, fontSize = 10.sp)
+                Button(enabled = apiAccessToken.matches(Regex("^[a-f0-9]{64}$")), onClick = {
+                    val saved = prefs.edit().putString("api_access_token", apiAccessToken.trim()).commit()
+                    if (saved) {
+                        AppSecurity.accessToken = apiAccessToken.trim()
+                        status = "Private API सुरक्षा सेटिंग सेव हुई"
+                        Toast.makeText(context, "सुरक्षा सेटिंग सेव हुई", Toast.LENGTH_SHORT).show()
+                    } else {
+                        status = "सुरक्षा token सेव नहीं हो पाया।"
+                        Toast.makeText(context, "सुरक्षा सेटिंग सेव नहीं हुई", Toast.LENGTH_LONG).show()
+                    }
+                }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("सुरक्षा token सेव करें") }
                 OutlinedButton(enabled = !healthBusy, onClick = {
                     healthBusy = true
                     status = "सर्वर जाँचा जा रहा है…"
@@ -1171,11 +1281,16 @@ private fun QuantumArtwork(modifier: Modifier = Modifier, variant: Int = 0) {
     }
 }
 
+private fun isTrustedBackend(baseUrl: String): Boolean = runCatching {
+    val parsed = URL(baseUrl.trim().trimEnd('/'))
+    parsed.protocol == "https" && parsed.host.equals("astraquantum-ai.onrender.com", ignoreCase = true) && parsed.port == -1
+}.getOrDefault(false)
+
 private fun checkAstraBackend(baseUrl: String): String {
     if (baseUrl.isBlank()) return "त्रुटि: Backend URL खाली है।"
     return try {
         val clean = baseUrl.trim().trimEnd('/')
-        if (!URLUtil.isHttpsUrl(clean)) return "त्रुटि: केवल HTTPS backend स्वीकार है।"
+        if (!isTrustedBackend(clean)) return "त्रुटि: केवल आधिकारिक QUANTUM AI backend स्वीकार है।"
         val connection = (URL("$clean/health").openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
             connectTimeout = 8000
@@ -1200,13 +1315,14 @@ private fun quantumApiRequest(baseUrl: String, path: String, method: String, pay
     if (baseUrl.isBlank()) return "ASTRA backend URL सेव करें।"
     return try {
         val clean = baseUrl.trim().trimEnd('/')
-        if (!URLUtil.isHttpsUrl(clean)) return "सुरक्षा के लिए backend URL HTTPS होना चाहिए।"
+        if (!isTrustedBackend(clean)) return "सुरक्षा के लिए केवल आधिकारिक QUANTUM AI backend स्वीकार है।"
         val connection = (URL(clean + path).openConnection() as HttpURLConnection).apply {
             requestMethod = method
             connectTimeout = 20000
             readTimeout = 150000
             doOutput = method == "POST"
             setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            setRequestProperty("Authorization", "Bearer " + AppSecurity.accessToken)
         }
         if (method == "POST" && payload != null) {
             connection.outputStream.use { it.write(payload.toString().toByteArray(Charsets.UTF_8)) }
@@ -1230,13 +1346,14 @@ private fun askResearch(baseUrl: String, query: String): String {
     if (baseUrl.isBlank()) return "ASTRA backend URL सेव करें।"
     return try {
         val clean = baseUrl.trim().trimEnd('/')
-        if (!URLUtil.isHttpsUrl(clean)) return "सुरक्षा के लिए backend URL HTTPS होना चाहिए।"
+        if (!isTrustedBackend(clean)) return "सुरक्षा के लिए केवल आधिकारिक QUANTUM AI backend स्वीकार है।"
         val connection = (URL(clean + "/v1/research").openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
             connectTimeout = 20000
             readTimeout = 150000
             doOutput = true
             setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            setRequestProperty("Authorization", "Bearer " + AppSecurity.accessToken)
         }
         val payload = JSONObject().put("query", query)
         connection.outputStream.use { it.write(payload.toString().toByteArray(Charsets.UTF_8)) }
@@ -1293,16 +1410,17 @@ private fun askResearch(baseUrl: String, query: String): String {
 }
 
 internal fun askBackend(baseUrl: String, prompt: String, mimeType: String? = null, base64: String? = null): String {
-    if (baseUrl.isBlank()) return "ASTRA से जुड़ने के लिए Backend HTTPS URL सेव करें।"
+    if (baseUrl.isBlank()) return "Private API Access Token सेटिंग्स में सेव करें।"
     return try {
         val clean = baseUrl.trim().trimEnd('/')
-        if (!URLUtil.isHttpsUrl(clean)) return "सुरक्षा के लिए backend URL HTTPS होना चाहिए।"
+        if (!isTrustedBackend(clean)) return "सुरक्षा के लिए केवल आधिकारिक QUANTUM AI backend स्वीकार है।"
         val connection = (URL("$clean/v1/generate").openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
             connectTimeout = 15000
             readTimeout = 65000
             doOutput = true
             setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            setRequestProperty("Authorization", "Bearer " + AppSecurity.accessToken)
         }
         val payload = JSONObject().put("prompt", prompt)
         if (!base64.isNullOrBlank() && !mimeType.isNullOrBlank()) {

@@ -1,6 +1,6 @@
 import http from "node:http";
+import { timingSafeEqual } from "node:crypto";
 import { clientAddress } from "./client-address.js";
-import { PDFParse } from "pdf-parse";
 import { searchKnowledge, validateKnowledgeCitations } from "./knowledge.js";
 import { buildResearchQueries, rankResearchSources } from "./research-quality.js";
 import { fitContentToByteBudget, estimateInputBytes, truncateUtf8 } from "./token-budget.js";
@@ -10,7 +10,8 @@ const PORT = Number(process.env.PORT || 8080);
 const API_KEY = process.env.GROQ_API_KEY;
 const MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-20b";
 const VISION_MODEL = process.env.GROQ_VISION_MODEL || "qwen/qwen3.8-27b";
-const ORIGIN = process.env.ALLOWED_ORIGIN || "*";
+const ALLOWED_ORIGINS = new Set(String(process.env.ALLOWED_ORIGINS || "").split(",").map(value => value.trim()).filter(Boolean));
+const APP_ACCESS_TOKEN = String(process.env.APP_ACCESS_TOKEN || "");
 const WINDOW_MS = 60_000;
 const configuredMaxRequests = Number(process.env.API_MAX_REQUESTS_PER_MINUTE ?? 20);
 const MAX_REQUESTS = Number.isFinite(configuredMaxRequests)
@@ -51,12 +52,13 @@ For short questions, be concise; for complex questions, explain the rationale an
 The configured text model is ${MODEL}; vision model is ${VISION_MODEL}; provider is Groq. If asked, state these exact identifiers. QUANTUM AI is the app name, not the model.
 Never claim to access the user's phone or perform an action unless a tool actually did it.`;
 
-function send(res, status, data) {
+function send(res, status, data, requestOrigin = "") {
+  const corsHeaders = requestOrigin && ALLOWED_ORIGINS.has(requestOrigin)
+    ? { "access-control-allow-origin": requestOrigin, "access-control-allow-methods": "POST, GET, OPTIONS", "access-control-allow-headers": "content-type, authorization", "vary": "Origin" }
+    : {};
   res.writeHead(status, {
     "content-type": "application/json; charset=utf-8",
-    "access-control-allow-origin": ORIGIN,
-    "access-control-allow-methods": "POST, GET, OPTIONS",
-    "access-control-allow-headers": "content-type",
+    ...corsHeaders,
     "cache-control": "no-store",
     "x-content-type-options": "nosniff",
     "x-frame-options": "DENY",
@@ -104,6 +106,7 @@ async function generate(input) {
         throw new Error("यह वैध PDF फ़ाइल नहीं लगती।");
       }
       let extracted = "";
+      const { PDFParse } = await import("pdf-parse");
       const parser = new PDFParse({ data: pdfBytes });
       try {
         const parsed = await parser.getText({ first: 60 });
@@ -680,51 +683,52 @@ async function research(input) {
 }
 
 const server = http.createServer(async (req, res) => {
-  if (req.method === "OPTIONS") return send(res, 204, {});
+  const requestOrigin = String(req.headers.origin || "");
+  if (req.method === "OPTIONS") return send(res, 204, {}, requestOrigin);
   const pathname = new URL(req.url || "/", "http://localhost").pathname.replace(/\/+$/, "") || "/";
   if (req.method === "GET" && pathname === "/") {
-    return send(res, 200, { ok: true, service: "ASTRA AI backend", message: "Use /health to check server status." });
+    return send(res, 200, { ok: true, service: "QUANTUM AI backend" }, requestOrigin);
   }
   if (req.method === "GET" && pathname === "/health") {
-    return send(res, 200, {
-      ok: true,
-      service: "ASTRA AI backend",
-      provider: "Groq",
-      model: MODEL,
-      vision_model: VISION_MODEL,
-      ibm_quantum_configured: Boolean(IBM_API_KEY && IBM_SERVICE_CRN),
-      ibm_quantum_submissions_enabled: process.env.IBM_QUANTUM_SUBMISSIONS_ENABLED === "true"
-    });
+    return send(res, 200, { ok: true, service: "QUANTUM AI backend" }, requestOrigin);
   }
   const isQuantumRoute = pathname === "/v1/quantum/backends" ||
     pathname === "/v1/quantum/demo" || pathname.startsWith("/v1/quantum/jobs/");
   if (!isQuantumRoute && !(req.method === "POST" && ["/v1/generate", "/v1/analyze", "/v1/research"].includes(pathname))) {
-    return send(res, 404, { error: "Not found" });
+    return send(res, 404, { error: "Not found" }, requestOrigin);
   }
   if (isQuantumRoute && !(
     (req.method === "GET" && (pathname === "/v1/quantum/backends" || pathname.startsWith("/v1/quantum/jobs/"))) ||
     (req.method === "POST" && pathname === "/v1/quantum/demo")
-  )) return send(res, 405, { error: "Method not allowed" });
+  )) return send(res, 405, { error: "Method not allowed" }, requestOrigin);
   const ip = clientAddress(req);
-  if (isRateLimited(ip)) return send(res, 429, { error: "Rate limit reached. Try again in a minute." });
+  if (isRateLimited(ip)) return send(res, 429, { error: "Rate limit reached. Try again in a minute." }, requestOrigin);
+  if (!APP_ACCESS_TOKEN) return send(res, 503, { error: "Private API authentication is not configured." }, requestOrigin);
+  const authorization = String(req.headers.authorization || "");
+  const suppliedToken = authorization.startsWith("Bearer ") ? authorization.slice(7).trim() : "";
+  const expected = Buffer.from(APP_ACCESS_TOKEN, "utf8");
+  const supplied = Buffer.from(suppliedToken, "utf8");
+  if (expected.length !== supplied.length || !timingSafeEqual(expected, supplied)) {
+    return send(res, 401, { error: "Unauthorized. Configure the private app access token in QUANTUM AI Settings." }, requestOrigin);
+  }
   try {
     if (req.method === "GET" && pathname === "/v1/quantum/backends") {
-      return send(res, 200, await quantumBackends());
+      return send(res, 200, await quantumBackends(), requestOrigin);
     }
     if (req.method === "GET" && pathname.startsWith("/v1/quantum/jobs/")) {
       const jobId = pathname.slice("/v1/quantum/jobs/".length);
-      return send(res, 200, await quantumJob(jobId));
+      return send(res, 200, await quantumJob(jobId), requestOrigin);
     }
     const input = await readBody(req);
     if (pathname === "/v1/quantum/demo") {
-      return send(res, 200, await submitQuantumDemo(input));
+      return send(res, 200, await submitQuantumDemo(input), requestOrigin);
     }
     if (pathname === "/v1/research") {
       const result = await research(input);
-      return send(res, 200, result);
+      return send(res, 200, result, requestOrigin);
     }
     const text = await generate(input);
-    return send(res, 200, { text });
+    return send(res, 200, { text }, requestOrigin);
   } catch (error) {
     const message = error?.message || "Internal server error";
     const status = Number.isInteger(error?.statusCode) ? error.statusCode :
@@ -732,7 +736,7 @@ const server = http.createServer(async (req, res) => {
       message.includes("job submission is disabled") ? 403 :
       message === "Invalid JSON" || message.startsWith("Prompt") || message.startsWith("Only ") || message.startsWith("File ") || message.startsWith("PDF ") ? 400 : 502;
     console.error("ASTRA request failed:", message);
-    return send(res, status, { error: message });
+    return send(res, status, { error: message }, requestOrigin);
   }
 });
 
