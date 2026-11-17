@@ -80,6 +80,8 @@ class MainActivity : ComponentActivity() {
     private var pickedMime by mutableStateOf("")
     private var pickedUri by mutableStateOf<Uri?>(null)
     private var speaking: TextToSpeech? = null
+    private var deviceUnlocked by mutableStateOf(false)
+    private var securityMessage by mutableStateOf("Fingerprint या फोन का Screen Lock सत्यापित करें।")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -99,12 +101,27 @@ class MainActivity : ComponentActivity() {
                 pickedMime = contentResolver.getType(it) ?: "application/octet-stream"
             }
         }
+        val authenticators = BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
+        val biometricPrompt = BiometricPrompt(this, ContextCompat.getMainExecutor(this), object : BiometricPrompt.AuthenticationCallback() {
+            override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) { deviceUnlocked = true; securityMessage = "" }
+            override fun onAuthenticationError(errorCode: Int, errString: CharSequence) { deviceUnlocked = false; securityMessage = errString.toString() }
+            override fun onAuthenticationFailed() { securityMessage = "पहचान नहीं हुई। दोबारा प्रयास करें।" }
+        })
+        val promptInfo = BiometricPrompt.PromptInfo.Builder()
+            .setTitle("QUANTUM AI सुरक्षा लॉक")
+            .setSubtitle("Fingerprint या फोन का PIN / Pattern / Password")
+            .setAllowedAuthenticators(authenticators)
+            .build()
+        fun authenticateDevice() {
+            if (BiometricManager.from(this).canAuthenticate(authenticators) == BiometricManager.BIOMETRIC_SUCCESS) biometricPrompt.authenticate(promptInfo)
+            else securityMessage = "पहले फोन की Settings में Screen Lock (PIN / Pattern / Password) सेट करें।"
+        }
         setContent {
             MaterialTheme(colorScheme = darkColorScheme(
                 primary = white, onPrimary = ink, secondary = violet,
                 background = ink, surface = charcoal, onSurface = white
             )) {
-                AstraApp(
+                if (deviceUnlocked) AstraApp(
                     activity = this,
                     speechText = speechText,
                     pickedFile = pickedFile,
@@ -115,22 +132,20 @@ class MainActivity : ComponentActivity() {
                         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "hi-IN")
-                            putExtra(RecognizerIntent.EXTRA_PROMPT, "ASTRA से हिंदी में बोलकर पूछें")
+                            putExtra(RecognizerIntent.EXTRA_PROMPT, "QUANTUM AI से हिंदी में बोलकर पूछें")
                         }
                         try {
-                            if (intent.resolveActivity(packageManager) != null) {
-                                speechLauncher.launch(intent)
-                            } else {
-                                Toast.makeText(this, "फोन में Speech Recognition सेवा उपलब्ध नहीं है। Google app या Speech Services by Google इंस्टॉल/अपडेट करें।", Toast.LENGTH_LONG).show()
-                            }
+                            if (intent.resolveActivity(packageManager) != null) speechLauncher.launch(intent)
+                            else Toast.makeText(this, "फोन में Speech Recognition सेवा उपलब्ध नहीं है।", Toast.LENGTH_LONG).show()
                         } catch (e: Exception) {
-                            Toast.makeText(this, "Voice Search शुरू नहीं हो सका: " + (e.localizedMessage ?: "Speech service उपलब्ध नहीं"), Toast.LENGTH_LONG).show()
+                            Toast.makeText(this, "Voice Search शुरू नहीं हो सका: " + (e.localizedMessage ?: "सेवा उपलब्ध नहीं"), Toast.LENGTH_LONG).show()
                         }
                     },
                     onPickFile = { fileLauncher.launch(arrayOf("image/jpeg", "image/png", "image/webp", "application/pdf")) }
-                )
+                ) else SecurityGate(message = securityMessage, onUnlock = { authenticateDevice() })
             }
         }
+        authenticateDevice()
     }
 
     override fun onDestroy() {
