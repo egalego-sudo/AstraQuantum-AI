@@ -366,7 +366,7 @@ async function research(input) {
     .replace(/\s+/g, " ").trim();
   const researchQueries = buildResearchQueries(query);
   const queryResults = await Promise.all(researchQueries.map(async searchQuery => {
-    const [wikiData, crossrefData, openAlexData, europeData, arxivXml] = await Promise.all([
+    const [wikiData, crossrefData, openAlexData, europeData, arxivXml, semanticData] = await Promise.all([
       fetchJson("https://en.wikipedia.org/w/api.php?" + new URLSearchParams({
         action: "query", generator: "search", gsrsearch: searchQuery, gsrlimit: "6",
         prop: "extracts", exintro: "1", explaintext: "1", format: "json"
@@ -384,12 +384,16 @@ async function research(input) {
       })),
       fetchText("https://export.arxiv.org/api/query?" + new URLSearchParams({
         search_query: "all:" + searchQuery, start: "0", max_results: "8", sortBy: "relevance"
+      })),
+      fetchJson("https://api.semanticscholar.org/graph/v1/paper/search?" + new URLSearchParams({
+        query: searchQuery, limit: "10",
+        fields: "title,authors,year,venue,abstract,externalIds,url,openAccessPdf"
       }))
     ]);
-    return { wikiData, crossrefData, openAlexData, europeData, arxivXml };
+    return { wikiData, crossrefData, openAlexData, europeData, arxivXml, semanticData };
   }));
   const sources = [];
-  for (const { wikiData, crossrefData, openAlexData, europeData, arxivXml } of queryResults) {
+  for (const { wikiData, crossrefData, openAlexData, europeData, arxivXml, semanticData } of queryResults) {
 
   for (const page of Object.values(wikiData?.query?.pages || {})) {
     const extract = String(page.extract || "").slice(0, 3000);
@@ -438,6 +442,20 @@ async function research(input) {
       quality: item.isOpenAccess === "Y" ? "indexed biomedical record; open full text may be available" : "indexed biomedical record"
     });
   }
+  for (const item of semanticData?.data || []) {
+    const title = String(item.title || "").trim();
+    if (!title) continue;
+    const doi = String(item.externalIds?.DOI || "").trim();
+    sources.push({
+      type: "semantic-scholar", title,
+      authors: (item.authors || []).slice(0, 5).map(author => author.name).filter(Boolean).join(", "),
+      year: item.year || "", journal: item.venue || "", doi,
+      url: item.url || (doi ? "https://doi.org/" + doi : ""),
+      abstract: String(item.abstract || "").slice(0, 3000),
+      openAccess: Boolean(item.openAccessPdf?.url),
+      quality: item.openAccessPdf?.url ? "Semantic Scholar indexed record; open-access PDF link reported, not independently full-text reviewed" : "Semantic Scholar indexed metadata/abstract"
+    });
+  }
   const atomEntries = arxivXml.match(/<entry[\s\S]*?<\/entry>/g) || [];
   for (const entry of atomEntries) {
     const getTag = tag => xmlText(entry.match(new RegExp("<" + tag + "(?:\\s[^>]*)?>([\\s\\S]*?)<\\/" + tag + ">","i"))?.[1] || "");
@@ -453,7 +471,7 @@ async function research(input) {
   }
   const rankedSources = rankResearchSources(sources, researchQueries, 0.12);
   const rejectedIrrelevantCount = sources.length - rankedSources.length;
-  const sourcePriority = { "europe-pmc": 0, "arxiv-preprint": 1, "openalex-index": 2, "crossref-metadata": 3, "encyclopedia": 4 };
+  const sourcePriority = { "europe-pmc": 0, "semantic-scholar": 1, "arxiv-preprint": 2, "openalex-index": 3, "crossref-metadata": 4, "encyclopedia": 5 };
   rankedSources.sort((a, b) => b.relevance.score - a.relevance.score || (sourcePriority[a.type] ?? 9) - (sourcePriority[b.type] ?? 9));
   const seen = new Set();
   const uniqueSources = rankedSources.filter(source => {
@@ -465,6 +483,29 @@ async function research(input) {
     seen.add(key);
     return true;
   }).slice(0, 24);
+  const normalizeTitle = value => String(value || "").toLowerCase()
+    .normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+  const titleSimilarity = (left, right) => {
+    const a = new Set(normalizeTitle(left).split(" ").filter(Boolean));
+    const b = new Set(normalizeTitle(right).split(" ").filter(Boolean));
+    if (!a.size || !b.size) return 0;
+    return [...a].filter(token => b.has(token)).length / new Set([...a, ...b]).size;
+  };
+  const doiCandidates = uniqueSources.filter(source => source.doi).slice(0, 12);
+  const doiChecks = await Promise.all(doiCandidates.map(async source => {
+    const doi = String(source.doi).replace(/^https?:\/\/doi\.org\//i, "").trim();
+    const record = await fetchJson("https://api.crossref.org/works/" + encodeURIComponent(doi), 12000);
+    const crossrefTitle = Array.isArray(record?.message?.title) ? record.message.title[0] : "";
+    return { doi, verified: Boolean(crossrefTitle && titleSimilarity(source.title, crossrefTitle) >= 0.7) };
+  }));
+  const doiCheckByDoi = new Map(doiChecks.map(check => [check.doi.toLowerCase(), check]));
+  for (const source of uniqueSources) {
+    const doi = String(source.doi || "").replace(/^https?:\/\/doi\.org\//i, "").toLowerCase();
+    const check = doiCheckByDoi.get(doi);
+    source.doiVerified = check ? check.verified : null;
+    source.doiVerification = !doi ? "NO_DOI" : !check ? "NOT_CHECKED_LIMIT" :
+      check.verified ? "CROSSREF_TITLE_MATCH" : "CROSSREF_NOT_FOUND_OR_TITLE_MISMATCH";
+  }
   if (!uniqueSources.length) {
     if (successfulProviderResponses === 0) {
       throw new Error("सभी शोध-स्रोत प्रदाताओं से संपर्क विफल रहा या समय-सीमा समाप्त हुई। यह अस्थायी सर्वर/नेटवर्क समस्या हो सकती है; बाद में पुनः प्रयास करें।");
@@ -503,6 +544,7 @@ async function research(input) {
     (source.journal ? " | " + source.journal : "") +
     " | relevance score: " + source.relevance.score + " | matched terms: " + source.relevance.matched_terms.join(", ") +
     " | source quality: " + source.quality +
+    " | DOI verification: " + (source.doiVerification || "NO_DOI") +
     "\nURL: " + source.url +
     "\n" + (source.fullText || source.abstract || "केवल bibliographic metadata उपलब्ध; abstract/full text उपलब्ध नहीं।")
   ).join("\n\n");
@@ -535,6 +577,7 @@ async function research(input) {
       id: source.id, type: source.type, title: source.title, url: source.url,
       relevance_score: source.relevance.score, matched_terms: source.relevance.matched_terms,
       year: source.year || "", doi: source.doi || "",
+      doi_verified: source.doiVerified, doi_verification: source.doiVerification || "NO_DOI",
       fullTextFetched: Boolean(source.fullTextFetched), quality: source.quality
     })),
     research_meta: {
@@ -542,10 +585,13 @@ async function research(input) {
       search_queries_used: researchQueries,
       rejected_irrelevant_source_count: rejectedIrrelevantCount,
       source_types: sourceTypes,
+      providers_attempted: ["OpenAlex", "Crossref", "Europe PMC", "arXiv", "Semantic Scholar", "Wikipedia"],
+      doi_checks_attempted: doiChecks.length,
+      doi_title_matches: doiChecks.filter(check => check.verified).length,
       open_full_texts_fetched: fullTextResults.filter(Boolean).length,
       full_text_types: [...new Set(fullTextResults.filter(Boolean).map(s => s.type))],
       sources_with_abstract_or_full_text: sourcesWithIds.filter(s => s.abstract || s.fullText).length,
-      coverage_note: "यह पाँच सार्वजनिक scholarly/knowledge indexes की सीमित खोज है; पूरे इंटरनेट की exhaustive खोज नहीं।",
+      coverage_note: "यह छह सार्वजनिक scholarly/knowledge indexes की सीमित खोज है; पूरे इंटरनेट की exhaustive खोज नहीं। DOI जाँच Crossref में DOI रिकॉर्ड और शीर्षक मिलान पर आधारित है।",
       limitations: [
         "Search results relevance ranking और provider coverage पर निर्भर हैं",
         "सभी स्रोतों का full text उपलब्ध या पढ़ा नहीं गया; अधिकतर indexed abstracts/metadata हैं",
