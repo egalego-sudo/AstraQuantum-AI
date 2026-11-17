@@ -45,8 +45,11 @@ This plan is an engineering checklist, not a claim that every capability is comp
 - App Builder and Website Builder screens.
 - AI task planning with explicit confirmation before saving a local checkpoint.
 
+**Incremental implementation on this branch**
+- Hardened the generated HTML preview WebView: file/content access and network loads are blocked, mixed content is disallowed, multiple windows and automatic JavaScript popups are disabled, Safe Browsing is enabled where supported, and navigation is restricted to the synthetic preview origin.
+
 **Work to verify/improve**
-- Verify generated project files, preview, validation and export flows end-to-end.
+- Verify generated project files, preview, validation and export flows end-to-end on a real device.
 - Add safe code-formatting and static validation where supported.
 - Never execute untrusted generated code on the production backend without an isolated sandbox, resource limits and explicit user approval.
 
