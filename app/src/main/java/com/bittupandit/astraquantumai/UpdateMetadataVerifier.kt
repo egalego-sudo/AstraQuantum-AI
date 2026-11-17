@@ -53,11 +53,38 @@ internal object UpdateMetadataVerifier {
         require(json.getString("signerCertificateSha256").equals(certificateHash, true)) {
             "Update signing certificate does not match the embedded trusted certificate."
         }
-        require(json.getString("patchUrl").startsWith("https://github.com/egalego-sudo/AstraQuantum-AI/releases/download/") &&
-            json.getString("apkUrl").startsWith("https://github.com/egalego-sudo/AstraQuantum-AI/releases/download/")) {
-            "Update download URL is not an approved ASTRA release URL."
+
+        require(isApprovedReleaseAssetUrl(json.getString("apkUrl"))) {
+            "Update download URL is not an approved QUANTUM AI release URL."
+        }
+        if (json.has("patchUrl")) {
+            require(isApprovedReleaseAssetUrl(json.getString("patchUrl"))) {
+                "Update patch URL is not an approved QUANTUM AI release URL."
+            }
+        }
+        val patches = json.optJSONArray("patches")
+        if (patches != null) {
+            for (i in 0 until patches.length()) {
+                require(isApprovedReleaseAssetUrl(patches.getJSONObject(i).getString("patchUrl"))) {
+                    "A signed patch URL is not an approved QUANTUM AI release URL."
+                }
+            }
         }
         return VerifiedMetadata(json, metadataBytes, certificateHash)
+    }
+
+    private fun isApprovedReleaseAssetUrl(value: String): Boolean {
+        return runCatching {
+            val uri = java.net.URI(value)
+            uri.scheme == "https" &&
+                uri.host == "github.com" &&
+                uri.userInfo == null &&
+                uri.port == -1 &&
+                uri.rawQuery == null &&
+                uri.rawFragment == null &&
+                uri.path.startsWith("/egalego-sudo/Quantum-AI/releases/download/") &&
+                uri.path.split('/').size >= 7
+        }.getOrDefault(false)
     }
 
     private fun installedVersionCode(context: Context): Long {
