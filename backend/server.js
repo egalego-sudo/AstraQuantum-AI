@@ -1,4 +1,5 @@
 import http from "node:http";
+import { clientAddress } from "./client-address.js";
 import { PDFParse } from "pdf-parse";
 import { searchKnowledge, validateKnowledgeCitations } from "./knowledge.js";
 import { buildResearchQueries, rankResearchSources } from "./research-quality.js";
@@ -20,12 +21,6 @@ const GROQ_MAX_INPUT_BYTES = Math.min(5_000, Math.max(3_000, Number(process.env.
 const GROQ_OUTPUT_RESERVE = 900;
 const hits = new Map();
 
-function clientAddress(req) {
-  // Render appends the connecting client IP to X-Forwarded-For.
-  // Use the right-most value rather than the caller-controlled left-most entry.
-  const chain = String(req.headers["x-forwarded-for"] || "").split(",").map(v => v.trim()).filter(Boolean);
-  return chain.length ? chain[chain.length - 1] : (req.socket.remoteAddress || "unknown");
-}
 
 function isRateLimited(clientKey, now = Date.now()) {
   const recent = (hits.get(clientKey) || []).filter(timestamp => now - timestamp < WINDOW_MS);
