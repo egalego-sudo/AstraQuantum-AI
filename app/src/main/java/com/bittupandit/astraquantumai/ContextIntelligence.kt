@@ -36,7 +36,11 @@ internal object ContextIntelligence {
         if (cleanHistory.isEmpty() && memories.isBlank() && projects.isBlank()) return question
 
         val queryTokens = tokens(question)
-        val recentStart = (cleanHistory.size - 16).coerceAtLeast(0)
+        // Reserve room for both recent continuity and older, relevant facts. Previously,
+        // selecting 16 recent turns and then taking the last 12 silently discarded every
+        // retrieved older turn. Keep at most 8 recent turns and fill the remaining slots
+        // with the strongest older matches.
+        val recentStart = (cleanHistory.size - 8).coerceAtLeast(0)
         val selected = cleanHistory.indices
             .filter { it >= recentStart }
             .toMutableSet()
@@ -54,7 +58,7 @@ internal object ContextIntelligence {
             }
             .filter { it.second > 0 }
             .sortedWith(compareByDescending<Pair<Int, Int>> { it.second }.thenByDescending { it.first })
-            .take(8)
+            .take((MAX_TURNS - selected.size).coerceAtLeast(0))
         rankedOlder.forEach { selected.add(it.first) }
 
         val ordered = selected.sorted().takeLast(MAX_TURNS)
