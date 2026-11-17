@@ -32,7 +32,7 @@ class ScientificIntelligenceTest {
     fun keepsCurrentQuestionFirstSoBudgetCompactionCannotDropIt() {
         val question = "यदि भविष्य पहले से तय है, तो क्या इंसान के पास स्वतंत्र इच्छा है?"
         val prompt = ScientificIntelligence.enhancePrompt(question)
-        assertTrue(prompt.startsWith("[CURRENT USER REQUEST]\\n$question"))
+        assertTrue(prompt.startsWith("[CURRENT USER REQUEST]\n$question"))
     }
 
     @Test
