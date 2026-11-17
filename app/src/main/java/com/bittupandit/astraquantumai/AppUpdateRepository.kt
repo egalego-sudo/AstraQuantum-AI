@@ -1,15 +1,12 @@
 package com.bittupandit.astraquantumai
 
 import android.content.Context
-import android.content.pm.PackageInfo
-import android.content.pm.PackageManager
-import android.os.Build
-import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
+import org.json.JSONObject
 
 internal object AppUpdateRepository {
     data class AvailableUpdate(
@@ -31,7 +28,7 @@ internal object AppUpdateRepository {
     )
 
     fun check(context: Context): AvailableUpdate {
-        val release = getJson("https://api.github.com/repos/egalego-sudo/AstraQuantum-AI/releases/latest")
+        val release = getJson("https://api.github.com/repos/egalego-sudo/Quantum-AI/releases/latest")
         val assets = release.getJSONArray("assets")
         val urls = mutableMapOf<String, String>()
         val sizes = mutableMapOf<String, Long>()
@@ -126,7 +123,7 @@ internal object AppUpdateRepository {
         connection.connectTimeout = 15000
         connection.readTimeout = 30000
         connection.setRequestProperty("Accept", "application/vnd.github+json")
-        connection.setRequestProperty("User-Agent", "ASTRA-QUANTUM-AI-PLUS-Updater")
+        connection.setRequestProperty("User-Agent", "QUANTUM-AI-Updater")
         try {
             check(connection.responseCode == HttpURLConnection.HTTP_OK) {
                 "Update server returned HTTP ${connection.responseCode}."
@@ -151,7 +148,7 @@ internal object AppUpdateRepository {
         val connection = URL(url).openConnection() as HttpURLConnection
         connection.connectTimeout = 20000
         connection.readTimeout = 60000
-        connection.setRequestProperty("User-Agent", "ASTRA-QUANTUM-AI-PLUS-Updater")
+        connection.setRequestProperty("User-Agent", "QUANTUM-AI-Updater")
         try {
             check(connection.responseCode == HttpURLConnection.HTTP_OK) {
                 "Update download failed with HTTP ${connection.responseCode}."
