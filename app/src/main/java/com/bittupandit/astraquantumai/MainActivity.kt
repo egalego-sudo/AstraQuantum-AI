@@ -1,6 +1,8 @@
 package com.bittupandit.astraquantumai
 
 import android.app.Activity
+import android.content.Context
+import android.content.SharedPreferences
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
@@ -13,6 +15,11 @@ import android.webkit.URLUtil
 import android.widget.Toast
 import android.widget.TextView
 import androidx.activity.ComponentActivity
+import androidx.biometric.BiometricManager
+import androidx.biometric.BiometricPrompt
+import androidx.core.content.ContextCompat
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -133,6 +140,45 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+
+private fun securePreferences(context: Context): SharedPreferences {
+    val masterKey = MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build()
+    val secure = EncryptedSharedPreferences.create(context, "quantum_private_secure", masterKey,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM)
+    val legacy = context.getSharedPreferences("astra_private", Context.MODE_PRIVATE)
+    if (!secure.getBoolean("_secure_migration_complete", false)) {
+        val editor = secure.edit()
+        legacy.all.forEach { (key, value) ->
+            when (value) {
+                is String -> editor.putString(key, value)
+                is Boolean -> editor.putBoolean(key, value)
+                is Int -> editor.putInt(key, value)
+                is Long -> editor.putLong(key, value)
+                is Float -> editor.putFloat(key, value)
+                is Set<*> -> editor.putStringSet(key, value.filterIsInstance<String>().toSet())
+            }
+        }
+        editor.putBoolean("_secure_migration_complete", true)
+        check(editor.commit()) { "Secure migration failed" }
+        check(legacy.edit().clear().commit()) { "Legacy storage cleanup failed" }
+    }
+    return secure
+}
+private object AppSecurity { @Volatile var accessToken: String = "" }
+@Composable
+private fun SecurityGate(message: String, onUnlock: () -> Unit) {
+    Box(Modifier.fillMaxSize().background(ink), contentAlignment = Alignment.Center) {
+        Column(Modifier.fillMaxWidth().padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Text("QUANTUM AI", color = white, fontSize = 24.sp, fontWeight = FontWeight.Black)
+            Text("SECURITY LOCK", color = mint, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text(message, color = white, fontSize = 14.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            Button(onClick = onUnlock) { Text("Fingerprint / Screen Lock से खोलें") }
+            Text("Creator by Bittu Pandit", color = muted, fontSize = 11.sp)
+        }
+    }
+}
+
 private data class ChatLine(val from: String, val text: String)
 
 private fun restoreChatHistory(raw: String?): List<ChatLine> {
@@ -175,7 +221,9 @@ private fun AstraApp(
             .usePlugin(TablePlugin.create(context))
             .build()
     }
-    val prefs = remember { context.getSharedPreferences("astra_private", 0) }
+    val prefs = remember { securePreferences(context) }
+    AppSecurity.accessToken = prefs.getString("api_access_token", "") ?: ""
+    var apiAccessToken by remember { mutableStateOf(prefs.getString("api_access_token", "") ?: "") }
     val offlineEngine = remember { OfflineAiEngine(context) }
     var page by remember { mutableStateOf("Home") }
     var showSplash by remember { mutableStateOf(true) }
@@ -991,13 +1039,16 @@ private fun AstraApp(
                 TextButton(onClick = { projects = ""; prefs.edit().remove("projects").apply() }) { Text("सभी प्रोजेक्ट नोट मिटाएँ", color = muted) }
             }
             "Updates" -> AppUpdateScreen()
-            "Settings" -> SimplePage("CONNECTION SETTINGS", "Groq AI की API key ऐप में नहीं, Render के सुरक्षित Environment में रहती है।") {
+            "Settings" -> SimplePage("CONNECTION & SECURITY SETTINGS", "Groq API key Render के सुरक्षित Environment में रहती है। Private backend access token आवश्यक है।") {
                 OutlinedTextField(backend, { backend = it }, Modifier.fillMaxWidth(), label = { Text("Backend HTTPS URL") })
+                OutlinedTextField(apiAccessToken, { apiAccessToken = it.trim() }, Modifier.fillMaxWidth(), label = { Text("Private API Access Token") }, singleLine = true)
+                Text("Token encrypted phone storage में सेव होगा। इसे किसी के साथ साझा न करें।", color = muted, fontSize = 10.sp)
                 Button(onClick = {
                     backend = backend.trim().trimEnd('/')
-                    prefs.edit().putString("backend_url", backend).apply()
-                    status = "Backend URL सेव हुआ"
-                    Toast.makeText(context, "Backend URL सेव हुआ", Toast.LENGTH_SHORT).show()
+                    prefs.edit().putString("backend_url", backend).putString("api_access_token", apiAccessToken.trim()).commit()
+                    AppSecurity.accessToken = apiAccessToken.trim()
+                    status = "सुरक्षा सेटिंग सेव हुई"
+                    Toast.makeText(context, "सुरक्षा सेटिंग सेव हुई", Toast.LENGTH_SHORT).show()
                 }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("सेटिंग सेव करें") }
                 OutlinedButton(enabled = !healthBusy, onClick = {
                     healthBusy = true
@@ -1207,6 +1258,7 @@ private fun quantumApiRequest(baseUrl: String, path: String, method: String, pay
             readTimeout = 150000
             doOutput = method == "POST"
             setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            setRequestProperty("Authorization", "Bearer " + AppSecurity.accessToken)
         }
         if (method == "POST" && payload != null) {
             connection.outputStream.use { it.write(payload.toString().toByteArray(Charsets.UTF_8)) }
@@ -1237,6 +1289,7 @@ private fun askResearch(baseUrl: String, query: String): String {
             readTimeout = 150000
             doOutput = true
             setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            setRequestProperty("Authorization", "Bearer " + AppSecurity.accessToken)
         }
         val payload = JSONObject().put("query", query)
         connection.outputStream.use { it.write(payload.toString().toByteArray(Charsets.UTF_8)) }
@@ -1303,6 +1356,7 @@ internal fun askBackend(baseUrl: String, prompt: String, mimeType: String? = nul
             readTimeout = 65000
             doOutput = true
             setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            setRequestProperty("Authorization", "Bearer " + AppSecurity.accessToken)
         }
         val payload = JSONObject().put("prompt", prompt)
         if (!base64.isNullOrBlank() && !mimeType.isNullOrBlank()) {
