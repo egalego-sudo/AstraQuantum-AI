@@ -13,7 +13,7 @@ const TOPIC_RULES = [
       "photosynthesis carbon fixation plants chloroplasts light reactions ATP NADPH",
       "photosynthesis C3 C4 CAM carbon fixation plant physiology"
     ],
-    anchors: ["photosynth","calvin","chloroplast","photosystem","carbon fixation","light-dependent","cam plant","c3 plant","c4 plant","rubisco","thylakoid","stroma","ruBP","g3p","3-pga"],
+    anchors: ["photosynth","calvin","chloroplast","photosystem","carbon fixation","light-dependent","cam plant","c3 plant","c4 plant","rubisco","thylakoid","stroma","rubp","g3p","3-pga"],
     context: ["plant","plants","leaf","leaves","botany","chloroplast","photosynthetic","algae","chlorophyll","oxygenic","carbon dioxide","co2"]
   },
   {
@@ -54,13 +54,13 @@ const TOPIC_RULES = [
 
 function normalize(value) {
   return String(value || "").toLowerCase().normalize("NFKC")
-    .replace(/[\\u0300-\\u036f]/g, "")
-    .replace(/[^\\p{L}\\p{N}]+/gu, " ")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
     .trim();
 }
 
 function tokens(value) {
-  return normalize(value).split(/\\s+/u)
+  return normalize(value).split(/\s+/u)
     .filter(token => token.length > 1 && !STOP_WORDS.has(token));
 }
 
@@ -77,7 +77,7 @@ export function buildResearchQueries(query) {
   const expanded = matched.flatMap(rule => rule.queries);
   const unique = [];
   for (const candidate of [original, ...expanded]) {
-    const clean = candidate.trim().replace(/\\s+/g, " ");
+    const clean = candidate.trim().replace(/\s+/g, " ");
     if (clean && !unique.some(existing => normalize(existing) === normalize(clean))) unique.push(clean);
   }
   return unique.slice(0, 6);
@@ -108,8 +108,6 @@ export function scoreResearchSource(source, queries) {
   }
 
   if (rule) {
-    // Topic anchors are stronger evidence than incidental word overlap. Do not
-    // require a narrow domain-context word when a source directly names the topic.
     if (!matchedAnchors.length && !matchedContext.length) {
       return { score: 0, matched_terms: [], topic: rule.id, rejected_reason: "missing_topic_evidence" };
     }
