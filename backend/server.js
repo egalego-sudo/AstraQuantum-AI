@@ -341,10 +341,12 @@ async function research(input) {
   const query = String(input.query || "").trim();
   if (!query || query.length > 500) throw new Error("Research query is empty or too long.");
   const headers = { "user-agent": "ASTRA-Quantum-AI/2.0 (evidence research assistant)" };
+  let successfulProviderResponses = 0;
   const fetchJson = async (url, timeout = 18000) => {
     try {
       const response = await fetch(url, { headers, signal: AbortSignal.timeout(timeout) });
       if (!response.ok) return null;
+      successfulProviderResponses++;
       return await response.json();
     } catch { return null; }
   };
@@ -352,6 +354,7 @@ async function research(input) {
     try {
       const response = await fetch(url, { headers, signal: AbortSignal.timeout(timeout) });
       if (!response.ok) return "";
+      successfulProviderResponses++;
       return await response.text();
     } catch { return ""; }
   };
@@ -463,7 +466,10 @@ async function research(input) {
     return true;
   }).slice(0, 24);
   if (!uniqueSources.length) {
-    const error = new Error("खोज प्रदाताओं से इस प्रश्न के लिए पर्याप्त विषय-संगत स्रोत नहीं मिले। यह सर्वर गेटवे की विफलता नहीं है। प्रश्न को अधिक विशिष्ट करें या कुछ समय बाद पुनः प्रयास करें; अप्रासंगिक स्रोतों से शोध रिपोर्ट नहीं बनाई गई।");
+    if (successfulProviderResponses === 0) {
+      throw new Error("सभी शोध-स्रोत प्रदाताओं से संपर्क विफल रहा या समय-सीमा समाप्त हुई। यह अस्थायी सर्वर/नेटवर्क समस्या हो सकती है; बाद में पुनः प्रयास करें।");
+    }
+    const error = new Error("शोध-स्रोत प्रदाताओं ने अनुरोध स्वीकार किया, लेकिन इस प्रश्न के लिए पर्याप्त विषय-संगत स्रोत नहीं मिले। प्रश्न को अधिक विशिष्ट करें; अप्रासंगिक स्रोतों से रिपोर्ट नहीं बनाई गई।");
     error.statusCode = 422;
     throw error;
   }
