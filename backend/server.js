@@ -519,18 +519,35 @@ async function research(input) {
   };
   const doiCandidates = uniqueSources.filter(source => source.doi).slice(0, 12);
   const doiChecks = await Promise.all(doiCandidates.map(async source => {
-    const doi = String(source.doi).replace(/^https?:\/\/doi\.org\//i, "").trim();
-    const record = await fetchJson("https://api.crossref.org/works/" + encodeURIComponent(doi), 12000);
-    const crossrefTitle = Array.isArray(record?.message?.title) ? record.message.title[0] : "";
-    return { doi, verified: Boolean(crossrefTitle && titleSimilarity(source.title, crossrefTitle) >= 0.7) };
+    const doi = String(source.doi).replace(/^https?:\\/\\/doi\\.org\\//i, "").trim();
+    try {
+      const response = await fetch("https://api.crossref.org/works/" + encodeURIComponent(doi), {
+        headers, signal: AbortSignal.timeout(12000)
+      });
+      if (response.status === 404) return { doi, verified: false, status: "CROSSREF_DOI_NOT_FOUND", crossrefTitle: "" };
+      if (!response.ok) return { doi, verified: false, status: "CROSSREF_LOOKUP_FAILED", crossrefTitle: "" };
+      successfulProviderResponses++;
+      const payload = await response.json().catch(() => ({}));
+      const crossrefTitle = Array.isArray(payload?.message?.title) ? payload.message.title[0] : "";
+      if (!crossrefTitle) return { doi, verified: false, status: "CROSSREF_RECORD_WITHOUT_TITLE", crossrefTitle: "" };
+      const similarity = titleSimilarity(source.title, crossrefTitle);
+      return {
+        doi, verified: similarity >= 0.7,
+        status: similarity >= 0.7 ? "CROSSREF_TITLE_MATCH" : "CROSSREF_TITLE_MISMATCH",
+        crossrefTitle, titleSimilarity: Number(similarity.toFixed(3))
+      };
+    } catch {
+      return { doi, verified: false, status: "CROSSREF_LOOKUP_FAILED", crossrefTitle: "" };
+    }
   }));
   const doiCheckByDoi = new Map(doiChecks.map(check => [check.doi.toLowerCase(), check]));
   for (const source of uniqueSources) {
-    const doi = String(source.doi || "").replace(/^https?:\/\/doi\.org\//i, "").toLowerCase();
+    const doi = String(source.doi || "").replace(/^https?:\\/\\/doi\\.org\\//i, "").toLowerCase();
     const check = doiCheckByDoi.get(doi);
     source.doiVerified = check ? check.verified : null;
-    source.doiVerification = !doi ? "NO_DOI" : !check ? "NOT_CHECKED_LIMIT" :
-      check.verified ? "CROSSREF_TITLE_MATCH" : "CROSSREF_NOT_FOUND_OR_TITLE_MISMATCH";
+    source.doiVerification = !doi ? "NO_DOI" : !check ? "NOT_CHECKED_LIMIT" : check.status;
+    source.doiCrossrefTitle = check?.crossrefTitle || "";
+    source.doiTitleSimilarity = check?.titleSimilarity ?? null;
   }
   if (!uniqueSources.length) {
     if (successfulProviderResponses === 0) {
@@ -564,16 +581,20 @@ async function research(input) {
   const fullTextByDoi = new Map(fullTextResults.filter(Boolean).map(s => [s.doi || s.pmcid || s.url, s]));
   const enrichedSources = uniqueSources.map(source => fullTextByDoi.get(source.doi || source.pmcid || source.url) || source);
   const sourcesWithIds = enrichedSources.map((source, index) => ({ ...source, id: index + 1 }));
-  const evidence = sourcesWithIds.map(source =>
+  // Discovery and DOI checks may return many records; synthesize from a compact,
+  // relevance-ranked evidence set so the free-tier request stays within its hard ceiling.
+  const synthesisSources = sourcesWithIds.slice(0, 8);
+  const evidence = truncateUtf8(synthesisSources.map(source =>
     "[" + source.id + "] " + source.type + " | " + source.title + " | " + (source.year || "date unavailable") +
     (source.authors ? " | " + source.authors : "") +
     (source.journal ? " | " + source.journal : "") +
-    " | relevance score: " + source.relevance.score + " | matched terms: " + source.relevance.matched_terms.join(", ") +
-    " | source quality: " + source.quality +
+    " | relevance: " + source.relevance.score +
+    " | quality: " + source.quality +
     " | DOI verification: " + (source.doiVerification || "NO_DOI") +
-    "\nURL: " + source.url +
-    "\n" + (source.fullText || source.abstract || "केवल bibliographic metadata उपलब्ध; abstract/full text उपलब्ध नहीं।")
-  ).join("\n\n");
+    (source.doiCrossrefTitle ? " | Crossref title: " + source.doiCrossrefTitle : "") +
+    "\\nURL: " + source.url +
+    "\\n" + String(source.fullText || source.abstract || "केवल bibliographic metadata उपलब्ध; abstract/full text उपलब्ध नहीं।").slice(0, 650)
+  ).join("\\n\\n"), 2_800);
   const sourceTypes = [...new Set(sourcesWithIds.map(source => source.type))];
   const answer = await generate({
     skipKnowledgeRetrieval: true,
@@ -604,6 +625,7 @@ async function research(input) {
       relevance_score: source.relevance.score, matched_terms: source.relevance.matched_terms,
       year: source.year || "", doi: source.doi || "",
       doi_verified: source.doiVerified, doi_verification: source.doiVerification || "NO_DOI",
+      crossref_title: source.doiCrossrefTitle || "", doi_title_similarity: source.doiTitleSimilarity,
       fullTextFetched: Boolean(source.fullTextFetched), quality: source.quality
     })),
     research_meta: {
@@ -614,6 +636,9 @@ async function research(input) {
       providers_attempted: ["OpenAlex", "Crossref", "Europe PMC", "arXiv", "Semantic Scholar", "Wikipedia"],
       doi_checks_attempted: doiChecks.length,
       doi_title_matches: doiChecks.filter(check => check.verified).length,
+      doi_verification_status_counts: doiChecks.reduce((counts, check) => ({ ...counts, [check.status]: (counts[check.status] || 0) + 1 }), {}),
+      synthesis_source_count: synthesisSources.length,
+      research_pipeline: ["source_discovery_and_ranking", "crossref_doi_record_and_title_verification", "bounded_open_access_full_text_fetch", "compact_evidence_report_synthesis"],
       open_full_texts_fetched: fullTextResults.filter(Boolean).length,
       full_text_types: [...new Set(fullTextResults.filter(Boolean).map(s => s.type))],
       sources_with_abstract_or_full_text: sourcesWithIds.filter(s => s.abstract || s.fullText).length,
