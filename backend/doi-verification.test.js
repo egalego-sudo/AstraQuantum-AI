@@ -10,13 +10,13 @@ test("distinguishes a DOI absent from Crossref", () => {
 
 test("distinguishes a temporary Crossref lookup failure", () => {
   assert.deepEqual(classifyCrossrefDoiResult({ httpStatus: 503 }), {
-    verified: false, status: "CROSSREF_LOOKUP_FAILED"
+    verified: null, status: "CROSSREF_LOOKUP_FAILED"
   });
 });
 
 test("does not verify a Crossref record without a title", () => {
   assert.deepEqual(classifyCrossrefDoiResult({ httpStatus: 200, crossrefTitle: "" }), {
-    verified: false, status: "CROSSREF_RECORD_WITHOUT_TITLE"
+    verified: null, status: "CROSSREF_RECORD_WITHOUT_TITLE"
   });
 });
 
