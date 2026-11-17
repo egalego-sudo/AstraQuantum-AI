@@ -13,7 +13,7 @@ import android.speech.tts.TextToSpeech
 import android.util.Base64
 import android.widget.Toast
 import android.widget.TextView
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
@@ -75,7 +75,7 @@ private val violet = Color(0xFF8E8EA0)
 private val mint = Color(0xFFD6D6D6)
 private const val TRUSTED_BACKEND_URL = "https://astraquantum-ai.onrender.com"
 
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     private var speechText by mutableStateOf("")
     private var pickedFile by mutableStateOf("")
     private var pickedMime by mutableStateOf("")
