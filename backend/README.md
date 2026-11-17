@@ -40,9 +40,10 @@ The `/v1/analyze` route is also accepted by the server and uses the same request
 
 - `POST /v1/research`
 - JSON body: `{"query":"research topic"}`
-- Searches five public knowledge/scholarly sources in parallel: Europe PMC, arXiv, OpenAlex, Crossref and Wikipedia.
+- Searches six public knowledge/scholarly sources in parallel: OpenAlex, Crossref, Europe PMC, arXiv, Semantic Scholar and Wikipedia. Semantic Scholar is a metadata/abstract index and may rate-limit unauthenticated requests.
 - Deduplicates indexed records and supplies up to 24 records to the synthesis stage.
 - Attempts full-text retrieval for up to three Europe PMC Open Access records and up to two arXiv HTML records, subject to availability and timeouts. A failed or unavailable full-text fetch remains labeled as abstract/metadata only.
+- Up to 12 DOI-bearing results are independently looked up in Crossref; the returned title is compared with the indexed title. The API returns `doi_verified` and `doi_verification` per source. This verifies a Crossref DOI record/title match only; it does not prove that every citation field or the paper's claims are correct.
 - The report asks for claim-level evidence classification: `SUPPORTED`, `PARTLY SUPPORTED`, `CONTRADICTED`, or `UNVERIFIED`, with source IDs and evidence level. This is model-assisted classification, not independent peer review or a guarantee of correctness.
 - Response fields include `text`, `sources`, and `research_meta`. Metadata reports source counts/types, which source types returned full text, coverage limitations, and how many records include an abstract or full text.
 - The Android client allows up to 150 seconds for this research request.
@@ -50,7 +51,7 @@ The `/v1/analyze` route is also accepted by the server and uses the same request
 
 ## Cost-conscious research behavior
 
-- The current Deep Research route uses public endpoints from Wikipedia, Crossref, OpenAlex, Europe PMC and arXiv, then uses the already-configured Groq model to synthesize the retrieved records. No additional search-provider API key is required by this route.
+- The current Deep Research route uses public endpoints from Wikipedia, Crossref, OpenAlex, Europe PMC, arXiv and Semantic Scholar, performs bounded Crossref DOI/title checks, then uses the already-configured Groq model to synthesize the retrieved records. No additional search-provider API key is required by this route.
 - This is bounded source retrieval, not general-purpose browser automation. Public endpoints have their own availability, terms and rate limits; Groq inference remains subject to the user's existing Groq plan, quota and any applicable charges.
 - Groq's separate built-in Browser Search and Code Interpreter tools are not enabled by default in this project. Their current pricing/allowances must be confirmed in the Groq account before enabling them; do not assume these tools are free.
 
