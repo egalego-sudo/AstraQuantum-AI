@@ -562,7 +562,19 @@ private fun AstraApp(
                                                 askBackend(backend, questionWithMemory, pickedMime, encoded)
                                             }.getOrElse { "फोटो विश्लेषण विफल: ${it.message}" }
                                         } else if (deepResearchMode) {
-                                            askResearch(backend, question.take(500))
+                                            val researchAnswer = askResearch(backend, question.take(500))
+                                            if (researchAnswer.contains("HTTP 422") ||
+                                                researchAnswer.contains("पर्याप्त विषय-संगत स्रोत नहीं मिले")) {
+                                                val directAnswer = askBackend(backend, questionWithMemory)
+                                                if (directAnswer.startsWith("Groq सेवा में त्रुटि") ||
+                                                    directAnswer.startsWith("ASTRA सर्वर से कनेक्शन नहीं हो पाया")) {
+                                                    directAnswer
+                                                } else {
+                                                    "सामान्य AI उत्तर (Deep Research में पर्याप्त स्रोत नहीं मिले; नीचे उत्तर स्रोत-सत्यापित शोध रिपोर्ट नहीं है):\n\n" + directAnswer
+                                                }
+                                            } else {
+                                                researchAnswer
+                                            }
                                         } else {
                                             askBackend(backend, questionWithMemory)
                                         }
@@ -579,6 +591,8 @@ private fun AstraApp(
                                             onlineResult + "\n\nOFFLINE VISION अभी ASTRA में उपलब्ध नहीं है।"
                                         } else if (imageUri != null) {
                                             "ONLINE · GROQ VISION\n" + onlineResult
+                                        } else if (deepResearchMode && onlineResult.startsWith("सामान्य AI उत्तर")) {
+                                            "ONLINE · GROQ\n" + onlineResult
                                         } else if (deepResearchMode) {
                                             "ONLINE · GROQ DEEP RESEARCH\n" + onlineResult
                                         } else {
