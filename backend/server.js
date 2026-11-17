@@ -29,7 +29,7 @@ const MAX_TRACKED_CLIENTS = 10_000;
 // Groq on-demand GPT-OSS currently advertises an 8K TPM ceiling on this tier.
 // Keep a conservative byte-based input ceiling plus explicit output reserve.
 const GROQ_TPM_LIMIT = Math.max(2_000, Number(process.env.GROQ_TPM_LIMIT || 8_000));
-const GROQ_MAX_INPUT_BYTES = Math.min(6_000, Math.max(3_000, Number(process.env.GROQ_MAX_INPUT_BYTES || 6_000)));
+const GROQ_MAX_INPUT_BYTES = Math.min(7_000, Math.max(3_000, Number(process.env.GROQ_MAX_INPUT_BYTES || 7_000)));
 const GROQ_OUTPUT_RESERVE = 900;
 const hits = new Map();
 
@@ -149,7 +149,7 @@ async function generate(input) {
   const boundedContent = fitContentToByteBudget(content, Buffer.byteLength(ASTRA_INSTRUCTIONS), GROQ_MAX_INPUT_BYTES);
   let boundedPromptText = boundedContent.filter(part => part.type === "input_text").map(part => part.text || "").join("\n");
   const estimatedInputBytes = estimateInputBytes(ASTRA_INSTRUCTIONS, boundedContent);
-  const requestedOutput = Math.min(1_800, Math.max(512, Number(input.maxOutputTokens) || 1_200));
+  const requestedOutput = Math.min(4_096, Math.max(512, Number(input.maxOutputTokens) || 3_000));
   const safeOutputTokens = Math.min(requestedOutput, Math.max(512, GROQ_TPM_LIMIT - estimatedInputBytes - GROQ_OUTPUT_RESERVE));
   let effectiveInputBytes = estimatedInputBytes;
   let effectiveOutputTokens = safeOutputTokens;
