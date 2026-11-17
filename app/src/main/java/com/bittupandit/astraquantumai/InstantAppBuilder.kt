@@ -11,6 +11,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.WebResourceRequest
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.widthIn
@@ -203,10 +204,29 @@ fun InstantAppBuilderScreen(backendUrl: String, initialWebsiteMode: Boolean = fa
                             modifier = Modifier.fillMaxWidth().height(if (previewDevice == "मोबाइल") 620.dp else 560.dp),
                             factory = { ctx ->
                                 WebView(ctx).apply {
-                                    webViewClient = WebViewClient()
+                                    webViewClient = object : WebViewClient() {
+                                        override fun shouldOverrideUrlLoading(
+                                            view: WebView?,
+                                            request: WebResourceRequest?
+                                        ): Boolean {
+                                            val uri = request?.url ?: return true
+                                            return !PreviewSecurityPolicy.allowsNavigation(uri.toString())
+                                        }
+                                    }
                                     settings.javaScriptEnabled = true
                                     settings.domStorageEnabled = true
                                     settings.loadsImagesAutomatically = true
+                                    settings.allowFileAccess = false
+                                    settings.allowContentAccess = false
+                                    settings.allowFileAccessFromFileURLs = false
+                                    settings.allowUniversalAccessFromFileURLs = false
+                                    settings.javaScriptCanOpenWindowsAutomatically = false
+                                    settings.setSupportMultipleWindows(false)
+                                    settings.blockNetworkLoads = true
+                                    settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
+                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                                        settings.safeBrowsingEnabled = true
+                                    }
                                     setBackgroundColor(android.graphics.Color.WHITE)
                                     tag = ""
                                     previewWebView = this

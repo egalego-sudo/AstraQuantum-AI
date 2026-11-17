@@ -3,6 +3,7 @@ name: ASTRA Android Build
 on:
   workflow_dispatch:
   push:
+    branches: [main]
     paths:
       - "app/**"
       - "backend/**"

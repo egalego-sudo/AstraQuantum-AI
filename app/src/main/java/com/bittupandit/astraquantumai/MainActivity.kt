@@ -289,6 +289,7 @@ private fun AstraApp(
     var backend by remember { mutableStateOf(TRUSTED_BACKEND_URL) }
     var memoryInput by remember { mutableStateOf("") }
     var memories by remember { mutableStateOf(prefs.getString("memories", "") ?: "") }
+    var memoryDraft by remember { mutableStateOf(prefs.getString("memories", "") ?: "") }
     var useMemoryInChat by remember { mutableStateOf(prefs.getBoolean("use_memory_in_chat", false)) }
     var projectInput by remember { mutableStateOf("") }
     var projects by remember { mutableStateOf(prefs.getString("projects", "") ?: "") }
@@ -340,6 +341,7 @@ private fun AstraApp(
         if (note.isBlank()) return
         memories = if (memories.isBlank()) "• " + note else memories.trimEnd() + "\n• " + note
         prefs.edit().putString("memories", memories).commit()
+        memoryDraft = memories
         memoryInput = ""
         Toast.makeText(context, "Memory सुरक्षित हो गई", Toast.LENGTH_SHORT).show()
     }
@@ -368,7 +370,7 @@ private fun AstraApp(
             }
             Spacer(Modifier.height(14.dp))
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                listOf("Home", "AI Chat", "Benchmark", "App Builder", "Website Builder", "Quantum", "Cores", "Science Lab", "Science QA", "Offline AI", "Research", "Action", "Memory", "Voice", "Files", "Projects", "Updates", "Settings").forEach { item ->
+                listOf("Home", "AI Chat", "Benchmark", "App Builder", "Website Builder", "Quantum", "Cores", "Science Lab", "Calculator", "Science QA", "Offline AI", "Research", "Action", "Memory", "Voice", "Files", "Projects", "Updates", "Settings").forEach { item ->
                     val selected = page == item
                     Surface(
                         onClick = { page = item },
@@ -723,6 +725,7 @@ private fun AstraApp(
                 }
             }
             "Science Lab" -> ScienceLabScreen()
+            "Calculator" -> ExpressionCalculatorScreen()
             "Science QA" -> SimplePage("ASTRA SCIENTIFIC QUESTION & REASONING", "वैज्ञानिक प्रश्न पूछें। ASTRA उत्तर में स्थापित तथ्य, गणना/मॉडल, मान्यताएँ, सीमाएँ और अनिश्चितता अलग रखने का प्रयास करेगा। शोध-स्रोतों की जाँच अलग बटन से करें।") {
                 OutlinedTextField(scienceQuestion, { scienceQuestion = it }, Modifier.fillMaxWidth(), label = { Text("विज्ञान का प्रश्न लिखें…") }, minLines = 2)
                 Button(enabled = scienceQuestion.isNotBlank() && !scienceBusy, onClick = {
@@ -847,12 +850,31 @@ private fun AstraApp(
                         prefs.edit().putBoolean("use_memory_in_chat", it).apply()
                     })
                 }
-                SelectionContainer { Text(memories.ifBlank { "अभी कोई Memory सेव नहीं है।" }, color = white) }
+                Text("सेव की हुई Memory देखें, सुधारें या किसी नोट को हटाएँ:", color = white, fontSize = 11.sp)
+                OutlinedTextField(
+                    value = memoryDraft,
+                    onValueChange = { memoryDraft = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Saved Memory (हर नोट अलग पंक्ति में)") },
+                    minLines = 4,
+                    maxLines = 10
+                )
+                Button(
+                    enabled = memoryDraft != memories,
+                    onClick = {
+                        memories = memoryDraft.trim()
+                        memoryDraft = memories
+                        prefs.edit().putString("memories", memories).commit()
+                        Toast.makeText(context, "Memory अपडेट हो गई", Toast.LENGTH_SHORT).show()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)
+                ) { Text("Memory बदलाव सुरक्षित करें") }
                 Text("गोपनीयता: Personal Context डिफ़ॉल्ट रूप से चैट में शामिल नहीं होता। चालू करने पर सेव किए नोट, प्रोजेक्ट और हाल की चैट का संदर्भ भेजा जा सकता है। ऐप डेटा हटाने पर ये मिट सकते हैं।", color = muted, fontSize = 10.sp)
                 TextButton(onClick = {
                     memories = ""
+                    memoryDraft = ""
                     useMemoryInChat = false
-                    prefs.edit().remove("memories").putBoolean("use_memory_in_chat", false).apply()
+                    prefs.edit().remove("memories").putBoolean("use_memory_in_chat", false).commit()
                 }) { Text("सभी Memory मिटाएँ और उपयोग बंद करें", color = muted) }
             }
             "Voice" -> SimplePage("VOICE ASSISTANT", "हिंदी में बोलें। Android speech service से offline recognition को प्राथमिकता दी जाती है; यह सुविधा आपके फोन में उपलब्ध भाषा-पैक और speech provider पर निर्भर है।") {
@@ -860,7 +882,7 @@ private fun AstraApp(
                 SelectionContainer { Text("पहचाना गया: $speechText", color = white) }
                 Button(enabled = speechText.isNotBlank(), onClick = { onSpeak(speechText) }, colors = ButtonDefaults.buttonColors(containerColor = graphite, contentColor = white)) { Text("आवाज़ में सुनें") }
             }
-            "Files" -> SimplePage("ASTRA FILE INTELLIGENCE", "PDF दस्तावेज़ का टेक्स्ट निकालकर AI से सारांश, मुख्य बिंदु और सवालों के जवाब पाएँ; JPG, PNG और WEBP फोटो का Vision विश्लेषण भी उपलब्ध है।") {
+            "Files" -> SimplePage("QUANTUM AI FILE INTELLIGENCE", "Text PDF और JPG/PNG/WEBP फोटो का विश्लेषण करें। यदि PDF स्कैन की हुई है और उसमें selectable text नहीं है, तो फोन पर OCR से टेक्स्ट पढ़ने का प्रयास होगा।") {
                 Button(onClick = onPickFile, colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("फोन से फ़ाइल चुनें") }
                 Text("चुनी गई फ़ाइल: $pickedFile", color = white)
                 Text("प्रकार: $pickedMime", color = muted, fontSize = 12.sp)
@@ -875,14 +897,29 @@ private fun AstraApp(
                                     val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: error("फ़ाइल पढ़ी नहीं जा सकी")
                                     require(bytes.size <= 7 * 1024 * 1024) { "फ़ाइल 7 MB से छोटी रखें।" }
                                     val encoded = Base64.encodeToString(bytes, Base64.NO_WRAP)
-                                    askBackend(backend, if (pickedMime == "application/pdf") "इस PDF दस्तावेज़ का गहराई से हिंदी में विश्लेषण करें: पहले संक्षिप्त सारांश, फिर विषयवार मुख्य बिंदु, महत्वपूर्ण तिथियाँ/नाम/आँकड़े, दस्तावेज़ में दिए गए निष्कर्ष और अंत में संभावित अस्पष्टताएँ बताएँ। केवल दस्तावेज़ में मौजूद जानकारी को तथ्य कहें।" else "इस फ़ाइल का हिंदी में सारांश, मुख्य बिंदु और महत्वपूर्ण तथ्य बताइए।", pickedMime, encoded)
+                                    val pdfPrompt = "इस PDF दस्तावेज़ का गहराई से हिंदी में विश्लेषण करें: पहले संक्षिप्त सारांश, फिर विषयवार मुख्य बिंदु, महत्वपूर्ण तिथियाँ/नाम/आँकड़े, दस्तावेज़ में दिए गए निष्कर्ष और अंत में संभावित अस्पष्टताएँ बताएँ। केवल दस्तावेज़ में मौजूद जानकारी को तथ्य कहें।"
+                                    val firstResult = askBackend(
+                                        backend,
+                                        if (pickedMime == "application/pdf") pdfPrompt else "इस फ़ाइल का हिंदी में सारांश, मुख्य बिंदु और महत्वपूर्ण तथ्य बताइए।",
+                                        pickedMime,
+                                        encoded
+                                    )
+                                    val scannedPdf = pickedMime == "application/pdf" &&
+                                        (firstResult.contains("स्कैन की हुई PDF") || firstResult.contains("पढ़ने योग्य टेक्स्ट नहीं मिला"))
+                                    if (scannedPdf) {
+                                        val ocrText = PdfOcrExtractor.extract(context, uri)
+                                        askBackend(
+                                            backend,
+                                            pdfPrompt + "\n\nफोन पर OCR से निकाला गया PDF टेक्स्ट (पहले 80,000 अक्षर तक):\n" + ocrText
+                                        )
+                                    } else firstResult
                                 }.getOrElse { "फ़ाइल विश्लेषण विफल: ${it.message}" }
                             }
                             fileAnalysis = result
                             fileBusy = false
                         }
                     }
-                }, colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text(if (fileBusy) "विश्लेषण…" else "Groq से विश्लेषण") }
+                }, colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text(if (fileBusy) "विश्लेषण…" else "AI से विश्लेषण") }
                 if (fileAnalysis.isNotBlank()) {
                     SelectionContainer { Text(fileAnalysis, color = white) }
                     TextButton(onClick = { copyText(fileAnalysis) }) { Text("कॉपी करें", color = white) }
