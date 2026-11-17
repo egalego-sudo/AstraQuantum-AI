@@ -32,9 +32,12 @@ internal object ContextIntelligence {
         projects: String = "",
         includePersonalContext: Boolean
     ): String {
+        // Respect the existing explicit privacy opt-in: no chat history, saved memory,
+        // or project notes are sent to the model while Personal Context is disabled.
+        if (!includePersonalContext) return question
         val cleanHistory = history.filter { it.text.isNotBlank() }
-        val personalMemory = if (includePersonalContext) memories.trim().take(MAX_PERSONAL_CHARS) else ""
-        val projectNotes = if (includePersonalContext) projects.trim().take(MAX_PERSONAL_CHARS) else ""
+        val personalMemory = memories.trim().take(MAX_PERSONAL_CHARS)
+        val projectNotes = projects.trim().take(MAX_PERSONAL_CHARS)
         if (cleanHistory.isEmpty() && personalMemory.isBlank() && projectNotes.isBlank()) return question
 
         val queryTokens = tokens(question)
