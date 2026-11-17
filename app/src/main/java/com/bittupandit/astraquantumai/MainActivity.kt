@@ -289,6 +289,7 @@ private fun AstraApp(
     var backend by remember { mutableStateOf(TRUSTED_BACKEND_URL) }
     var memoryInput by remember { mutableStateOf("") }
     var memories by remember { mutableStateOf(prefs.getString("memories", "") ?: "") }
+    var memoryDraft by remember { mutableStateOf(prefs.getString("memories", "") ?: "") }
     var useMemoryInChat by remember { mutableStateOf(prefs.getBoolean("use_memory_in_chat", false)) }
     var projectInput by remember { mutableStateOf("") }
     var projects by remember { mutableStateOf(prefs.getString("projects", "") ?: "") }
@@ -340,6 +341,7 @@ private fun AstraApp(
         if (note.isBlank()) return
         memories = if (memories.isBlank()) "• " + note else memories.trimEnd() + "\n• " + note
         prefs.edit().putString("memories", memories).commit()
+        memoryDraft = memories
         memoryInput = ""
         Toast.makeText(context, "Memory सुरक्षित हो गई", Toast.LENGTH_SHORT).show()
     }
@@ -848,12 +850,31 @@ private fun AstraApp(
                         prefs.edit().putBoolean("use_memory_in_chat", it).apply()
                     })
                 }
-                SelectionContainer { Text(memories.ifBlank { "अभी कोई Memory सेव नहीं है।" }, color = white) }
+                Text("सेव की हुई Memory देखें, सुधारें या किसी नोट को हटाएँ:", color = white, fontSize = 11.sp)
+                OutlinedTextField(
+                    value = memoryDraft,
+                    onValueChange = { memoryDraft = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Saved Memory (हर नोट अलग पंक्ति में)") },
+                    minLines = 4,
+                    maxLines = 10
+                )
+                Button(
+                    enabled = memoryDraft != memories,
+                    onClick = {
+                        memories = memoryDraft.trim()
+                        memoryDraft = memories
+                        prefs.edit().putString("memories", memories).commit()
+                        Toast.makeText(context, "Memory अपडेट हो गई", Toast.LENGTH_SHORT).show()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)
+                ) { Text("Memory बदलाव सुरक्षित करें") }
                 Text("गोपनीयता: Personal Context डिफ़ॉल्ट रूप से चैट में शामिल नहीं होता। चालू करने पर सेव किए नोट, प्रोजेक्ट और हाल की चैट का संदर्भ भेजा जा सकता है। ऐप डेटा हटाने पर ये मिट सकते हैं।", color = muted, fontSize = 10.sp)
                 TextButton(onClick = {
                     memories = ""
+                    memoryDraft = ""
                     useMemoryInChat = false
-                    prefs.edit().remove("memories").putBoolean("use_memory_in_chat", false).apply()
+                    prefs.edit().remove("memories").putBoolean("use_memory_in_chat", false).commit()
                 }) { Text("सभी Memory मिटाएँ और उपयोग बंद करें", color = muted) }
             }
             "Voice" -> SimplePage("VOICE ASSISTANT", "हिंदी में बोलें। Android speech service से offline recognition को प्राथमिकता दी जाती है; यह सुविधा आपके फोन में उपलब्ध भाषा-पैक और speech provider पर निर्भर है।") {
