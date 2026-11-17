@@ -861,7 +861,7 @@ private fun AstraApp(
                 SelectionContainer { Text("पहचाना गया: $speechText", color = white) }
                 Button(enabled = speechText.isNotBlank(), onClick = { onSpeak(speechText) }, colors = ButtonDefaults.buttonColors(containerColor = graphite, contentColor = white)) { Text("आवाज़ में सुनें") }
             }
-            "Files" -> SimplePage("ASTRA FILE INTELLIGENCE", "PDF दस्तावेज़ का टेक्स्ट निकालकर AI से सारांश, मुख्य बिंदु और सवालों के जवाब पाएँ; JPG, PNG और WEBP फोटो का Vision विश्लेषण भी उपलब्ध है।") {
+            "Files" -> SimplePage("QUANTUM AI FILE INTELLIGENCE", "Text PDF और JPG/PNG/WEBP फोटो का विश्लेषण करें। यदि PDF स्कैन की हुई है और उसमें selectable text नहीं है, तो फोन पर OCR से टेक्स्ट पढ़ने का प्रयास होगा।") {
                 Button(onClick = onPickFile, colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("फोन से फ़ाइल चुनें") }
                 Text("चुनी गई फ़ाइल: $pickedFile", color = white)
                 Text("प्रकार: $pickedMime", color = muted, fontSize = 12.sp)
@@ -876,14 +876,29 @@ private fun AstraApp(
                                     val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: error("फ़ाइल पढ़ी नहीं जा सकी")
                                     require(bytes.size <= 7 * 1024 * 1024) { "फ़ाइल 7 MB से छोटी रखें।" }
                                     val encoded = Base64.encodeToString(bytes, Base64.NO_WRAP)
-                                    askBackend(backend, if (pickedMime == "application/pdf") "इस PDF दस्तावेज़ का गहराई से हिंदी में विश्लेषण करें: पहले संक्षिप्त सारांश, फिर विषयवार मुख्य बिंदु, महत्वपूर्ण तिथियाँ/नाम/आँकड़े, दस्तावेज़ में दिए गए निष्कर्ष और अंत में संभावित अस्पष्टताएँ बताएँ। केवल दस्तावेज़ में मौजूद जानकारी को तथ्य कहें।" else "इस फ़ाइल का हिंदी में सारांश, मुख्य बिंदु और महत्वपूर्ण तथ्य बताइए।", pickedMime, encoded)
+                                    val pdfPrompt = "इस PDF दस्तावेज़ का गहराई से हिंदी में विश्लेषण करें: पहले संक्षिप्त सारांश, फिर विषयवार मुख्य बिंदु, महत्वपूर्ण तिथियाँ/नाम/आँकड़े, दस्तावेज़ में दिए गए निष्कर्ष और अंत में संभावित अस्पष्टताएँ बताएँ। केवल दस्तावेज़ में मौजूद जानकारी को तथ्य कहें।"
+                                    val firstResult = askBackend(
+                                        backend,
+                                        if (pickedMime == "application/pdf") pdfPrompt else "इस फ़ाइल का हिंदी में सारांश, मुख्य बिंदु और महत्वपूर्ण तथ्य बताइए।",
+                                        pickedMime,
+                                        encoded
+                                    )
+                                    val scannedPdf = pickedMime == "application/pdf" &&
+                                        (firstResult.contains("स्कैन की हुई PDF") || firstResult.contains("पढ़ने योग्य टेक्स्ट नहीं मिला"))
+                                    if (scannedPdf) {
+                                        val ocrText = PdfOcrExtractor.extract(context, uri)
+                                        askBackend(
+                                            backend,
+                                            pdfPrompt + "\n\nफोन पर OCR से निकाला गया PDF टेक्स्ट (पहले 80,000 अक्षर तक):\n" + ocrText
+                                        )
+                                    } else firstResult
                                 }.getOrElse { "फ़ाइल विश्लेषण विफल: ${it.message}" }
                             }
                             fileAnalysis = result
                             fileBusy = false
                         }
                     }
-                }, colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text(if (fileBusy) "विश्लेषण…" else "Groq से विश्लेषण") }
+                }, colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text(if (fileBusy) "विश्लेषण…" else "AI से विश्लेषण") }
                 if (fileAnalysis.isNotBlank()) {
                     SelectionContainer { Text(fileAnalysis, color = white) }
                     TextButton(onClick = { copyText(fileAnalysis) }) { Text("कॉपी करें", color = white) }
