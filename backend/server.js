@@ -137,6 +137,9 @@ async function generate(input) {
   const estimatedInputBytes = estimateInputBytes(ASTRA_INSTRUCTIONS, boundedContent);
   const requestedOutput = Math.min(1_800, Math.max(512, Number(input.maxOutputTokens) || 1_200));
   const safeOutputTokens = Math.min(requestedOutput, Math.max(512, GROQ_TPM_LIMIT - estimatedInputBytes - GROQ_OUTPUT_RESERVE));
+  let effectiveInputBytes = estimatedInputBytes;
+  let effectiveOutputTokens = safeOutputTokens;
+  let compactedFor413 = false;
 
   const requestWithRetry = async (url, options) => {
     let lastError = null;
@@ -179,7 +182,10 @@ async function generate(input) {
   if (response.status === 413) {
     const compactContent = fitContentToByteBudget(boundedContent, Buffer.byteLength(ASTRA_INSTRUCTIONS), Math.floor(GROQ_MAX_INPUT_BYTES * 0.62));
     boundedPromptText = compactContent.filter(part => part.type === "input_text").map(part => part.text || "").join("\n");
-    const compactRequest = { ...requestBody, input: [{ role: "user", content: compactContent }], max_output_tokens: Math.min(800, safeOutputTokens) };
+    effectiveInputBytes = estimateInputBytes(ASTRA_INSTRUCTIONS, compactContent);
+    effectiveOutputTokens = Math.min(800, safeOutputTokens);
+    compactedFor413 = true;
+    const compactRequest = { ...requestBody, input: [{ role: "user", content: compactContent }], max_output_tokens: effectiveOutputTokens };
     response = await requestWithRetry("https://api.groq.com/openai/v1/responses", {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${API_KEY}` },
@@ -270,7 +276,19 @@ async function generate(input) {
     const incompleteReason = data?.incomplete_details?.reason || "not reported";
     throw new Error(`Groq returned an empty response after Responses API and Chat Completions fallback (status: ${responseStatus}; incomplete: ${incompleteReason}). Check model access, provider limits and server logs.`);
   }
-  return validateKnowledgeCitations(text, knowledgeHits);
+  const validatedText = validateKnowledgeCitations(text, knowledgeHits);
+  if (input.returnMetadata) return {
+    text: validatedText,
+    request_budget: {
+      tpm_limit: GROQ_TPM_LIMIT,
+      max_input_bytes: GROQ_MAX_INPUT_BYTES,
+      estimated_input_bytes: effectiveInputBytes,
+      max_output_tokens: effectiveOutputTokens,
+      safety_reserve_tokens: GROQ_OUTPUT_RESERVE,
+      compacted_after_413: compactedFor413
+    }
+  };
+  return validatedText;
 }
 
 
@@ -597,8 +615,9 @@ async function research(input) {
     "\n" + String(source.fullText || source.abstract || "केवल bibliographic metadata उपलब्ध; abstract/full text उपलब्ध नहीं।").slice(0, 650)
   ).join("\n\n"), 2_800);
   const sourceTypes = [...new Set(sourcesWithIds.map(source => source.type))];
-  const answer = await generate({
+  const synthesis = await generate({
     skipKnowledgeRetrieval: true,
+    returnMetadata: true,
     maxOutputTokens: 1_500,
     prompt: "आप ASTRA Deep Research Engine हैं। इस प्रश्न पर गहन, संतुलित और प्रमाण-आधारित रिपोर्ट तैयार करें: " + query +
       "\n\nस्रोतों का सीमित live retrieval किया गया है। यह पूरा इंटरनेट, exhaustive literature review या सभी प्रकाशित/अप्रकाशित सामग्री नहीं है। केवल नीचे उपलब्ध सामग्री पर दावे करें।" +
@@ -620,7 +639,7 @@ async function research(input) {
       "\n\nRetrieved evidence:\n" + evidence
   });
   return {
-    text: answer,
+    text: synthesis.text,
     sources: sourcesWithIds.map(source => ({
       id: source.id, type: source.type, title: source.title, url: source.url,
       relevance_score: source.relevance.score, matched_terms: source.relevance.matched_terms,
@@ -640,6 +659,7 @@ async function research(input) {
       doi_verification_status_counts: doiChecks.reduce((counts, check) => ({ ...counts, [check.status]: (counts[check.status] || 0) + 1 }), {}),
       synthesis_source_count: synthesisSources.length,
       research_pipeline: ["source_discovery_and_ranking", "crossref_doi_record_and_title_verification", "bounded_open_access_full_text_fetch", "compact_evidence_report_synthesis"],
+      request_budget: synthesis.request_budget,
       open_full_texts_fetched: fullTextResults.filter(Boolean).length,
       full_text_types: [...new Set(fullTextResults.filter(Boolean).map(s => s.type))],
       sources_with_abstract_or_full_text: sourcesWithIds.filter(s => s.abstract || s.fullText).length,
