@@ -11,7 +11,7 @@ const MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-20b";
 const VISION_MODEL = process.env.GROQ_VISION_MODEL || "qwen/qwen3.8-27b";
 const ORIGIN = process.env.ALLOWED_ORIGIN || "*";
 const WINDOW_MS = 60_000;
-const MAX_REQUESTS = 20;
+const MAX_REQUESTS = Math.max(1, Number(process.env.API_MAX_REQUESTS_PER_MINUTE || 20));
 const MAX_TRACKED_CLIENTS = 10_000;
 // Groq on-demand GPT-OSS currently advertises an 8K TPM ceiling on this tier.
 // Keep a conservative byte-based input ceiling plus explicit output reserve.
@@ -19,6 +19,13 @@ const GROQ_TPM_LIMIT = Math.max(2_000, Number(process.env.GROQ_TPM_LIMIT || 8_00
 const GROQ_MAX_INPUT_BYTES = Math.min(5_000, Math.max(3_000, Number(process.env.GROQ_MAX_INPUT_BYTES || 5_000)));
 const GROQ_OUTPUT_RESERVE = 900;
 const hits = new Map();
+
+function clientAddress(req) {
+  // Render appends the connecting client IP to X-Forwarded-For.
+  // Use the right-most value rather than the caller-controlled left-most entry.
+  const chain = String(req.headers["x-forwarded-for"] || "").split(",").map(v => v.trim()).filter(Boolean);
+  return chain.length ? chain[chain.length - 1] : (req.socket.remoteAddress || "unknown");
+}
 
 function isRateLimited(clientKey, now = Date.now()) {
   const recent = (hits.get(clientKey) || []).filter(timestamp => now - timestamp < WINDOW_MS);
@@ -28,7 +35,6 @@ function isRateLimited(clientKey, now = Date.now()) {
   }
   recent.push(now);
   hits.set(clientKey, recent);
-  // Bound memory when requests arrive from many distinct addresses.
   if (hits.size > MAX_TRACKED_CLIENTS) {
     for (const [key, timestamps] of hits) {
       if (!timestamps.length || now - timestamps[timestamps.length - 1] >= WINDOW_MS) hits.delete(key);
@@ -703,7 +709,7 @@ const server = http.createServer(async (req, res) => {
     (req.method === "GET" && (pathname === "/v1/quantum/backends" || pathname.startsWith("/v1/quantum/jobs/"))) ||
     (req.method === "POST" && pathname === "/v1/quantum/demo")
   )) return send(res, 405, { error: "Method not allowed" });
-  const ip = req.socket.remoteAddress || "unknown";
+  const ip = clientAddress(req);
   if (isRateLimited(ip)) return send(res, 429, { error: "Rate limit reached. Try again in a minute." });
   try {
     if (req.method === "GET" && pathname === "/v1/quantum/backends") {
