@@ -17,7 +17,7 @@ permissions:
 
 # Keep only one APK pipeline active; a newer fix supersedes a stuck run.
 concurrency:
-  group: astra-android-build-v2
+  group: astra-android-build-v3
   cancel-in-progress: true
 
 jobs:
