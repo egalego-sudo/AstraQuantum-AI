@@ -1098,13 +1098,17 @@ private fun AstraApp(
                 Text("Verified backend: $TRUSTED_BACKEND_URL", color = mint, fontSize = 12.sp)
                 OutlinedTextField(apiAccessToken, { apiAccessToken = it.trim() }, Modifier.fillMaxWidth(), label = { Text("Private API Access Token") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
                 Text("Token encrypted phone storage में सेव होगा। इसे किसी के साथ साझा न करें।", color = muted, fontSize = 10.sp)
-                Button(onClick = {
-                    backend = backend.trim().trimEnd('/')
-                    prefs.edit().putString("api_access_token", apiAccessToken.trim()).commit()
-                    AppSecurity.accessToken = apiAccessToken.trim()
-                    status = "सुरक्षा सेटिंग सेव हुई"
-                    Toast.makeText(context, "सुरक्षा सेटिंग सेव हुई", Toast.LENGTH_SHORT).show()
-                }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("सेटिंग सेव करें") }
+                Button(enabled = apiAccessToken.matches(Regex("^[a-f0-9]{64}$")), onClick = {
+                    val saved = prefs.edit().putString("api_access_token", apiAccessToken.trim()).commit()
+                    if (saved) {
+                        AppSecurity.accessToken = apiAccessToken.trim()
+                        status = "Private API सुरक्षा सेटिंग सेव हुई"
+                        Toast.makeText(context, "सुरक्षा सेटिंग सेव हुई", Toast.LENGTH_SHORT).show()
+                    } else {
+                        status = "सुरक्षा token सेव नहीं हो पाया।"
+                        Toast.makeText(context, "सुरक्षा सेटिंग सेव नहीं हुई", Toast.LENGTH_LONG).show()
+                    }
+                }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("सुरक्षा token सेव करें") }
                 OutlinedButton(enabled = !healthBusy, onClick = {
                     healthBusy = true
                     status = "सर्वर जाँचा जा रहा है…"
