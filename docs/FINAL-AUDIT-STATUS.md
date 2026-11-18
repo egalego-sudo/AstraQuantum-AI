@@ -99,3 +99,12 @@ This section adds independent byte-level checks performed after the earlier audi
 
 - Cross-checking the six `baseApkSha256` values in Build 387 metadata against the corresponding `ASTRA-QUANTUM-AI.apk` GitHub Release digests for Builds 386, 385, 384, 382, 381 and 150 returned six exact matches. This independently confirms that the metadata's selected base APK identities match the published release inventory.
 - APK ZIP inspection found native library directories for `arm64-v8a`, `armeabi-v7a`, `x86` and `x86_64`. This confirms packaged ABI entries, not runtime compatibility on every device.
+
+
+## Latest automated CI evidence (2026-11-18)
+
+- Capability CI run [44240641223](https://github.com/egalego-sudo/Quantum-AI/actions/runs/44240641223) for PR #44 completed successfully. Its single job passed all listed steps: backend dependency install and npm audit, backend unit tests, build-inventory validation, Android navigation validation, native patch-parser smoke tests, Android NDK/CMake setup, Android unit tests, Android lint and Debug APK build.
+- The backend suite reported **51 tests, 51 passed, 0 failed, 0 skipped**. `npm audit --audit-level=high` reported **0 vulnerabilities** for the installed backend dependency tree.
+- The inventory validator reported 385 sequential build rows, 380 Android runs, five accounted gaps, 36 releases and all 380 source commits present in Git. The navigation validator reported 19 unique menu items and all routes reachable, with creator credit and product branding present.
+- Capability CI run [44239847767](https://github.com/egalego-sudo/Quantum-AI/actions/runs/44239847767) for PR #43 also completed successfully with the same configured validation stages.
+- These are automated CI results on the corresponding PR heads, not physical-device acceptance or independent penetration-test results.
