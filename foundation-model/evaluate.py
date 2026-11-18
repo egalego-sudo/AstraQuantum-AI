@@ -118,6 +118,12 @@ def evaluate_checkpoint(
     }
 
 
+def write_report(report: dict[str, object], output_path: Path) -> Path:
+    """Write standards-compliant UTF-8 JSON followed by one real newline."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return output_path
+
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--checkpoint", required=True)
@@ -140,7 +146,5 @@ if __name__ == "__main__":
         Path(args.manifest), device, args.max_corpus_mb,
         args.generation_tokens, args.seed,
     )
-    output = Path(args.output)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    write_report(result, Path(args.output))
     print(json.dumps(result, ensure_ascii=False, indent=2))

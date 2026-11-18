@@ -86,6 +86,8 @@ def train(args: argparse.Namespace) -> Path:
     model = QuantumGPT(config).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate)
     best_val = math.inf
+    best_step = 0
+    best_state_dict = None
 
     for step in range(1, args.steps + 1):
         model.train()
@@ -100,7 +102,20 @@ def train(args: argparse.Namespace) -> Path:
             train_loss = evaluate(model, train_data, args.batch_size, args.block_size, device, batches=5)
             val_loss = evaluate(model, val_data, args.batch_size, args.block_size, device, batches=5)
             print(f"step={step} train_loss={train_loss:.4f} val_loss={val_loss:.4f} device={device}")
-            best_val = min(best_val, val_loss)
+            if val_loss < best_val:
+                best_val = val_loss
+                best_step = step
+                # Keep an immutable CPU snapshot of the best evaluated weights.
+                best_state_dict = {
+                    name: value.detach().cpu().clone()
+                    for name, value in model.state_dict().items()
+                }
+
+    if best_state_dict is None:
+        raise RuntimeError("training completed without a validated checkpoint")
+    # The checkpoint weights must correspond to the recorded best validation loss,
+    # not merely to the final optimizer step.
+    model.load_state_dict(best_state_dict)
 
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -111,6 +126,7 @@ def train(args: argparse.Namespace) -> Path:
             "config": model.config_dict(),
             "state_dict": model.state_dict(),
             "best_validation_loss": best_val,
+            "best_step": best_step,
             "tokenizer": "utf8-byte-v1",
             "seed": args.seed,
             "dataset": {
@@ -131,7 +147,7 @@ def train(args: argparse.Namespace) -> Path:
         temporary,
     )
     temporary.replace(output)
-    print(f"saved={output} parameters={model.parameter_count()} best_validation_loss={best_val:.4f}")
+    print(f"saved={output} parameters={model.parameter_count()} best_step={best_step} best_validation_loss={best_val:.4f}")
     return output
 
 

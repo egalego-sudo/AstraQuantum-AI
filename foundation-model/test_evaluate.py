@@ -10,7 +10,7 @@ import torch
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
 from core import ModelConfig, QuantumGPT
-from evaluate import evaluate_checkpoint
+from evaluate import evaluate_checkpoint, write_report
 
 
 class EvaluationTests(unittest.TestCase):
@@ -58,6 +58,16 @@ class EvaluationTests(unittest.TestCase):
             self.assertEqual(metrics["generated_tokens"], 2)
             self.assertEqual(result["evaluation_dataset"]["split"], "test")
             self.assertIn("not a measure of general intelligence", result["interpretation"])
+
+    def test_report_writer_emits_valid_json_with_real_trailing_newline(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "nested" / "report.json"
+            report = {"message": "नमस्ते", "score": 0.5}
+            write_report(report, output)
+            raw = output.read_text(encoding="utf-8")
+            self.assertTrue(raw.endswith("\n"))
+            self.assertFalse(raw.endswith("\\n"))
+            self.assertEqual(json.loads(raw), report)
 
     def test_evaluation_rejects_training_only_dataset(self):
         with tempfile.TemporaryDirectory() as directory:
