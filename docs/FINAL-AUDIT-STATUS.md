@@ -108,3 +108,14 @@ This section adds independent byte-level checks performed after the earlier audi
 - The inventory validator reported 385 sequential build rows, 380 Android runs, five accounted gaps, 36 releases and all 380 source commits present in Git. The navigation validator reported 19 unique menu items and all routes reachable, with creator credit and product branding present.
 - Capability CI run [44239847767](https://github.com/egalego-sudo/Quantum-AI/actions/runs/44239847767) for PR #43 also completed successfully with the same configured validation stages.
 - These are automated CI results on the corresponding PR heads, not physical-device acceptance or independent penetration-test results.
+
+
+## Focused source-security recheck (2026-11-18)
+
+- Backend rate-limit identity logic prefers a valid Cloudflare visitor IP and deliberately does not trust caller-controlled `X-Forwarded-For`; its tests cover spoofed forwarding headers, invalid addresses and IPv6.
+- Backend research fetching uses an explicit HTTPS host allowlist, rejects credentials and non-443 ports, validates each redirect target, and caps redirect depth. Tests are included in the current 51-test backend suite.
+- Upstream response readers enforce both declared content-length and streamed-byte limits before parsing JSON; tests cover exact UTF-8 byte budgets and oversized streamed bodies.
+- Backend private routes reject missing private-token configuration and compare supplied bearer tokens using `timingSafeEqual` after checking equal byte lengths. CORS uses an explicit origin allowlist.
+- Android external-link policy restricts navigation to HTTPS public DNS names and rejects IP literals and local/private naming suffixes. The update verifier authenticates raw metadata bytes with the embedded X.509 public key, requires an approved GitHub Release URL, and checks package identity and a strictly newer version.
+- The updater verifies patch SHA-256 before native patch parsing, then verifies reconstructed/full APK hash, package, version and signer against trusted metadata and the installed app. Build 387 release metadata and its six patches were independently checked above.
+- No source-code changes were made during this focused recheck. These are targeted static observations backed by CI tests, not a full manual audit of every Android/backend code path or a penetration test.
