@@ -10,7 +10,7 @@ from pathlib import Path
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from train import evaluate, make_batch, train
+from train import evaluate, make_batch, scheduled_learning_rate, train
 
 
 class TrainingTests(unittest.TestCase):
@@ -51,6 +51,17 @@ class TrainingTests(unittest.TestCase):
         model = QuantumGPT(ModelConfig(block_size=8, n_embd=16, n_head=4, n_layer=1))
         with self.assertRaisesRegex(ValueError, "must be positive"):
             evaluate(model, torch.arange(40, dtype=torch.long), 2, 8, torch.device("cpu"), batches=0)
+
+    def test_cosine_schedule_has_warmup_and_decay(self):
+        base = 1e-3
+        self.assertAlmostEqual(scheduled_learning_rate(1, 10, 2, base), base / 2)
+        self.assertAlmostEqual(scheduled_learning_rate(2, 10, 2, base), base)
+        self.assertAlmostEqual(scheduled_learning_rate(3, 10, 2, base), base)
+        self.assertLess(scheduled_learning_rate(9, 10, 2, base), base / 10)
+
+    def test_cosine_schedule_rejects_invalid_warmup(self):
+        with self.assertRaisesRegex(ValueError, "warmup_steps"):
+            scheduled_learning_rate(1, 5, 5, 1e-3)
 
     def test_make_batch_rejects_short_data(self):
         with self.assertRaises(ValueError):
@@ -138,6 +149,29 @@ class TrainingTests(unittest.TestCase):
             self.assertEqual(len(validation_snapshots), 2)
             for key, expected in validation_snapshots[0].items():
                 torch.testing.assert_close(checkpoint["state_dict"][key], expected)
+
+            # Continue from the saved best step with the same approved data and model config.
+            resumed_output = root / "resumed-model.pt"
+            args.resume = str(output)
+            args.output = str(resumed_output)
+            args.steps = 3
+            resumed_losses = [5.0, 0.5, 4.0, 0.8]
+            resume_calls = 0
+
+            def controlled_resume_evaluate(model, data, batch_size, block_size, device, batches=10):
+                nonlocal resume_calls
+                resume_calls += 1
+                return resumed_losses[resume_calls - 1]
+
+            with patch("train.evaluate", side_effect=controlled_resume_evaluate):
+                train(args)
+            resumed = torch.load(resumed_output, map_location="cpu", weights_only=True)
+            self.assertEqual(resumed["training"]["starting_step"], 1)
+            self.assertEqual(resumed["best_step"], 2)
+            self.assertEqual(resumed["training"]["resumed_from"], str(output))
+            self.assertIn("optimizer_state_dict", resumed)
+            self.assertIn("rng_state", resumed)
+            self.assertGreater(resumed["metrics"]["tokens_seen"], 0)
 
     def test_training_rejects_corpus_hash_mismatch(self):
         with tempfile.TemporaryDirectory() as directory:
