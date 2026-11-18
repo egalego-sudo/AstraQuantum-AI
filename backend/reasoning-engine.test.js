@@ -21,6 +21,28 @@ test("AI model guidance warns against equating orchestration with trained capabi
   assert.match(guide, /benchmark evidence/i);
 });
 
+test("logic verification checks premises, validity, fallacies and counterexamples", () => {
+  const guide = buildReasoningInstructions("इस तर्क में विरोधाभास और कुतर्क खोजकर सही या गलत निष्कर्ष बताओ");
+  assert.match(guide, /explicit premises and conclusion/i);
+  assert.match(guide, /counterexamples/i);
+});
+
+test("pattern analysis separates signal from noise and correlation from causation", () => {
+  const guide = buildReasoningInstructions("इस डेटा में pattern और trend पहचानो");
+  assert.match(guide, /signal from noise/i);
+  assert.match(guide, /correlation alone/i);
+});
+
+test("cross-domain synthesis states domain assumptions and limits", () => {
+  const guide = buildReasoningInstructions("विज्ञान और अर्थशास्त्र के अलग-अलग विषयों का ज्ञान जोड़ो");
+  assert.match(guide, /domain boundaries/i);
+});
+
+test("creative synthesis compares novel ideas by feasibility and testability", () => {
+  const guide = buildReasoningInstructions("तीन नए विचार और वैकल्पिक समाधान बनाओ");
+  assert.match(guide, /testability/i);
+});
+
 test("decision guidance compares trade-offs and reversibility", () => {
   const guide = buildReasoningInstructions("इन तीन विकल्पों की तुलना करके निर्णय बताओ");
   assert.match(guide, /reversibility/i);
