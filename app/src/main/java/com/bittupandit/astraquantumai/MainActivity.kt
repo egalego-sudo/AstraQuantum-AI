@@ -383,8 +383,8 @@ private fun AstraApp(
         HorizontalDivider(color = line)
         when (page) {
             "Benchmark" -> BenchmarkScreen(backend)
-            "App Builder" -> InstantAppBuilderScreen(backend, initialWebsiteMode = false)
-            "Website Builder" -> InstantAppBuilderScreen(backend, initialWebsiteMode = true)
+            "App Builder" -> InstantAppBuilderScreen(backend, apiAccessToken, initialWebsiteMode = false)
+            "Website Builder" -> InstantAppBuilderScreen(backend, apiAccessToken, initialWebsiteMode = true)
             "Cores" -> SimplePage("QUANTUM AI FIVE CORE ARCHITECTURE", "पाँचों Core मिलकर QUANTUM AI का काम बाँटते हैं। किसी सुविधा की उपलब्धता उसके वास्तविक मॉड्यूल और डिवाइस/सर्वर समर्थन पर निर्भर है।") {
                 val coreCards = listOf(
                     Triple("01 · PERCEPTION CORE", "देखना • सुनना • दस्तावेज़ समझना", "Files" to "इमेज/PDF विश्लेषण और Voice इनपुट"),
