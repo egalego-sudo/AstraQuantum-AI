@@ -1,0 +1,68 @@
+/**
+ * Deterministic task framing for QUANTUM AI.
+ * This selects verification checklists; it does not expose hidden chain-of-thought
+ * or independently prove an answer correct.
+ */
+const MODES = [
+  {
+    id: "root_cause",
+    pattern: /root cause|कारण|जड़|समस्या.*(क्यों|कहाँ)|त्रुटि|error|bug|debug|failure|विफल|breaks?/i,
+    guide: "ROOT-CAUSE CHECK: define the observed symptom; separate symptom from cause; list plausible causes; rank by evidence; test the leading cause; propose a reversible fix; specify a regression check."
+  },
+  {
+    id: "decision",
+    pattern: /decide|decision|choose|compare|comparison|कौन.*(सही|बेहतर)|तुलना|निर्णय|विकल्प|strategy|रणनीति/i,
+    guide: "DECISION CHECK: state the goal and hard constraints; compare viable options on benefits, cost, risk, reversibility and evidence; identify trade-offs; recommend one option with conditions that would change the recommendation."
+  },
+  {
+    id: "research",
+    pattern: /research|शोध|paper|प्रमाण|source|citation|literature|अध्ययन|स्रोत|सत्यापन|verify/i,
+    guide: "RESEARCH CHECK: define the question and scope; distinguish primary research, reviews, metadata and tertiary sources; evaluate methods, date, sample and limitations; compare agreement/conflict; cite only supplied or actually retrieved sources; mark unsupported claims UNVERIFIED."
+  },
+  {
+    id: "experiment",
+    pattern: /hypothes|परिकल्पना|experiment|प्रयोग|test.*(plan|design)|परीक्षण.*(योजना|डिजाइन)|simulation|सिमुलेशन/i,
+    guide: "EXPERIMENT CHECK: state a falsifiable hypothesis; define independent/dependent variables, controls, sample/data, procedure and metrics; identify confounders and safety limits; predefine what result supports or rejects the hypothesis."
+  },
+  {
+    id: "software_engineering",
+    pattern: /code|coding|program|programming|software|api|backend|frontend|android|kotlin|python|javascript|typescript|java|rust|golang|sql|database|github|pull request|deploy|build|compile|कोड|प्रोग्रामिंग|ऐप|एप्लीकेशन|सॉफ्टवेयर/i,
+    guide: "SOFTWARE ENGINEERING CHECK: clarify runtime, interfaces and constraints; inspect existing conventions before changing code; make the smallest maintainable change; handle invalid input, errors, resource bounds and security; add focused unit/integration/regression tests; report exactly what was and was not run."
+  },
+  {
+    id: "ai_engineering",
+    pattern: /transformer|neural network|tokenizer|pretrain|fine.?tun|llm|foundation model|rag|retrieval|agent|multimodal|quantization|inference|language model|एआई मॉडल|एआई|कृत्रिम बुद्धिमत्ता/i,
+    guide: "AI ENGINEERING CHECK: distinguish prompt orchestration from trained model capability; define data provenance/licensing, architecture, compute budget and evaluation split; prevent train/test contamination; measure quality, latency, memory and safety; compare against a baseline; do not claim capability without benchmark evidence."
+  },
+  {
+    id: "education",
+    pattern: /teach|explain|learn|lesson|beginner|expert|समझाओ|समझाइए|सीखना|शिक्षा|पढ़ाई|क्या है|कैसे काम/i,
+    guide: "EDUCATION CHECK: identify the learner's starting level; define terms; explain from foundations to the requested depth; use a worked example and a misconception check; distinguish established knowledge from simplified analogy."
+  },
+  {
+    id: "scientific_analysis",
+    pattern: /physics|chemistry|biology|math|calculus|algebra|science|scientific|वैज्ञानिक|विज्ञान|भौतिक|रसायन|जीव|गणित|सूत्र|equation/i,
+    guide: "SCIENTIFIC CHECK: define quantities and units; state assumptions and applicable domain; check dimensions, boundary cases and uncertainty; distinguish observation, model, interpretation and hypothesis; do not overstate causality."
+  }
+];
+
+export function selectReasoningModes(prompt) {
+  const value = String(prompt || "").trim();
+  if (!value) return [];
+  return MODES.filter(mode => mode.pattern.test(value)).map(mode => mode.id);
+}
+
+export function buildReasoningInstructions(prompt) {
+  const modes = MODES.filter(mode => mode.pattern.test(String(prompt || "")));
+  if (!String(prompt || "").trim()) return "";
+  const selected = modes.slice(0, 4);
+  const guides = selected.map(mode => mode.guide);
+  if (!guides.length) {
+    guides.push("GENERAL ANALYSIS CHECK: identify the actual question, constraints and unknowns; separate facts, assumptions and inference; address each requested part; check for contradictions and edge cases; state limitations.");
+  }
+  return [
+    "[TASK-SPECIFIC QUALITY CHECKLIST — use silently; do not reveal private chain-of-thought]",
+    ...guides,
+    "FINAL SELF-CHECK: answer the user's actual request; do not invent facts, sources, tool use or test results. Give a concise rationale, evidence and uncertainty—not hidden internal reasoning."
+  ].join("\n");
+}
