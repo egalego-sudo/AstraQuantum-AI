@@ -88,7 +88,7 @@ RESPONSE STANDARD
                 "RESEARCH CHECK: distinguish primary studies, reviews, metadata and tertiary sources; compare methods, dates, limitations and conflicts; cite only sources actually supplied or retrieved; label unsupported claims UNVERIFIED.",
             Regex("""hypothesis|experiment|परिकल्पना|प्रयोग|सिमुलेशन""", RegexOption.IGNORE_CASE) to
                 "EXPERIMENT CHECK: define a falsifiable hypothesis, variables, controls, procedure, metrics, confounders and the result that would reject the hypothesis.",
-            Regex("""code|coding|programming|software|android|python|javascript|typescript|java|kotlin|rust|golang|\bgo\b|\bc\b|c\+\+|c#|php|swift|sql|verilog|systemverilog|bash|कोड|प्रोग्रामिंग|ऐप|सॉफ्टवेयर""", RegexOption.IGNORE_CASE) to
+            Regex("""code|coding|programming|software|android|python|javascript|typescript|java|kotlin|rust|golang|\bgo\b|\bc\b|c\+\+|c#|php|swift|sql|verilog|systemverilog|bash|html|css|कोड|प्रोग्रामिंग|ऐप|सॉफ्टवेयर""", RegexOption.IGNORE_CASE) to
                 "SOFTWARE CHECK: inspect existing interfaces; make a minimal maintainable change; handle invalid input, errors, resource limits and security; add focused tests; report exactly which checks ran.",
             Regex("""transformer|neural network|tokenizer|pretraining|fine.?tuning|foundation model|rag|quantization|inference|एआई मॉडल|कृत्रिम बुद्धिमत्ता""", RegexOption.IGNORE_CASE) to
                 "AI ENGINEERING CHECK: distinguish prompt orchestration from trained model capability; document data rights, compute and evaluation splits; test held-out quality, latency, memory and safety before making capability claims.",
