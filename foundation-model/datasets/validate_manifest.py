@@ -149,3 +149,33 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+
+def verify_evaluation_corpus(manifest_path: Path, dataset_id: str, corpus_path: Path) -> dict:
+    """Require an approved held-out evaluation record and exact artifact hash."""
+    try:
+        data = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"cannot read dataset manifest: {exc}") from exc
+    errors = validate_manifest(data)
+    if errors:
+        raise ValueError("dataset manifest is invalid: " + "; ".join(errors))
+    matches = [item for item in data["datasets"] if item["id"] == dataset_id]
+    if len(matches) != 1:
+        raise ValueError(f"dataset_id must identify exactly one manifest record: {dataset_id}")
+    record = matches[0]
+    if record["usage"] != "evaluate" or record["review_status"] != "approved":
+        raise ValueError("dataset is not approved for evaluation")
+    if record["split"] not in {"validation", "test"}:
+        raise ValueError("evaluation requires split=validation or split=test")
+    digest = hashlib.sha256()
+    try:
+        with corpus_path.open("rb") as corpus_file:
+            for chunk in iter(lambda: corpus_file.read(1024 * 1024), b""):
+                digest.update(chunk)
+    except OSError as exc:
+        raise ValueError(f"cannot read evaluation corpus: {exc}") from exc
+    if digest.hexdigest() != record["sha256"]:
+        raise ValueError("evaluation corpus SHA-256 does not match the manifest record")
+    return record
