@@ -465,7 +465,7 @@ async function research(input) {
   };
   const fetchText = async (url, timeout = 18000) => {
     try {
-      const response = await fetch(url, { headers, signal: AbortSignal.timeout(timeout) });
+      const response = await fetchWithSafeRedirects(url, { headers, signal: AbortSignal.timeout(timeout) }, RESEARCH_ALLOWED_HOSTS);
       if (!response.ok) return "";
       successfulProviderResponses++;
       return await readLimitedResponseText(response, 2 * 1024 * 1024);
