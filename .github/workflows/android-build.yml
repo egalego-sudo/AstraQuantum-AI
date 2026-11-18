@@ -24,13 +24,15 @@ concurrency:
 jobs:
   build:
     name: Build ASTRA APKs
+    # This release-capable workflow must only execute on main. PR/debug validation runs in capability-ci.yml.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      ASTRA_KEYSTORE_BASE64: ${{ secrets.ASTRA_KEYSTORE_BASE64 }}
-      ASTRA_KEYSTORE_PASSWORD: ${{ secrets.ASTRA_KEYSTORE_PASSWORD }}
-      ASTRA_KEY_ALIAS: ${{ secrets.ASTRA_KEY_ALIAS }}
-      ASTRA_KEY_PASSWORD: ${{ secrets.ASTRA_KEY_PASSWORD }}
+      ASTRA_KEYSTORE_BASE64: ${{ github.ref == 'refs/heads/main' && secrets.ASTRA_KEYSTORE_BASE64 || '' }}
+      ASTRA_KEYSTORE_PASSWORD: ${{ github.ref == 'refs/heads/main' && secrets.ASTRA_KEYSTORE_PASSWORD || '' }}
+      ASTRA_KEY_ALIAS: ${{ github.ref == 'refs/heads/main' && secrets.ASTRA_KEY_ALIAS || '' }}
+      ASTRA_KEY_PASSWORD: ${{ github.ref == 'refs/heads/main' && secrets.ASTRA_KEY_PASSWORD || '' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

@@ -7,6 +7,7 @@ import { fitContentToByteBudget, estimateInputBytes, truncateUtf8 } from "./toke
 import { classifyCrossrefDoiResult } from "./doi-verification.js";
 import { readLimitedResponseJson, readLimitedResponseText } from "./response-limits.js";
 import { fetchWithSafeRedirects } from "./safe-fetch.js";
+import { extractAtomTag } from "./arxiv-atom.js";
 import {
   INTELLIGENCE_ENGINE_INSTRUCTIONS,
   MAX_COMPLETION_CONTINUATIONS,
@@ -571,7 +572,7 @@ async function research(input) {
   }
   const atomEntries = arxivXml.match(/<entry[\s\S]*?<\/entry>/g) || [];
   for (const entry of atomEntries) {
-    const getTag = tag => xmlText(entry.match(new RegExp("<" + tag + "(?:\s[^>]*)?>([\s\S]*?)<\/" + tag + ">","i"))?.[1] || "");
+    const getTag = tag => xmlText(extractAtomTag(entry, tag));
     const id = getTag("id");
     const title = getTag("title").replace(/\s+/g, " ");
     if (!title || !id) continue;
