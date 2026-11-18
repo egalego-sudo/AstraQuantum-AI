@@ -121,7 +121,7 @@ jobs:
           test -n "$(find "$GITHUB_WORKSPACE/artifact-output" -maxdepth 1 -name '*.apk' -print -quit)"
           sha256sum "$GITHUB_WORKSPACE/artifact-output"/*.apk | tee "$GITHUB_WORKSPACE/artifact-output/SHA256SUMS.txt"
           printf 'Historical build target: %s\n' "${{ inputs.build_target }}" > "$GITHUB_WORKSPACE/artifact-output/BUILD-INFO.txt"
-          printf 'Source commit: %s\n' "${{ github.sha }}" >> "$GITHUB_WORKSPACE/artifact-output/BUILD-INFO.txt"
+          printf 'Source commit: %s\n' "$HISTORICAL_SOURCE_COMMIT" >> "$GITHUB_WORKSPACE/artifact-output/BUILD-INFO.txt"
 
       - name: Upload rebuilt APK and SHA-256
         uses: actions/upload-artifact@v4
