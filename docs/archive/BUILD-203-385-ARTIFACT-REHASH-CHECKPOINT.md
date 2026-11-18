@@ -31,7 +31,7 @@ The local SHA-256 was calculated from each downloaded ZIP's bytes and compared w
 ## Corrections and integrity notes
 
 - The earlier CSV manifests for Builds 215–318 had `independent_sha256` values copied from `github_sha256`. That was insufficient proof by itself. This checkpoint records that all 86 corresponding ZIPs were subsequently downloaded and locally re-hashed; all 86 local results matched the GitHub digests and passed ZIP integrity tests.
-- A temporary filename/build-label offset was detected while processing Builds 375 and 377. Artifact IDs and workflow-run IDs were used to correct the local labels; the missing Build 378 artifacts and the initially omitted Build 369 source-patch ZIP were downloaded and verified. The final Build 319–385 count is 116 ZIPs, including Builds 375, 377 and 378 correctly attributed.
+- A temporary filename/build-label offset was detected while processing Builds 375 and 377. Artifact IDs and workflow-run IDs were used to correct the local labels; the missing Build 378 artifacts and the initially omitted Build 369 source-patch ZIP were downloaded and verified. The final Build 319–385 count is 116 ZIPs, including Builds 369, 375, 377 and 378 correctly attributed.
 - No hash mismatch or ZIP integrity failure remained in the final verified set.
 - No artifact was fabricated for a missing/expired/zero-artifact run.
 
