@@ -1,0 +1,34 @@
+# Local secrets and environment files
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+
+# Signing material and private keys
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.key
+*.pem
+
+# Android / Gradle local state and build outputs
+local.properties
+.gradle/
+**/.gradle/
+**/build/
+.idea/
+**/.idea/
+*.apk
+*.aab
+
+# Backend dependencies and local runtime files
+node_modules/
+**/node_modules/
+*.log
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
