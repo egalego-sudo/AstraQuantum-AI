@@ -39,8 +39,14 @@ def train(args: argparse.Namespace) -> Path:
         raise ValueError("steps and batch size must be positive; block size must be at least 8")
     if args.eval_interval < 1 or args.learning_rate <= 0:
         raise ValueError("eval interval and learning rate must be positive")
+    if args.seed < 0 or args.max_corpus_mb < 1:
+        raise ValueError("seed must be non-negative and max corpus size must be positive")
 
-    text = Path(args.text_file).read_text(encoding="utf-8")
+    corpus_path = Path(args.text_file)
+    max_bytes = args.max_corpus_mb * 1024 * 1024
+    if corpus_path.stat().st_size > max_bytes:
+        raise ValueError(f"corpus exceeds configured {args.max_corpus_mb} MiB safety limit")
+    text = corpus_path.read_text(encoding="utf-8")
     tokenizer = ByteTokenizer()
     tokens = torch.tensor(tokenizer.encode(text), dtype=torch.long)
     split = int(tokens.numel() * 0.9)
@@ -48,6 +54,9 @@ def train(args: argparse.Namespace) -> Path:
     if train_data.numel() <= args.block_size + 1 or val_data.numel() <= args.block_size + 1:
         raise ValueError("corpus is too small for the selected context length and 90/10 split")
 
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
     device = torch.device("cuda" if torch.cuda.is_available() and not args.cpu else "cpu")
     config = ModelConfig(
         block_size=args.block_size,
@@ -85,6 +94,7 @@ def train(args: argparse.Namespace) -> Path:
             "state_dict": model.state_dict(),
             "best_validation_loss": best_val,
             "tokenizer": "utf8-byte-v1",
+            "seed": args.seed,
         },
         temporary,
     )
@@ -106,6 +116,8 @@ def parse_args():
     parser.add_argument("--dropout", type=float, default=0.0)
     parser.add_argument("--learning-rate", type=float, default=3e-4)
     parser.add_argument("--eval-interval", type=int, default=100)
+    parser.add_argument("--seed", type=int, default=1337)
+    parser.add_argument("--max-corpus-mb", type=int, default=64)
     parser.add_argument("--cpu", action="store_true")
     return parser.parse_args()
 
