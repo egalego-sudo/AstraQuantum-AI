@@ -27,14 +27,14 @@ python -m unittest discover -s foundation-model -p 'test_*.py' -v
 Prepare a UTF-8 plain-text file that you have the right to use:
 
 ```bash
-python foundation-model/train.py --text-file ./your-lawful-corpus.txt --steps 500 --batch-size 16 --block-size 128 --output ./quantum-small.pt
+python foundation-model/train.py --text-file ./your-lawful-corpus.txt --dataset-id YOUR_APPROVED_DATASET_ID --steps 500 --batch-size 16 --block-size 128 --output ./quantum-small.pt
 ```
 
-The script splits the text sequentially into train/validation regions, reports loss, clips gradients and saves model configuration plus state dict. Load a saved research checkpoint with `from core import load_checkpoint; model, metadata = load_checkpoint('./quantum-small.pt')`; the loader rejects unsupported formats and malformed weights. The validation split is not a substitute for a held-out benchmark. Use small values first; training memory grows with batch size, context length, width and layer count.
+The script first checks `foundation-model/datasets/manifest.json` (or `--manifest`) and refuses training unless `--dataset-id` identifies a record with `usage=train`, `review_status=approved`, `split=train`, and an exact matching SHA-256. The script then splits the text sequentially into train/validation regions, reports loss, clips gradients and saves model configuration plus state dict. Load a saved research checkpoint with `from core import load_checkpoint; model, metadata = load_checkpoint('./quantum-small.pt')`; the loader rejects unsupported formats and malformed weights. The validation split is not a substitute for a held-out benchmark. Use small values first; training memory grows with batch size, context length, width and layer count.
 
 ## Next research gates
 
-1. Curate and document licensed multilingual datasets with provenance and deduplication.
+1. Curate and document licensed multilingual datasets with provenance and deduplication; training now requires an approved manifest record and matching artifact SHA-256.
 2. Evaluate tokenizer alternatives for Hindi/English and code.
 3. Add deterministic benchmark suites and contamination checks.
 4. Profile memory/latency and choose realistic training hardware.
