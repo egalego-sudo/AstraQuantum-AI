@@ -51,6 +51,6 @@ class Quantum64SparseLabTest {
         val operations = (0 until 17).map { QuantumOp("H", it) }
         val result = runCatching { AstraSparseQuantumSimulator.run(17, operations) }
         assertFalse(result.isSuccess)
-        assertTrue(result.exceptionOrNull()?.message?.contains("Sparse simulation सीमा पार हुई") == true)
+        assertTrue(result.exceptionOrNull()?.message?.contains("100000") == true)
     }
 }
