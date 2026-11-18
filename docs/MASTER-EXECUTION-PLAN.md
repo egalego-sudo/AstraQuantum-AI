@@ -27,7 +27,7 @@ The plan covers all requested work:
 | G06 | 30% | Programming/software-engineering workflows audited and tested across supported language families and development tasks. | Pending |
 | G07 | 35% | Scientific research workflows verified: source retrieval, provenance, synthesis, modelling/experiment support and limitations. | Pending |
 | G08 | 40% | Independent model architecture and tokenizer design validated; external-provider and third-party models clearly separated from QUANTUM AI-owned weights. | Pending |
-| G09 | 45% | Lawful Hindi/English/code training and evaluation corpora sourced, rights/privacy/quality reviewed, hashed and explicitly approved. | Pending |
+| G09 | 45% | Lawful Hindi/English/code training and evaluation corpora sourced, rights/privacy/quality reviewed, hashed and explicitly approved. | Blocked: candidate sources reviewed, but no source is yet approved for this project's actual use; see DATASET-RIGHTS-REVIEW-2026-11-18.md |
 | G10 | 50% | Training pipeline reliability verified: deterministic configuration, best-checkpoint correctness, resume/scheduler/metrics and failure recovery. | In progress |
 | G11 | 55% | Reproducible real training run on approved data and feasible compute; checkpoint provenance and resource metrics recorded. | Blocked: no approved training corpus is currently registered |
 | G12 | 60% | Held-out language, reasoning, math, coding, factuality and instruction-following benchmarks run; baseline comparisons and reports recorded. | Pending; no approved held-out corpus is registered |
