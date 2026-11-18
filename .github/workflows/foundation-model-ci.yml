@@ -1,0 +1,31 @@
+name: QUANTUM AI Foundation Model Lab CI
+
+on:
+  pull_request:
+    paths:
+      - "foundation-model/**"
+      - ".github/workflows/foundation-model-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "foundation-model/**"
+      - ".github/workflows/foundation-model-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install CPU PyTorch
+        run: python -m pip install --index-url https://download.pytorch.org/whl/cpu torch
+      - name: Run foundation-model tests
+        run: python -m unittest discover -s foundation-model -p 'test_*.py' -v
