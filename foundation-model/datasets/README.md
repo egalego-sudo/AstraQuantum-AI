@@ -39,7 +39,7 @@ From the repository root:
 
 ```sh
 python foundation-model/datasets/validate_manifest.py
-python -m unittest foundation-model/datasets/test_manifest.py
+python foundation-model/datasets/test_manifest.py
 ```
 
 The validator checks registry integrity only. It does not provide legal advice or
