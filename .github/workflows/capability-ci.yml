@@ -42,8 +42,21 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Backend syntax and tests
+      - name: Resolve backend dependency lock
+        run: npm install --package-lock-only --ignore-scripts --prefix backend
+
+      - name: Upload generated backend lockfile for pinning
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-package-lock
+          path: backend/package-lock.json
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Install, audit and test backend
         run: |
+          npm ci --ignore-scripts --prefix backend
+          npm audit --prefix backend --audit-level=high
           node --check backend/server.js
           npm test --prefix backend
 
@@ -63,6 +76,9 @@ jobs:
 
       - name: Android unit tests
         run: gradle --no-daemon testDebugUnitTest
+
+      - name: Android lint
+        run: gradle --no-daemon lintDebug
 
       - name: Build debug APK
         run: gradle --no-daemon assembleDebug
