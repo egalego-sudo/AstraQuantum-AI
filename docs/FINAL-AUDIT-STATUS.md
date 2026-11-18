@@ -238,3 +238,14 @@ This section supersedes the earlier Render workspace-selection and empty-health-
 - External `/health` HTTP verification was attempted from the connected execution environment but DNS resolution failed (`Temporary failure in name resolution`). Render configuration read-back and successful deployment remain verified; external response status/body remains **NOT VERIFIED**.
 
 **New actionable source finding:** arXiv Atom tag extraction regex escaping defect — OPEN, needs fix + regression test.
+
+
+## arXiv Atom parser defect — correction and local regression evidence (2026-11-18)
+
+- The previously recorded arXiv Atom extraction defect has been corrected on this audit branch. A dedicated `backend/arxiv-atom.js` helper now builds the regex with correctly escaped JavaScript string backslashes, validates tag names, and extracts multiline element content with optional attributes.
+- `backend/server.js` now uses this helper for arXiv `id`, `title`, `published` and `summary` fields; author-name extraction remains unchanged.
+- Added `backend/arxiv-atom.test.js` with tests for ordinary Atom fields, multiline text, attributes, invalid tag names and non-string input.
+- The exact helper and test contents were reproduced in a clean temporary Node environment and run with `node --test`: **3 passed, 0 failed, 0 skipped**.
+- The tests have not yet run inside the repository's GitHub Actions workflow, and the corrected code has not been deployed. CI validation and deployed research acceptance remain pending. This change is confined to the audit branch; production `main` and the Render service were not changed.
+
+**arXiv parser source defect:** corrected on audit branch; local regression tests PASS; GitHub CI / deployment acceptance PENDING.
