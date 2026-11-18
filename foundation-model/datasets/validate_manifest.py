@@ -104,7 +104,7 @@ def validate_manifest(data: object) -> list[str]:
 
 
 def verify_training_corpus(manifest_path: Path, dataset_id: str, corpus_path: Path) -> dict:
-    """Require an approved training record and verify the exact local artifact."""
+    """Require an approved training record and hash the artifact in bounded chunks."""
     try:
         data = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -120,8 +120,14 @@ def verify_training_corpus(manifest_path: Path, dataset_id: str, corpus_path: Pa
         raise ValueError("dataset is not approved for training")
     if record["split"] != "train":
         raise ValueError("training requires a dataset record with split=train")
-    digest = hashlib.sha256(corpus_path.read_bytes()).hexdigest()
-    if digest != record["sha256"]:
+    digest = hashlib.sha256()
+    try:
+        with corpus_path.open("rb") as corpus_file:
+            for chunk in iter(lambda: corpus_file.read(1024 * 1024), b""):
+                digest.update(chunk)
+    except OSError as exc:
+        raise ValueError(f"cannot read training corpus: {exc}") from exc
+    if digest.hexdigest() != record["sha256"]:
         raise ValueError("local corpus SHA-256 does not match the approved manifest record")
     return record
 
