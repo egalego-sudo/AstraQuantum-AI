@@ -59,6 +59,18 @@ class ModelTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.model.generate(torch.tensor([[1]]), 1, temperature=0)
 
+    def test_generation_rejects_invalid_shape_and_token_even_for_zero_steps(self):
+        with self.assertRaises(ValueError):
+            self.model.generate(torch.tensor([1, 2]), max_new_tokens=0)
+        with self.assertRaises(ValueError):
+            self.model.generate(torch.tensor([[258]]), max_new_tokens=0)
+
+    def test_generation_rejects_non_finite_temperature(self):
+        with self.assertRaises(ValueError):
+            self.model.generate(torch.tensor([[1]]), max_new_tokens=1, temperature=float("nan"))
+        with self.assertRaises(ValueError):
+            self.model.generate(torch.tensor([[1]]), max_new_tokens=1, temperature=float("inf"))
+
     def test_parameter_count_is_positive(self):
         self.assertGreater(self.model.parameter_count(), 0)
 
