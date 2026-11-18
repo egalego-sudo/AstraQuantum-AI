@@ -55,6 +55,46 @@ const MODES = [
     guide: "AI ENGINEERING CHECK: distinguish prompt orchestration from trained model capability; define data provenance/licensing, architecture, compute budget and evaluation split; prevent train/test contamination; measure quality, latency, memory and safety; compare against a baseline; do not claim capability without benchmark evidence."
   },
   {
+    id: "history_archaeology",
+    pattern: /history|historical|archaeolog|epigraph|inscription|chronolog|इतिहास|पुरातत्व|अभिलेख|शिलालेख|सभ्यता|कालक्रम/i,
+    guide: "HISTORY/ARCHAEOLOGY: separate contemporary primary sources, inscriptions/material evidence, later chronicles, oral tradition and modern interpretation; check provenance, dating method, stratigraphic context and chronology; identify contested interpretations and avoid projecting modern categories backwards."
+  },
+  {
+    id: "philosophy_ethics",
+    pattern: /philosoph|ethic|epistemolog|metaphysic|moral theory|दर्शन|दर्शनशास्त्र|नीतिशास्त्र|ज्ञानमीमांसा|तत्वमीमांसा/i,
+    guide: "PHILOSOPHY/ETHICS: define the central concepts and question type; identify premises and normative assumptions; compare relevant schools fairly; present the strongest counterargument; distinguish conceptual analysis, empirical claim and value judgment."
+  },
+  {
+    id: "law_finance_economics",
+    pattern: /legal|law|statute|regulation|court|contract|tax|finance|financial|economics|investment|market|कानून|कानूनी|अधिनियम|न्यायालय|अनुबंध|कर|वित्त|अर्थशास्त्र|निवेश|बाजार/i,
+    guide: "LAW/FINANCE/ECONOMICS: state jurisdiction, date and assumptions; distinguish statute, regulation, judgment, policy and opinion; prefer primary official sources; explain uncertainty and material risks; do not present general information as individualized legal, tax or investment advice."
+  },
+  {
+    id: "social_sciences",
+    pattern: /psycholog|sociolog|social science|behavioral science|मनोविज्ञान|समाजशास्त्र|सामाजिक विज्ञान|व्यवहार विज्ञान/i,
+    guide: "SOCIAL SCIENCES: identify the study design, population, sample and cultural context; distinguish correlation from causation; consider confounders, measurement bias and replication; avoid diagnosing individuals from general research."
+  },
+  {
+    id: "language_literature",
+    pattern: /linguistic|language science|literature|literary|grammar|translation|transliteration|script|भाषाविज्ञान|भाषा विज्ञान|साहित्य|व्याकरण|अनुवाद|लिपि/i,
+    guide: "LANGUAGE/LITERATURE: identify language, dialect, script, period and genre; distinguish literal translation from interpretation; note textual variants and transliteration choices; support historical language claims with dated primary evidence."
+  },
+  {
+    id: "astronomy_space",
+    pattern: /astronom|astrophysic|cosmolog|space science|celestial|खगोल|खगोलशास्त्र|खगोलभौतिकी|ब्रह्मांड विज्ञान|अंतरिक्ष विज्ञान|आकाशीय/i,
+    guide: "ASTRONOMY/SPACE SCIENCE: state reference frame, scale, units and observational limits; separate measured observations from theoretical models; check orders of magnitude and uncertainty; distinguish established results from speculative cosmology."
+  },
+  {
+    id: "mathematics",
+    pattern: /mathematics|algebra|geometry|calculus|theorem|proof|probability|statistics|गणित|बीजगणित|ज्यामिति|कलन|प्रमेय|प्रमाण|प्रायिकता|सांख्यिकी/i,
+    guide: "MATHEMATICS: state definitions and assumptions; show a verifiable derivation; distinguish proof from numerical evidence or heuristic; check domains, edge cases, units and alternative solution paths."
+  },
+  {
+    id: "computer_science",
+    pattern: /computer science|algorithm|data structure|operating system|distributed system|complexity|कंप्यूटर विज्ञान|संगणक विज्ञान|एल्गोरिदम|डेटा संरचना|ऑपरेटिंग सिस्टम|वितरित प्रणाली/i,
+    guide: "COMPUTER SCIENCE: define the computational model and input constraints; analyze time/space complexity; state invariants and failure cases; consider concurrency, memory safety, security and version/platform assumptions."
+  },
+  {
     id: "education",
     pattern: /teach|explain|learn|lesson|beginner|expert|समझाओ|समझाइए|सीखना|शिक्षा|पढ़ाई|क्या है|कैसे काम/i,
     guide: "EDUCATION CHECK: identify the learner's starting level; define terms; explain from foundations to the requested depth; use a worked example and a misconception check; distinguish established knowledge from simplified analogy."

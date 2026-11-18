@@ -49,6 +49,44 @@ test("decision guidance compares trade-offs and reversibility", () => {
   assert.match(guide, /trade-offs/i);
 });
 
+test("history and archaeology guidance distinguishes evidence types and dating", () => {
+  const guide = buildReasoningInstructions("इतिहास और पुरातत्व के प्रमाणों का कालक्रम सहित विश्लेषण करो");
+  assert.match(guide, /primary sources/i);
+  assert.match(guide, /dating method/i);
+});
+
+test("law and finance guidance requires jurisdiction, date and risk disclosure", () => {
+  const guide = buildReasoningInstructions("भारत में इस कानूनी और वित्तीय नियम की जानकारी दो");
+  assert.match(guide, /jurisdiction, date and assumptions/i);
+  assert.match(guide, /individualized legal, tax or investment advice/i);
+});
+
+test("philosophy and social-science guidance separates value and empirical claims", () => {
+  const guide = buildReasoningInstructions("दर्शन और मनोविज्ञान के इस प्रश्न की तुलना करो");
+  assert.match(guide, /value judgment/i);
+  assert.match(guide, /cultural context/i);
+});
+
+test("language and literature guidance distinguishes translation from interpretation", () => {
+  const guide = buildReasoningInstructions("इस प्राचीन साहित्य का भाषावैज्ञानिक और अनुवाद विश्लेषण करो");
+  assert.match(guide, /literal translation from interpretation/i);
+});
+
+test("astronomy guidance requires reference frames and observational limits", () => {
+  const guide = buildReasoningInstructions("खगोल विज्ञान में इस ब्रह्मांडीय दूरी की गणना करो");
+  assert.match(guide, /reference frame/i);
+});
+
+test("mathematics guidance requires derivation and proof boundaries", () => {
+  const guide = buildReasoningInstructions("calculus theorem का proof दीजिए");
+  assert.match(guide, /verifiable derivation/i);
+});
+
+test("computer science guidance checks complexity and invariants", () => {
+  const guide = buildReasoningInstructions("Analyze this distributed system algorithm and its complexity");
+  assert.match(guide, /time\/space complexity/i);
+});
+
 test("education guidance includes learner level and misconception check", () => {
   const guide = buildReasoningInstructions("मुझे calculus शुरुआती स्तर से समझाइए");
   assert.match(guide, /starting level/i);
@@ -98,7 +136,7 @@ test("classifies only the current user request, excluding embedded app instructi
   ].join("\n");
   const extracted = extractCurrentUserRequest(wrapped);
   assert.equal(extracted, "मुझे calculus समझाइए");
-  assert.deepEqual(selectReasoningModes(extracted), ["education", "scientific_analysis"]);
+  assert.deepEqual(selectReasoningModes(extracted), ["mathematics", "education", "scientific_analysis"]);
 });
 
 test("leaves direct API prompts unchanged when no app wrapper is present", () => {
