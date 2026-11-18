@@ -82,6 +82,11 @@ class TrainingTests(unittest.TestCase):
             self.assertEqual(checkpoint["format"], "quantum-gpt-research-v1")
             self.assertEqual(checkpoint["tokenizer"], "utf8-byte-v1")
             self.assertEqual(checkpoint["seed"], 1337)
+            self.assertEqual(checkpoint["dataset"]["id"], "local-approved-corpus")
+            self.assertEqual(checkpoint["dataset"]["sha256"], hashlib.sha256(corpus.read_bytes()).hexdigest())
+            self.assertEqual(checkpoint["dataset"]["license_id"], "CC-BY-4.0")
+            self.assertEqual(checkpoint["training"]["steps"], 2)
+            self.assertEqual(checkpoint["training"]["block_size"], 8)
             self.assertGreater(checkpoint["best_validation_loss"], 0)
 
     def test_training_rejects_corpus_hash_mismatch(self):
