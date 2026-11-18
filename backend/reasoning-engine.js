@@ -46,6 +46,19 @@ const MODES = [
   }
 ];
 
+export function extractCurrentUserRequest(prompt) {
+  const value = String(prompt || "");
+  const prefix = "[CURRENT USER REQUEST]\n";
+  if (!value.startsWith(prefix)) return value.trim();
+  let request = value.slice(prefix.length);
+  const boundaries = [
+    request.indexOf("\n\n[QUANTUM AI CONTEXT INTELLIGENCE"),
+    request.indexOf("\n\n[QUANTUM AI ADVANCED REASONING ARCHITECTURE")
+  ].filter(index => index >= 0);
+  if (boundaries.length) request = request.slice(0, Math.min(...boundaries));
+  return request.trim();
+}
+
 export function selectReasoningModes(prompt) {
   const value = String(prompt || "").trim();
   if (!value) return [];
