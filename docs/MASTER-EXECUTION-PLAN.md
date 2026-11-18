@@ -28,16 +28,16 @@ The plan covers all requested work:
 | G07 | 35% | Scientific research workflows verified: source retrieval, provenance, synthesis, modelling/experiment support and limitations. | Pending |
 | G08 | 40% | Independent model architecture and tokenizer design validated; external-provider and third-party models clearly separated from QUANTUM AI-owned weights. | Pending |
 | G09 | 45% | Lawful Hindi/English/code training and evaluation corpora sourced, rights/privacy/quality reviewed, hashed and explicitly approved. | Blocked: candidate sources reviewed, but no source is yet approved for this project's actual use; see DATASET-RIGHTS-REVIEW-2026-11-18.md |
-| G10 | 50% | Training pipeline reliability verified: deterministic configuration, best-checkpoint correctness, resume/scheduler/metrics and failure recovery. | In progress: deterministic validation, best-step model/optimizer/RNG checkpoints, resume, warmup/cosine schedule and throughput metrics merged in PRs #55, #57 and #59; real approved-data training run remains blocked |
+| G10 | 50% | Training pipeline reliability verified: deterministic configuration, best-checkpoint correctness, resume/scheduler/metrics and failure recovery. | In progress: deterministic validation, best-step model/optimizer/RNG checkpoints, resume, warmup/cosine schedule and throughput metrics merged in PRs #55, #57, #59 and #68; resume now rejects non-finite optimizer state and mismatched seed/config/device; real approved-data training run remains blocked |
 | G11 | 55% | Reproducible real training run on approved data and feasible compute; checkpoint provenance and resource metrics recorded. | Blocked: no approved training corpus is currently registered |
-| G12 | 60% | Held-out language, reasoning, math, coding, factuality and instruction-following benchmarks run; baseline comparisons and reports recorded. | Pending; no approved held-out corpus is registered |
+| G12 | 60% | Held-out language, reasoning, math, coding, factuality and instruction-following benchmarks run; baseline comparisons and reports recorded. | In progress: evaluation harness is merged; original 24-task bilingual exact-answer draft is merged in PR #69 but remains unreviewed/unapproved and is not in the manifest |
 | G13 | 65% | Safety/security testing: prompt injection, data leakage, memorization, harmful requests, citation reliability and abuse controls. | Pending |
 | G14 | 70% | Memory and RAG verified for consent, persistence, retrieval relevance, provenance, deletion and bounded context. | Pending |
 | G15 | 75% | Multimodal workflows verified: voice input/output, image understanding, documents/PDF/OCR and error/resource limits. | Pending |
 | G16 | 80% | Agent/tool architecture verified with scoped permissions, preview/confirmation for consequential actions and audit logs. | Pending |
 | G17 | 85% | QUANTUM AI-owned model export/quantization and offline Android inference verified on representative real devices. | Pending |
 | G18 | 90% | End-to-end Android/backend integration, compatibility, latency, memory, battery, thermal and stability tests passed. | Pending |
-| G19 | 95% | Full applicable unit/integration/regression/security/build checks pass; fresh APK/AAB artifacts built, inspected and checksummed. | In progress: fresh Debug APK built and archive/hash verified; signed Release/AAB and physical-device install remain NOT VERIFIED |
+| G19 | 95% | Full applicable unit/integration/regression/security/build checks pass; fresh APK/AAB artifacts built, inspected and checksummed. | In progress: main-branch Debug APK from workflow run 44309326872 built, archive/hash verified (SHA-256 7b8b4f1e153a977dc0d2cd0cc9a77dc0b408489150457321bc6561d9c2fdd605); signed Release/AAB and physical-device install remain NOT VERIFIED |
 | G20 | 100% | Independent final review, complete Git diff/commit/PR evidence, limitations and BLOCKED/NOT VERIFIED disclosures, final report and UPDATE NOW confirmation package. | Pending |
 
 ## Progress rules
@@ -56,6 +56,7 @@ The plan covers all requested work:
 - Do not approve a dataset unless its actual source rights, license, attribution, privacy/consent and quality have been reviewed by an authorized human.
 - Preserve the current Android application ID and signing identity unless a separately validated migration is deliberately planned; changing either can break app updates.
 - Production deployment, public Release publication, destructive data changes and other irreversible operations require the owner's explicit approval.
+- The earlier Render audit recorded a backend service with automatic deploys enabled on `main`. Current deployment state is NOT VERIFIED; do not merge further backend changes or trigger deployment until the user confirms the Render workspace and current deploy/auto-deploy state is checked.
 - Debug/test APKs may be built and verified without publishing a public Release. A signed Release is not the same as a Debug APK.
 
 ## Baseline checkpoint
