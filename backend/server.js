@@ -4,7 +4,7 @@ import { timingSafeEqual } from "node:crypto";
 import { clientAddress } from "./client-address.js";
 import { searchKnowledge, validateKnowledgeCitations } from "./knowledge.js";
 import { buildResearchQueries, rankResearchSources } from "./research-quality.js";
-import { buildReasoningInstructions } from "./reasoning-engine.js";
+import { buildReasoningInstructions, extractCurrentUserRequest } from "./reasoning-engine.js";
 import { fitContentToByteBudget, estimateInputBytes, truncateUtf8 } from "./token-budget.js";
 import { classifyCrossrefDoiResult } from "./doi-verification.js";
 import { readLimitedResponseJson, readLimitedResponseText } from "./response-limits.js";
@@ -141,7 +141,8 @@ async function generate(input) {
         "\nEvidence type: " + record.evidence_type + "; review status: " + record.review_status).join("\n\n") +
       "\nUse [KB:record-id] only for claims directly supported by that record. Include its source URL. If it does not answer the question, ignore it. Do not treat retrieval as proof or invent missing details."
     : "";
-  const reasoningGuide = buildReasoningInstructions(prompt);
+  const reasoningQuestion = extractCurrentUserRequest(prompt);
+  const reasoningGuide = buildReasoningInstructions(reasoningQuestion);
   content.push({
     type: "input_text",
     text: prompt + (reasoningGuide ? "\n\n" + reasoningGuide : "") + knowledgeContext
