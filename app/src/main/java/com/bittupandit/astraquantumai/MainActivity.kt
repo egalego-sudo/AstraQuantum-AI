@@ -225,8 +225,15 @@ private fun securePreferences(context: Context): SharedPreferences {
                 is Set<*> -> editor.putStringSet(key, value.filterIsInstance<String>().toSet())
             }
         }
-        editor.putBoolean("_secure_migration_complete", true)
+        // Commit encrypted copies first, then clear the legacy plaintext store.
+        // Set the completion marker last so a crash between these steps retries cleanup.
         check(editor.commit()) { "Secure migration failed" }
+        check(legacy.edit().clear().commit()) { "Legacy storage cleanup failed" }
+        check(secure.edit().putBoolean("_secure_migration_complete", true).commit()) {
+            "Secure migration completion marker failed"
+        }
+    } else if (legacy.all.isNotEmpty()) {
+        // Also clean up a legacy store left behind by an interrupted older migration.
         check(legacy.edit().clear().commit()) { "Legacy storage cleanup failed" }
     }
     return secure
