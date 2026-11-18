@@ -4,6 +4,7 @@ import { timingSafeEqual } from "node:crypto";
 import { clientAddress } from "./client-address.js";
 import { searchKnowledge, validateKnowledgeCitations } from "./knowledge.js";
 import { buildResearchQueries, rankResearchSources } from "./research-quality.js";
+import { buildReasoningInstructions } from "./reasoning-engine.js";
 import { fitContentToByteBudget, estimateInputBytes, truncateUtf8 } from "./token-budget.js";
 import { classifyCrossrefDoiResult } from "./doi-verification.js";
 import { readLimitedResponseJson, readLimitedResponseText } from "./response-limits.js";
@@ -140,7 +141,11 @@ async function generate(input) {
         "\nEvidence type: " + record.evidence_type + "; review status: " + record.review_status).join("\n\n") +
       "\nUse [KB:record-id] only for claims directly supported by that record. Include its source URL. If it does not answer the question, ignore it. Do not treat retrieval as proof or invent missing details."
     : "";
-  content.push({ type: "input_text", text: prompt + knowledgeContext });
+  const reasoningGuide = buildReasoningInstructions(prompt);
+  content.push({
+    type: "input_text",
+    text: prompt + (reasoningGuide ? "\\n\\n" + reasoningGuide : "") + knowledgeContext
+  });
   const boundedContent = fitContentToByteBudget(content, Buffer.byteLength(ASTRA_INSTRUCTIONS), GROQ_MAX_INPUT_BYTES);
   let boundedPromptText = boundedContent.filter(part => part.type === "input_text").map(part => part.text || "").join("\n");
   const estimatedInputBytes = estimateInputBytes(ASTRA_INSTRUCTIONS, boundedContent);
