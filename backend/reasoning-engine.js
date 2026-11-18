@@ -26,7 +26,7 @@ const MODES = [
   },
   {
     id: "software_engineering",
-    pattern: /code|coding|program|programming|software|api|backend|frontend|android|kotlin|python|javascript|typescript|java|rust|golang|sql|database|github|pull request|deploy|build|compile|कोड|प्रोग्रामिंग|ऐप|एप्लीकेशन|सॉफ्टवेयर/i,
+    pattern: /code|coding|program|programming|software|api|backend|frontend|android|kotlin|python|javascript|typescript|java|rust|golang|sql|database|github|pull request|deploy|build|compile|c\\+\\+|c#|\\bc\\b|csharp|php|swift|verilog|systemverilog|bash|html|css|कोड|प्रोग्रामिंग|ऐप|एप्लीकेशन|सॉफ्टवेयर/i,
     guide: "SOFTWARE ENGINEERING CHECK: clarify runtime, interfaces and constraints; inspect existing conventions before changing code; make the smallest maintainable change; handle invalid input, errors, resource bounds and security; add focused unit/integration/regression tests; report exactly what was and was not run."
   },
   {
