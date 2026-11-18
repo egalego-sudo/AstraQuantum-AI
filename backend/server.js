@@ -609,7 +609,7 @@ async function research(input) {
     const doi = String(source.doi).replace(/^https?:\/\/doi\.org\//i, "").trim();
     try {
       const response = await fetch("https://api.crossref.org/works/" + encodeURIComponent(doi), {
-        headers, signal: AbortSignal.timeout(12000)
+        headers, redirect: "error", signal: AbortSignal.timeout(12000)
       });
       if (!response.ok) return { doi, ...classifyCrossrefDoiResult({ httpStatus: response.status }), crossrefTitle: "" };
       successfulProviderResponses++;
