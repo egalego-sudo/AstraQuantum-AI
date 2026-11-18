@@ -136,7 +136,7 @@ test("classifies only the current user request, excluding embedded app instructi
   ].join("\n");
   const extracted = extractCurrentUserRequest(wrapped);
   assert.equal(extracted, "मुझे calculus समझाइए");
-  assert.deepEqual(selectReasoningModes(extracted), ["education", "scientific_analysis"]);
+  assert.deepEqual(selectReasoningModes(extracted), ["mathematics", "education", "scientific_analysis"]);
 });
 
 test("leaves direct API prompts unchanged when no app wrapper is present", () => {
