@@ -455,7 +455,7 @@ private fun AstraApp(
                 Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.size(42.dp).clip(RoundedCornerShape(13.dp)).background(Brush.linearGradient(listOf(white, violet, mint))), contentAlignment = Alignment.Center) {
-                            Text("A", color = ink, fontSize = 27.sp, fontWeight = FontWeight.Black)
+                            Text("Q", color = ink, fontSize = 27.sp, fontWeight = FontWeight.Black)
                         }
                         Spacer(Modifier.width(11.dp))
                         Column(Modifier.weight(1f)) {
@@ -610,7 +610,7 @@ private fun AstraApp(
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = if (isAi) Arrangement.Start else Arrangement.End) {
                                 if (isAi) {
                                     Box(Modifier.size(30.dp).clip(CircleShape).background(Color(0xFF444444)), contentAlignment = Alignment.Center) {
-                                        Text("A", color = white, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                        Text("Q", color = white, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                                     }
                                     Spacer(Modifier.width(10.dp))
                                 }
@@ -1210,7 +1210,7 @@ private fun SplashScreen(modifier: Modifier = Modifier) {
     Box(modifier.background(ink), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(Modifier.size(112.dp).clip(RoundedCornerShape(34.dp)).background(Brush.linearGradient(listOf(white, violet, mint))), contentAlignment = Alignment.Center) {
-                Text("A", color = ink, fontSize = 76.sp, fontWeight = FontWeight.Black)
+                Text("Q", color = ink, fontSize = 76.sp, fontWeight = FontWeight.Black)
             }
             Spacer(Modifier.height(24.dp))
             Text("QUANTUM AI", color = white, fontSize = 31.sp, fontWeight = FontWeight.Black, letterSpacing = 8.sp)
