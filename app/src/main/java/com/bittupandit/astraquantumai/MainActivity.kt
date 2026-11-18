@@ -1352,8 +1352,11 @@ private fun checkAstraBackend(baseUrl: String): String {
             readTimeout = 8000
         }
         val code = connection.responseCode
-        val body = (if (code in 200..299) connection.inputStream else connection.errorStream)
-            ?.bufferedReader()?.use { it.readText() }.orEmpty()
+        val body = BoundedInputReader.readText(
+            if (code in 200..299) connection.inputStream else connection.errorStream,
+            64 * 1024,
+            "Backend health response is too large."
+        )
         connection.disconnect()
         if (code !in 200..299) "सर्वर उपलब्ध नहीं · HTTP $code"
         else {
@@ -1384,7 +1387,7 @@ private fun quantumApiRequest(baseUrl: String, path: String, method: String, pay
         }
         val code = connection.responseCode
         val stream = if (code in 200..299) connection.inputStream else connection.errorStream
-        val body = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+        val body = BoundedInputReader.readText(stream, 12 * 1024 * 1024, "Quantum response is too large.")
         connection.disconnect()
         if (code !in 200..299) {
             val message = runCatching { JSONObject(body).optString("error") }.getOrDefault("")
@@ -1414,7 +1417,7 @@ private fun askResearch(baseUrl: String, query: String): String {
         connection.outputStream.use { it.write(payload.toString().toByteArray(Charsets.UTF_8)) }
         val code = connection.responseCode
         val stream = if (code in 200..299) connection.inputStream else connection.errorStream
-        val body = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+        val body = BoundedInputReader.readText(stream, 12 * 1024 * 1024, "Research response is too large.")
         connection.disconnect()
         if (code !in 200..299) {
             val message = runCatching { JSONObject(body).optString("error") }.getOrDefault("")
@@ -1484,7 +1487,7 @@ internal fun askBackend(baseUrl: String, prompt: String, mimeType: String? = nul
         connection.outputStream.use { it.write(payload.toString().toByteArray(Charsets.UTF_8)) }
         val code = connection.responseCode
         val stream = if (code in 200..299) connection.inputStream else connection.errorStream
-        val body = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+        val body = BoundedInputReader.readText(stream, 2 * 1024 * 1024, "AI response is too large.")
         connection.disconnect()
         if (code !in 200..299) {
             val message = runCatching { JSONObject(body).optString("error") }.getOrDefault("")
