@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildReasoningInstructions, selectReasoningModes } from "./reasoning-engine.js";
+import { buildReasoningInstructions, extractCurrentUserRequest, selectReasoningModes } from "./reasoning-engine.js";
 
 test("detects multiple relevant modes in a Hindi root-cause coding request", () => {
   const modes = selectReasoningModes("Android ऐप में error का root cause खोजकर code fix और regression test करो");
@@ -61,4 +61,24 @@ test("recognizes every requested programming language family", () => {
       `language not recognized: ${language}`
     );
   }
+});
+
+test("classifies only the current user request, excluding embedded app instructions", () => {
+  const wrapped = [
+    "[CURRENT USER REQUEST]",
+    "मुझे calculus समझाइए",
+    "",
+    "[QUANTUM AI CONTEXT INTELLIGENCE · selected history]",
+    "पुरानी बातचीत में research, root cause, code और experiment शब्द हैं।",
+    "",
+    "[QUANTUM AI ADVANCED REASONING ARCHITECTURE]",
+    "Always analyze root causes, research and experiments."
+  ].join("\n");
+  const extracted = extractCurrentUserRequest(wrapped);
+  assert.equal(extracted, "मुझे calculus समझाइए");
+  assert.deepEqual(selectReasoningModes(extracted), ["education", "scientific_analysis"]);
+});
+
+test("leaves direct API prompts unchanged when no app wrapper is present", () => {
+  assert.equal(extractCurrentUserRequest("Find the root cause of this bug"), "Find the root cause of this bug");
 });
