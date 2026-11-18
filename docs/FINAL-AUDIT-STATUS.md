@@ -171,3 +171,6 @@ This section adds independent byte-level checks performed after the earlier audi
 
 
 - Cross-workflow permissions review found `capability-ci.yml`, `knowledge-base-tests.yml` and `legacy-rebuild.yml` declare `contents: read` and contain no repository signing-secret references. The Android build workflow is the only inspected workflow that needs write access for Release publication; its workflow-level write permission remains a documented least-privilege gap.
+
+
+- As defense in depth, the release-capable Android build job now has a job-level condition requiring `refs/heads/main`. Non-main manual dispatches are skipped entirely; pull-request/debug builds remain handled by the read-only Capability CI workflow. The signing-secret expressions remain main-only as a second guard.
