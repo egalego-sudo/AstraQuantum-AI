@@ -1,7 +1,10 @@
 """Tests for dataset manifest governance validation."""
 import unittest
 
-from validate_manifest import validate_manifest
+try:
+    from .validate_manifest import validate_manifest
+except ImportError:  # Support direct execution from the repository root.
+    from validate_manifest import validate_manifest
 
 
 def valid_record(**overrides):
