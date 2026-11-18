@@ -294,14 +294,14 @@ User's app idea:
     }
     val cleanBase = backendUrl.trim().trimEnd('/')
     require(cleanBase.startsWith("https://")) { "Settings में सही HTTPS Backend URL सेव करें।" }
-    require(accessToken.matches(Regex("^[a-f0-9]{64}$"))) { "पहले Settings में QUANTUM AI का 64-अक्षरों वाला Private API Access Token सेव करें।" }
+    require(PrivateApiTokenPolicy.isValid(accessToken)) { "पहले Settings में QUANTUM AI का 64-अक्षरों वाला Private API Access Token सेव करें।" }
     val connection = (URL(cleanBase + "/v1/generate").openConnection() as HttpURLConnection).apply {
         requestMethod = "POST"
         connectTimeout = 15000
         readTimeout = 90000
         doOutput = true
         setRequestProperty("Content-Type", "application/json; charset=utf-8")
-        setRequestProperty("Authorization", "Bearer " + accessToken)
+        setRequestProperty("Authorization", PrivateApiTokenPolicy.authorizationHeader(accessToken))
     }
     try {
         connection.outputStream.use { it.write(JSONObject().put("prompt", prompt).toString().toByteArray(Charsets.UTF_8)) }
