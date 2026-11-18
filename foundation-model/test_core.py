@@ -40,6 +40,20 @@ class ModelTests(unittest.TestCase):
             logits_b, _ = self.model(changed_future)
         torch.testing.assert_close(logits_a[:, :2], logits_b[:, :2])
 
+    def test_model_config_rejects_non_integer_dimensions(self):
+        for values in (
+            {"block_size": 16.5},
+            {"n_head": True},
+            {"vocab_size": True},
+        ):
+            with self.subTest(values=values), self.assertRaises(ValueError):
+                ModelConfig(**values)
+
+    def test_model_config_rejects_non_finite_or_non_numeric_dropout(self):
+        for dropout in (float("nan"), float("inf"), True, "0.1"):
+            with self.subTest(dropout=dropout), self.assertRaises(ValueError):
+                ModelConfig(dropout=dropout)
+
     def test_rejects_context_overflow_and_bad_dimensions(self):
         with self.assertRaises(ValueError):
             self.model(torch.ones((1, 17), dtype=torch.long))
