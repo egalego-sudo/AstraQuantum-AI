@@ -84,8 +84,8 @@ def prepare_corpus(
     train_output.parent.mkdir(parents=True, exist_ok=True)
     validation_output.parent.mkdir(parents=True, exist_ok=True)
     manifest_output.parent.mkdir(parents=True, exist_ok=True)
-    train_output.write_text("\\n".join(train_docs) + "\\n", encoding="utf-8")
-    validation_output.write_text("\\n".join(validation_docs) + "\\n", encoding="utf-8")
+    train_output.write_text("\n".join(train_docs) + "\n", encoding="utf-8")
+    validation_output.write_text("\n".join(validation_docs) + "\n", encoding="utf-8")
 
     records = []
     for suffix, path, split in (
@@ -107,7 +107,7 @@ def prepare_corpus(
             "size_bytes": path.stat().st_size,
         })
     manifest = {"manifest_version": 1, "datasets": records}
-    manifest_output.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    manifest_output.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     return {
         "input_documents": len(documents) + duplicate_count,
