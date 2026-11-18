@@ -2,6 +2,12 @@ name: ASTRA Android Build
 
 on:
   workflow_dispatch:
+    inputs:
+      publish_release:
+        description: Explicitly approve publishing a signed APK/update release
+        required: true
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths:
@@ -33,6 +39,7 @@ jobs:
       ASTRA_KEYSTORE_PASSWORD: ${{ github.ref == 'refs/heads/main' && secrets.ASTRA_KEYSTORE_PASSWORD || '' }}
       ASTRA_KEY_ALIAS: ${{ github.ref == 'refs/heads/main' && secrets.ASTRA_KEY_ALIAS || '' }}
       ASTRA_KEY_PASSWORD: ${{ github.ref == 'refs/heads/main' && secrets.ASTRA_KEY_PASSWORD || '' }}
+      RELEASE_PUBLISH_APPROVED: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_release == true }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -147,14 +154,14 @@ jobs:
           retention-days: 14
 
       - name: Prepare persistent release signing key
-        if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
+        if: env.RELEASE_PUBLISH_APPROVED == 'true' && env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
         run: |
           mkdir -p "$RUNNER_TEMP/keystore"
           echo "$ASTRA_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/keystore/astra-upload.jks"
           test -s "$RUNNER_TEMP/keystore/astra-upload.jks"
 
       - name: Validate persistent release signing credentials
-        if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
+        if: env.RELEASE_PUBLISH_APPROVED == 'true' && env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
         shell: bash
         run: |
           # Discover the real alias from the keystore instead of trusting a possibly stale alias secret.
@@ -176,14 +183,14 @@ jobs:
           echo "Keystore password and signing alias validated; Gradle will verify the private-key password during assembleRelease."
 
       - name: Build permanently signed release APK
-        if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
+        if: env.RELEASE_PUBLISH_APPROVED == 'true' && env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
         timeout-minutes: 20
         env:
           ASTRA_KEYSTORE_PATH: ${{ runner.temp }}/keystore/astra-upload.jks
         run: gradle --no-daemon --no-parallel --max-workers=1 --console=plain --stacktrace assembleRelease
 
       - name: Upload signed update APK
-        if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
+        if: env.RELEASE_PUBLISH_APPROVED == 'true' && env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
         uses: actions/upload-artifact@v4
         with:
           name: ASTRA-QUANTUM-AI-signed-update-apk
@@ -192,7 +199,7 @@ jobs:
           retention-days: 90
       # Create separately verified binary patches for the 5 most recent compatible release APKs to keep CI bounded.
       - name: Download recent signed base APKs
-        if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
+        if: env.RELEASE_PUBLISH_APPROVED == 'true' && env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -215,7 +222,7 @@ jobs:
           mkdir -p delta-bases/150
           gh run download 43903146328 --repo "$GITHUB_REPOSITORY" --name ASTRA-QUANTUM-AI-signed-update-apk --dir delta-bases/150 || true
       - name: Create and verify multi-base APK deltas
-        if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
+        if: env.RELEASE_PUBLISH_APPROVED == 'true' && env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
         shell: bash
         run: |
           set -euo pipefail
@@ -246,7 +253,7 @@ jobs:
           print("Verified multi-base patches:",len(patches))
           PY
       - name: Create and sign multi-base update metadata
-        if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
+        if: env.RELEASE_PUBLISH_APPROVED == 'true' && env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
         shell: bash
         env:
           ASTRA_KEYSTORE_PATH: ${{ runner.temp }}/keystore/astra-upload.jks
@@ -282,7 +289,7 @@ jobs:
           base64 -d delta-output/UPDATE-METADATA.sig > "$RUNNER_TEMP/update-signature.bin"
           openssl dgst -sha256 -verify "$RUNNER_TEMP/update-public.pem" -signature "$RUNNER_TEMP/update-signature.bin" delta-output/UPDATE-METADATA.json
       - name: Publish verified multi-base update release
-        if: github.ref == 'refs/heads/main' && env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
+        if: github.ref == 'refs/heads/main' && env.RELEASE_PUBLISH_APPROVED == 'true' && env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -291,7 +298,7 @@ jobs:
           gh release create "$TAG" delta-output/*.patch delta-output/UPDATE-METADATA.json delta-output/UPDATE-METADATA.sig delta-output/ASTRA-QUANTUM-AI.apk --repo "$GITHUB_REPOSITORY" --title "ASTRA QUANTUM AI PLUS Build ${GITHUB_RUN_NUMBER}" --notes "Signed per-build delta patches for the 20 most recent compatible releases. Full APK fallback only." --latest --target "$GITHUB_SHA"
 
       - name: Upload verified APK binary delta
-        if: env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
+        if: env.RELEASE_PUBLISH_APPROVED == 'true' && env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
         uses: actions/upload-artifact@v4
         with:
           name: ASTRA-QUANTUM-AI-APK-DELTA-multi-base
