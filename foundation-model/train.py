@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import math
 from pathlib import Path
 
@@ -54,8 +55,15 @@ def train(args: argparse.Namespace) -> Path:
     if corpus_path.stat().st_size > max_bytes:
         raise ValueError(f"corpus exceeds configured {args.max_corpus_mb} MiB safety limit")
     manifest_path = Path(args.manifest)
-    verify_training_corpus(manifest_path, args.dataset_id, corpus_path)
-    text = corpus_path.read_text(encoding="utf-8")
+    approved_record = verify_training_corpus(manifest_path, args.dataset_id, corpus_path)
+    # Hash and decode the same byte snapshot to avoid a file-change race between
+    # the approval check and the actual training read.
+    corpus_bytes = corpus_path.read_bytes()
+    if len(corpus_bytes) > max_bytes:
+        raise ValueError(f"corpus exceeds configured {args.max_corpus_mb} MiB safety limit")
+    if hashlib.sha256(corpus_bytes).hexdigest() != approved_record["sha256"]:
+        raise ValueError("corpus changed after approval verification; refusing to train")
+    text = corpus_bytes.decode("utf-8")
     tokenizer = ByteTokenizer()
     tokens = torch.tensor(tokenizer.encode(text), dtype=torch.long)
     split = int(tokens.numel() * 0.9)
