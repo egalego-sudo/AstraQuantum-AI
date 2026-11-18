@@ -4,6 +4,7 @@ import json
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 import torch
@@ -111,6 +112,42 @@ class TrainingTests(unittest.TestCase):
             )
             with self.assertRaisesRegex(ValueError, "SHA-256"):
                 train(args)
+
+    def test_training_rejects_corpus_changed_after_approval_check(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            corpus = root / "corpus.txt"
+            corpus.write_text(("approved corpus " * 40), encoding="utf-8")
+            manifest = root / "manifest.json"
+            manifest.write_text(json.dumps({
+                "manifest_version": 1,
+                "datasets": [{
+                    "id": "approved-corpus", "name": "Approved corpus",
+                    "source_url": "https://example.org/corpus",
+                    "license_id": "CC-BY-4.0",
+                    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+                    "languages": ["en"],
+                    "sha256": hashlib.sha256(corpus.read_bytes()).hexdigest(),
+                    "usage": "train", "split": "train",
+                    "attribution": "Test", "review_status": "approved"
+                }]
+            }), encoding="utf-8")
+            args = argparse.Namespace(
+                text_file=str(corpus), dataset_id="approved-corpus",
+                manifest=str(manifest), output=str(root / "out.pt"), steps=1,
+                batch_size=1, block_size=8, eval_interval=1, learning_rate=1e-3,
+                seed=1, max_corpus_mb=1, width=16, heads=4, layers=1,
+                dropout=0.0, cpu=True,
+            )
+            from datasets.validate_manifest import verify_training_corpus as verify
+            def verify_then_mutate(manifest_path, dataset_id, corpus_path):
+                record = verify(manifest_path, dataset_id, corpus_path)
+                corpus_path.write_text(("tampered corpus " * 40), encoding="utf-8")
+                return record
+
+            with patch("train.verify_training_corpus", side_effect=verify_then_mutate):
+                with self.assertRaisesRegex(ValueError, "changed after approval verification"):
+                    train(args)
 
     def test_training_rejects_unapproved_dataset(self):
         with tempfile.TemporaryDirectory() as directory:
