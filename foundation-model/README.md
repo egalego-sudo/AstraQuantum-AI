@@ -7,6 +7,7 @@ This directory is an original, small-scale research implementation of a decoder-
 ## Scope and limitations
 
 - Implements byte-level UTF-8 tokenization, causal self-attention, pre-normalized Transformer blocks, next-token training and autoregressive sampling.
+- Includes `load_checkpoint()` with PyTorch's restricted `weights_only=True` loader and validation of format, tokenizer, config, tensor keys/shapes, finite values and tied embeddings.
 - Starts with randomly initialized weights. It does not include pretrained weights, proprietary model code, hidden prompts, private datasets or OpenAI model parameters.
 - The default model is intentionally tiny for correctness tests and educational experiments. It is not a competitive assistant and cannot be expected to answer general questions until trained on a large, lawful, high-quality corpus.
 - Training quality depends on data quality, tokenizer design, compute, optimization, evaluation and safety work. A successful unit test proves software behavior only—not intelligence.
@@ -29,7 +30,7 @@ Prepare a UTF-8 plain-text file that you have the right to use:
 python foundation-model/train.py --text-file ./your-lawful-corpus.txt --steps 500 --batch-size 16 --block-size 128 --output ./quantum-small.pt
 ```
 
-The script splits the text sequentially into train/validation regions, reports loss, clips gradients and saves model configuration plus state dict. The validation split is not a substitute for a held-out benchmark. Use small values first; training memory grows with batch size, context length, width and layer count.
+The script splits the text sequentially into train/validation regions, reports loss, clips gradients and saves model configuration plus state dict. Load a saved research checkpoint with `from core import load_checkpoint; model, metadata = load_checkpoint('./quantum-small.pt')`; the loader rejects unsupported formats and malformed weights. The validation split is not a substitute for a held-out benchmark. Use small values first; training memory grows with batch size, context length, width and layer count.
 
 ## Next research gates
 

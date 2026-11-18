@@ -34,7 +34,7 @@ This is an educational baseline only. It is randomly initialized and has no pret
 - Run Python unit tests in CI.
 - Verify causal masking and deterministic tensor contracts.
 - Record parameter count, config and checkpoint format.
-- Add checkpoint-loading validation and corruption tests before production use.
+- Implemented restricted checkpoint loading with format/tokenizer/config/state validation, non-finite weight rejection and corruption tests; keep it covered by CI before any production use.
 
 ### Stage B — Data and tokenizer
 - Build a dataset manifest with source URL, license, language, collection date, deduplication hash and permitted purpose.
