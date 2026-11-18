@@ -29,7 +29,7 @@ class SecurePreferencesMigrationTest {
         assertEquals(7, secure.getInt("count", 0))
         assertEquals(99L, secure.getLong("timestamp", 0L))
         assertEquals(1.5f, secure.getFloat("ratio", 0f))
-        assertEquals(setOf("one", "two"), secure.getStringSet("labels", emptySet()))
+        assertEquals(setOf("one", "two"), secure.getStringSet("labels", mutableSetOf()))
         assertTrue(secure.getBoolean("_secure_migration_complete", false))
         assertTrue(legacy.all.isEmpty())
     }
