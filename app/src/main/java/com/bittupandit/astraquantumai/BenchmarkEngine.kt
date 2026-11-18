@@ -222,7 +222,7 @@ internal fun BenchmarkScreen(backendUrl: String) {
     val question = questions[index]
     val latest = records.firstOrNull { it.id == latestId }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("ASTRA INTELLIGENCE BENCHMARK", fontSize = 17.sp, fontWeight = FontWeight.Black)
+        Text("QUANTUM AI INTELLIGENCE BENCHMARK", fontSize = 17.sp, fontWeight = FontWeight.Black)
         Text("6 मॉड्यूल · 120 प्रश्न · Question version 1", fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
         BQuestionBank.moduleNames.forEach { name ->
             FilterChip(selected = module == name, onClick = { module = name; index = 0; latestId = null },
@@ -236,7 +236,7 @@ internal fun BenchmarkScreen(backendUrl: String) {
             busy = true
             status = "Groq से उत्तर और confidence लिया जा रहा है…"
             scope.launch {
-                val prompt = "ASTRA benchmark. उत्तर दें और केवल JSON लौटाएँ: {\"answer\":\"उत्तर\",\"confidence\":0.0,\"uncertainty\":\"अनिश्चितता\"}. confidence 0 से 1 के बीच इस rubric के अनुसार सही/पर्याप्त होने की आपकी subjective संभावना है। प्रश्न: " +
+                val prompt = "QUANTUM AI benchmark. उत्तर दें और केवल JSON लौटाएँ: {\"answer\":\"उत्तर\",\"confidence\":0.0,\"uncertainty\":\"अनिश्चितता\"}. confidence 0 से 1 के बीच इस rubric के अनुसार सही/पर्याप्त होने की आपकी subjective संभावना है। प्रश्न: " +
                     question.prompt + " Rubric: " + question.rubric
                 val raw = withContext(Dispatchers.IO) { askBackend(backendUrl, prompt) }
                 val parsed = runCatching {
@@ -256,7 +256,7 @@ internal fun BenchmarkScreen(backendUrl: String) {
         if (latest != null && latest.questionId == question.id) {
             Card(shape = RoundedCornerShape(14.dp)) {
                 Column(Modifier.fillMaxWidth().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("ASTRA का उत्तर", fontWeight = FontWeight.Bold)
+                    Text("QUANTUM AI का उत्तर", fontWeight = FontWeight.Bold)
                     Text(latest.answer, fontSize = 13.sp, lineHeight = 19.sp)
                     Text("Self-confidence: " + (latest.confidence?.let { (it * 100).toInt().toString() + "%" } ?: "उपलब्ध नहीं"), fontSize = 12.sp)
                     Text("मानवीय समीक्षा: 0 = गलत/अप्रासंगिक, 4 = उत्कृष्ट", fontSize = 11.sp)
