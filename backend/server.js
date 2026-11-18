@@ -26,8 +26,8 @@ const MAX_REQUESTS = Number.isFinite(configuredMaxRequests)
   ? Math.min(1_000, Math.max(1, Math.floor(configuredMaxRequests)))
   : 20;
 const MAX_TRACKED_CLIENTS = 10_000;
-// Groq on-demand GPT-OSS currently advertises an 8K TPM ceiling on this tier.
-// Keep a conservative byte-based input ceiling plus explicit output reserve.
+// Bound UTF-8 request bytes independently from provider token quotas.
+// Byte counts are not model tokens; the provider remains authoritative for TPM limits.
 const GROQ_TPM_LIMIT = Math.max(2_000, Number(process.env.GROQ_TPM_LIMIT || 8_000));
 const GROQ_MAX_INPUT_BYTES = Math.min(7_000, Math.max(3_000, Number(process.env.GROQ_MAX_INPUT_BYTES || 7_000)));
 const GROQ_OUTPUT_RESERVE = 900;
@@ -210,7 +210,7 @@ async function generate(input) {
     });
     data = await response.json().catch(() => ({}));
     if (response.status === 413) {
-      const budgetError = new Error(`Groq request still exceeds the ${GROQ_TPM_LIMIT}-token request budget after automatic compaction. The same oversized request was not retried.`);
+      const budgetError = new Error("Groq rejected the request with HTTP 413 even after one bounded compaction; no further oversized retry was attempted.");
       budgetError.statusCode = 413;
       throw budgetError;
     }
