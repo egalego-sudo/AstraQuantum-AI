@@ -24,6 +24,8 @@ concurrency:
 jobs:
   build:
     name: Build ASTRA APKs
+    # This release-capable workflow must only execute on main. PR/debug validation runs in capability-ci.yml.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
