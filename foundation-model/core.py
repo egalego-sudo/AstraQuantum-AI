@@ -25,14 +25,19 @@ class ModelConfig:
     dropout: float = 0.0
 
     def __post_init__(self) -> None:
+        integer_fields = ("vocab_size", "block_size", "n_embd", "n_head", "n_layer")
+        if any(type(getattr(self, name)) is not int for name in integer_fields):
+            raise ValueError("model dimensions must be integers")
         if self.vocab_size < 258:
             raise ValueError("vocab_size must include 256 byte values and two special tokens")
         if self.block_size < 1 or self.n_embd < 1 or self.n_layer < 1 or self.n_head < 1:
             raise ValueError("model dimensions must be positive")
         if self.n_embd % self.n_head:
             raise ValueError("n_embd must be divisible by n_head")
-        if not 0.0 <= self.dropout < 1.0:
-            raise ValueError("dropout must be in [0, 1)")
+        if isinstance(self.dropout, bool) or not isinstance(self.dropout, (int, float)):
+            raise ValueError("dropout must be a finite number in [0, 1)")
+        if not math.isfinite(float(self.dropout)) or not 0.0 <= self.dropout < 1.0:
+            raise ValueError("dropout must be a finite number in [0, 1)")
 
 
 class ByteTokenizer:
