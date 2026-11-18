@@ -90,7 +90,7 @@ def validate_manifest(data: object) -> list[str]:
             errors.append(f"{prefix}.review_status is invalid")
         if record["usage"] == "train" and record["review_status"] != "approved":
             errors.append(f"{prefix}: training use requires approved review_status")
-        if record["split"] in {"validation", "test"} and record["usage"] == "train":
+        if isinstance(record["split"], str) and record["split"] in {"validation", "test"} and record["usage"] == "train":
             errors.append(f"{prefix}: validation/test data cannot be marked for training")
         if "size_bytes" in record and (
             not isinstance(record["size_bytes"], int)
