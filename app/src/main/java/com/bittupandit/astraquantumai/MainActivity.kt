@@ -1371,7 +1371,7 @@ private fun checkAstraBackend(baseUrl: String): String {
         if (code !in 200..299) "सर्वर उपलब्ध नहीं · HTTP $code"
         else {
             val json = JSONObject(body)
-            if (json.optBoolean("ok")) "कनेक्शन सफल · " + json.optString("provider", "AI") + " · " + json.optString("model", "मॉडल सक्रिय")
+            if (json.optBoolean("ok")) "Backend server reachable · AI API/model की अलग जाँच अभी नहीं हुई।"
             else "सर्वर मिला, पर health check सफल नहीं हुआ।"
         }
     } catch (e: Exception) {
