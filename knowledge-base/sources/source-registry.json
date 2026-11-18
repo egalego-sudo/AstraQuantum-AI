@@ -87,7 +87,7 @@
     "url": "https://openstax.org/subjects/science",
     "source_type": "open_textbook",
     "priority": "high",
-    "usage": "Open educational textbook chapters; cite exact chapter/section and edition."
+    "usage": "DISABLED for QUANTUM AI RAG/model ingestion until prior written OpenStax permission is documented. License varies by exact title; verify the title-specific preface and AI-ingestion terms, not merely the general Creative Commons label."
   },
   {
     "id": "openstax-biology",
@@ -96,7 +96,7 @@
     "url": "https://openstax.org/details/books/biology-2e",
     "source_type": "open_textbook",
     "priority": "high",
-    "usage": "Open educational biology textbook; cite exact chapter/section and edition."
+    "usage": "DISABLED for QUANTUM AI RAG/model ingestion until prior written OpenStax permission is documented. License varies by exact title; verify the title-specific preface and AI-ingestion terms, not merely the general Creative Commons label."
   },
   {
     "id": "pubchem",
