@@ -61,7 +61,28 @@ class MainActivityCoreFlowTest {
         composeRule.onNodeWithText("ADVANCED PRIVATE MEMORY").assertExists()
         composeRule.onNodeWithText("QUANTUM-AI emulator persistence check", substring = true).assertExists()
 
+        // Project notes are private local data and should survive Activity recreation too.
+        composeRule.onNodeWithText("Projects", useUnmergedTree = true).performClick()
+        composeRule.onNodeWithText("PROJECT WORKSPACE").assertExists()
+        composeRule.onAllNodes(hasSetTextAction()).onFirst().performTextInput("QUANTUM-AI project persistence check")
+        composeRule.onNodeWithText("प्रोजेक्ट / नोट सेव करें").performClick()
+        composeRule.onNodeWithText("QUANTUM-AI project persistence check", substring = true).assertExists()
+
+        composeRule.activityRule.scenario.recreate()
+        composeRule.waitUntil(timeoutMillis = 15_000) {
+            composeRule.onAllNodesWithText("Settings", substring = false).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("Projects", useUnmergedTree = true).performClick()
+        composeRule.onNodeWithText("QUANTUM-AI project persistence check", substring = true).assertExists()
+
+        composeRule.onNodeWithText("Settings", useUnmergedTree = true).performClick()
+        composeRule.onNodeWithText("CONNECTION & SECURITY SETTINGS").assertExists()
+        composeRule.onNodeWithText("App Lock").assertExists()
+
         // Leave the emulator's app data clean for any following tests.
+        composeRule.onNodeWithText("Projects", useUnmergedTree = true).performClick()
+        composeRule.onNodeWithText("सभी प्रोजेक्ट नोट मिटाएँ").performClick()
+        composeRule.onNodeWithText("Memory", useUnmergedTree = true).performClick()
         composeRule.onNodeWithText("सभी Memory मिटाएँ और उपयोग बंद करें").performClick()
     }
 }
