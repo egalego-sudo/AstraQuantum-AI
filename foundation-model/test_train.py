@@ -1,4 +1,6 @@
 import argparse
+import hashlib
+import json
 import sys
 import tempfile
 import unittest
@@ -40,8 +42,24 @@ class TrainingTests(unittest.TestCase):
             corpus = root / "corpus.txt"
             output = root / "model.pt"
             corpus.write_text(("Quantum AI शोध और language model training. " * 40), encoding="utf-8")
+            manifest = root / "manifest.json"
+            manifest.write_text(json.dumps({
+                "manifest_version": 1,
+                "datasets": [{
+                    "id": "local-approved-corpus", "name": "Local approved corpus",
+                    "source_url": "https://example.org/corpus",
+                    "license_id": "CC-BY-4.0",
+                    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+                    "languages": ["en", "hi"],
+                    "sha256": hashlib.sha256(corpus.read_bytes()).hexdigest(),
+                    "usage": "train", "split": "train",
+                    "attribution": "Local test fixture", "review_status": "approved"
+                }]
+            }), encoding="utf-8")
             args = argparse.Namespace(
                 text_file=str(corpus),
+                dataset_id="local-approved-corpus",
+                manifest=str(manifest),
                 output=str(output),
                 steps=2,
                 batch_size=2,
@@ -65,13 +83,41 @@ class TrainingTests(unittest.TestCase):
             self.assertEqual(checkpoint["seed"], 1337)
             self.assertGreater(checkpoint["best_validation_loss"], 0)
 
+    def test_training_rejects_unapproved_dataset(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            corpus = root / "corpus.txt"
+            corpus.write_text(("not approved " * 40), encoding="utf-8")
+            manifest = root / "manifest.json"
+            manifest.write_text(json.dumps({
+                "manifest_version": 1,
+                "datasets": [{
+                    "id": "pending-corpus", "name": "Pending corpus",
+                    "source_url": "https://example.org/corpus",
+                    "license_id": "CC-BY-4.0",
+                    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+                    "languages": ["en"],
+                    "sha256": hashlib.sha256(corpus.read_bytes()).hexdigest(),
+                    "usage": "train", "split": "train",
+                    "attribution": "Test", "review_status": "pending"
+                }]
+            }), encoding="utf-8")
+            args = argparse.Namespace(
+                text_file=str(corpus), dataset_id="pending-corpus", manifest=str(manifest),
+                output=str(root / "out.pt"), steps=1, batch_size=1, block_size=8,
+                eval_interval=1, learning_rate=1e-3, seed=1, max_corpus_mb=1,
+                width=16, heads=4, layers=1, dropout=0.0, cpu=True,
+            )
+            with self.assertRaisesRegex(ValueError, "not approved"):
+                train(args)
+
     def test_training_rejects_corpus_over_size_limit(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             corpus = root / "corpus.txt"
             corpus.write_text("x" * (1024 * 1024 + 1), encoding="utf-8")
             args = argparse.Namespace(
-                text_file=str(corpus), output=str(root / "out.pt"), steps=1,
+                text_file=str(corpus), dataset_id="oversize", manifest=str(root / "missing.json"), output=str(root / "out.pt"), steps=1,
                 batch_size=1, block_size=8, eval_interval=1, learning_rate=1e-3,
                 seed=1, max_corpus_mb=1, width=16, heads=4, layers=1,
                 dropout=0.0, cpu=True,
