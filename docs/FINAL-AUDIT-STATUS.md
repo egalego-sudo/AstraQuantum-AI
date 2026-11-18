@@ -159,3 +159,12 @@ This section adds independent byte-level checks performed after the earlier audi
 - JNI bridge validates non-null paths and releases acquired UTF strings in its cleanup path.
 - Host smoke tests cover null arguments, missing/truncated/invalid patches, out-of-bounds control segments and oversized APK/patch limits; latest Capability CI reports this stage passed.
 - Coverage-guided fuzzing, sanitizer runs across supported ABIs and device-level patch reconstruction remain **NOT VERIFIED**. No native code was changed in this recheck.
+
+
+## Android signing-secret exposure hardening (2026-11-18)
+
+- Focused workflow review found the Android build job injected all four release-signing secrets into every run, including `workflow_dispatch` runs on non-`main` refs. Although release signing/publishing steps were gated later, earlier steps on a manually selected branch could still read job-level signing secrets.
+- On this audit branch, the four job-level secret expressions were changed so the keystore, keystore password, alias and key password resolve only when `github.ref == 'refs/heads/main'`; non-main builds receive empty values and therefore cannot enter the signed-release path.
+- This preserves debug builds on non-main refs and preserves the existing signed-release behavior on `main`. No signing secret values were read or exposed.
+- The changed workflow file was re-fetched and the four expressions verified. **CI validation of this new workflow change is pending**; it has not been merged or run against production. A Capability CI run must validate the workflow syntax/behavior before merge.
+- Workflow-level `contents: write` remains broader than ideal because the current single build job also publishes Releases. Splitting build and publish into separate permission-scoped jobs is a further hardening opportunity and is not included in this minimal fix.
