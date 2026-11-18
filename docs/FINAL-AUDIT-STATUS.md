@@ -60,3 +60,20 @@ This is an evidence-based status record. Code review and automated CI are not su
 - The CI Debug APK is a test build, not a production release; run 44219350718 did not upload an APK artifact.
 - Do not mark the project fully verified until every remaining gate above is completed.
 
+
+
+## Superseding verification — PR #40 / Build 386 (2026-11-18)
+
+This section supersedes the earlier pre-merge statements in the historical snapshot above. The earlier snapshot is retained as a record of what was known before PR #40 merged; it must not be read as the current deployment state.
+
+- PR #40 was squash-merged into `main`; merge commit: `225d4c5bcf9c692d0ebee317e1d7aff79bd44d59`.
+- GitHub Actions release workflow run `44222056232` completed successfully. All 27 listed job steps have conclusion `success`, including persistent release-signing credential validation, signed release APK build, multi-base delta generation and verification, signed update metadata, and release publication.
+- Release artifacts were re-listed and downloaded for independent inspection. Three non-debug archives were obtained: signed APK ZIP (51,517,569 bytes), multi-base update ZIP (95,960,037 bytes), and source-patch ZIP (178,067 bytes). All are unexpired in the Actions record at time of retrieval.
+- SHA-256 of downloaded ZIPs: signed APK ZIP `107edbdf6d46f765da47e9f1e3533bde1f774eab9ed5ec1ec245e235ace51e35`; multi-base ZIP `9ef8667c64902e85f7644a3835fdc6a6d1016f8bcdb720fb65d4689d89f8f256`; source-patch ZIP `5e298867f09520fe1d51e0c18b606988a3096f5705e8b50cc2ec73b7b6376717`.
+- The signed APK ZIP contains `app-release.apk` (104,060,996 bytes). The same APK is present in the multi-base ZIP; both copies have SHA-256 `42c5782ddd71024249d8961f08e61b7c6e4cefc954747c339942b41de69b0f8f` and match `targetApkSha256` in `UPDATE-METADATA.json`.
+- Multi-base metadata records package `com.bittupandit.astraquantumai`, versionCode 386, versionName 1.0.386, a signer certificate fingerprint, and six base-build patches (150, 380, 381, 382, 384, 385). All six extracted patch files' SHA-256 values match their metadata entries.
+- The nested source-patch archive was readable and contains the source/workflow changes for this release. This is a patch, not a complete source-tree snapshot.
+- Render service `srv-dbt2v3vf3r2c73bpcn0g` is not suspended and deployment `dep-dbugqns9v7es738hb29g` for the merge commit is `live`; Render events show build and deploy both succeeded. Startup logs show `QUANTUM AI backend listening on port 10000; provider=Groq; model=openai/gpt-oss-20b`. The user independently reported that the public health endpoint returned `{"ok":true,"service":"QUANTUM AI backend"}` on Android.
+- This verification does not prove an authenticated AI request, all feature workflows, a full physical-device regression, offline inference, or independent security penetration testing. Those remain acceptance gates under points 3–10. Build 1–149 historical binaries are still not durably archived; the historical inventory's binary-backup limitation remains open.
+
+**Current verified release/deploy state:** PR #40 merged; Build 386 signed release workflow successful; Render deploy live; health endpoint user-verified. **Overall ten-point audit: not yet certified 100%.**
