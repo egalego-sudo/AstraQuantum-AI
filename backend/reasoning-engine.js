@@ -10,6 +10,26 @@ const MODES = [
     guide: "ROOT-CAUSE CHECK: define the observed symptom; separate symptom from cause; list plausible causes; rank by evidence; test the leading cause; propose a reversible fix; specify a regression check."
   },
   {
+    id: "logic_verification",
+    pattern: /logic|logical|fallacy|valid argument|invalid argument|contradiction|inconsisten|proof|तर्क|कुतर्क|विरोधाभास|असंगति|सही.*गलत.*तर्क|तार्किक/i,
+    guide: "LOGIC VERIFICATION: list the explicit premises and conclusion; test whether the conclusion follows; distinguish validity from truth of premises; look for hidden assumptions, equivocation, circular reasoning, counterexamples and contradictions; state what evidence would settle disputed premises."
+  },
+  {
+    id: "pattern_analysis",
+    pattern: /pattern|trend|anomal|recurring|repeated|पैटर्न|रुझान|असामान्यता|दोहराव|आवर्ती/i,
+    guide: "PATTERN ANALYSIS: define the observations and comparison baseline; identify repeated structure and exceptions; separate signal from noise; test sample size, selection effects, confounders and spurious correlation; report uncertainty and avoid causal claims from correlation alone."
+  },
+  {
+    id: "cross_domain_synthesis",
+    pattern: /interdisciplin|cross.?domain|combine.{0,30}(fields|subjects|disciplines)|different.{0,20}(fields|subjects)|बहुविषयक|अंतरविषयक|अलग.?अलग.{0,20}(विषय|क्षेत्र)|विषयों.{0,20}(जोड़|मिल)|ज्ञान.{0,20}(जोड़|एकीकृत)/i,
+    guide: "CROSS-DOMAIN SYNTHESIS: map the concepts and variables shared by the fields; state each field's assumptions and units; distinguish a useful analogy from a proven equivalence; identify where evidence transfers and where domain boundaries prevent transfer."
+  },
+  {
+    id: "creative_synthesis",
+    pattern: /new idea|novel concept|innovation|innovate|alternative idea|brainstorm|नई अवधारणा|नए विचार|नया विचार|नवाचार|वैकल्पिक विचार|रचनात्मक समाधान/i,
+    guide: "CREATIVE SYNTHESIS: generate materially different candidate ideas; state the mechanism and assumptions for each; compare feasibility, novelty, cost, risk and testability; prefer a small falsifiable prototype over unsupported claims of discovery."
+  },
+  {
     id: "decision",
     pattern: /decide|decision|choose|compare|comparison|कौन.*(सही|बेहतर)|तुलना|निर्णय|विकल्प|strategy|रणनीति/i,
     guide: "DECISION CHECK: state the goal and hard constraints; compare viable options on benefits, cost, risk, reversibility and evidence; identify trade-offs; recommend one option with conditions that would change the recommendation."
