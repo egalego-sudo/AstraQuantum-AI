@@ -119,3 +119,10 @@ This section adds independent byte-level checks performed after the earlier audi
 - Android external-link policy restricts navigation to HTTPS public DNS names and rejects IP literals and local/private naming suffixes. The update verifier authenticates raw metadata bytes with the embedded X.509 public key, requires an approved GitHub Release URL, and checks package identity and a strictly newer version.
 - The updater verifies patch SHA-256 before native patch parsing, then verifies reconstructed/full APK hash, package, version and signer against trusted metadata and the installed app. Build 387 release metadata and its six patches were independently checked above.
 - No source-code changes were made during this focused recheck. These are targeted static observations backed by CI tests, not a full manual audit of every Android/backend code path or a penetration test.
+
+
+## Offline engine and update-compatibility source review (2026-11-18)
+
+- Offline model download is initiated only after an explicit user action, writes to app-private storage, bounds the downloaded byte count, checks the pinned SHA-256, and rechecks the full model hash before initialization. GPU initialization falls back to CPU when GPU initialization fails; cancellation is rethrown rather than swallowed.
+- The model is identified in the UI as Qwen3-0.6B (328 MiB). Its download, integrity and runtime behavior have **NOT VERIFIED** on the user's physical device or in airplane mode.
+- The Android package/application ID and Kotlin namespace remain `com.bittupandit.astraquantumai`. The old package ID is an update-lineage compatibility anchor; changing it would create a different Android app and could prevent in-place updates. User-facing app branding is QUANTUM AI. Legacy internal artifact names and service identifiers are not, by themselves, visible app branding and should not be renamed without a compatibility/migration plan.
