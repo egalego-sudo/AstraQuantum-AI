@@ -5,6 +5,7 @@ import { searchKnowledge, validateKnowledgeCitations } from "./knowledge.js";
 import { buildResearchQueries, rankResearchSources } from "./research-quality.js";
 import { fitContentToByteBudget, estimateInputBytes, truncateUtf8 } from "./token-budget.js";
 import { classifyCrossrefDoiResult } from "./doi-verification.js";
+import { readLimitedResponseJson, readLimitedResponseText } from "./response-limits.js";
 import {
   INTELLIGENCE_ENGINE_INSTRUCTIONS,
   MAX_COMPLETION_CONTINUATIONS,
@@ -193,7 +194,7 @@ async function generate(input) {
     },
     body: JSON.stringify(requestBody)
   });
-  let data = await response.json().catch(() => ({}));
+  let data = await readLimitedResponseJson(response, 2 * 1024 * 1024).catch(() => ({}));
   // A Groq 413 is a hard per-request ceiling, not a transient rate limit.
   // Never resend the same payload: compact it once and lower the output reserve.
   if (response.status === 413) {
@@ -208,7 +209,7 @@ async function generate(input) {
       headers: { "content-type": "application/json", authorization: `Bearer ${API_KEY}` },
       body: JSON.stringify(compactRequest)
     });
-    data = await response.json().catch(() => ({}));
+    data = await readLimitedResponseJson(response, 2 * 1024 * 1024).catch(() => ({}));
     if (response.status === 413) {
       const budgetError = new Error("Groq rejected the request with HTTP 413 even after one bounded compaction; no further oversized retry was attempted.");
       budgetError.statusCode = 413;
@@ -234,7 +235,7 @@ async function generate(input) {
           max_tokens: safeOutputTokens
         })
       });
-      const fallbackData = await fallbackResponse.json().catch(() => ({}));
+      const fallbackData = await readLimitedResponseJson(fallbackResponse, 2 * 1024 * 1024).catch(() => ({}));
       if (fallbackResponse.ok) {
         const fallbackContent = fallbackData?.choices?.[0]?.message?.content;
         const fallbackText = typeof fallbackContent === "string"
@@ -281,7 +282,7 @@ async function generate(input) {
       completionStillIncomplete = true;
       break;
     }
-    const continuationData = await continuationResponse.json().catch(() => ({}));
+    const continuationData = await readLimitedResponseJson(continuationResponse, 2 * 1024 * 1024).catch(() => ({}));
     const continuationText = extractResponsesText(continuationData);
     if (!continuationText) {
       completionStillIncomplete = isResponsesIncomplete(continuationData);
@@ -310,7 +311,7 @@ async function generate(input) {
         max_tokens: safeOutputTokens
       })
     });
-    const fallbackData = await fallbackResponse.json().catch(() => ({}));
+    const fallbackData = await readLimitedResponseJson(fallbackResponse, 2 * 1024 * 1024).catch(() => ({}));
     if (!fallbackResponse.ok) {
       const message = fallbackData?.error?.message || `Groq Chat Completions returned HTTP ${fallbackResponse.status}`;
       throw new Error(`Groq fallback HTTP ${fallbackResponse.status}: ${message}`);
@@ -367,7 +368,7 @@ async function getIbmAccessToken() {
     body: form,
     signal: AbortSignal.timeout(15000)
   });
-  const data = await response.json().catch(() => ({}));
+  const data = await readLimitedResponseJson(response, 2 * 1024 * 1024).catch(() => ({}));
   if (!response.ok || !data.access_token) throw new Error("IBM Quantum authentication failed. Check the server-side IBM API key.");
   ibmAccessToken = data.access_token;
   ibmTokenExpiresAt = Date.now() + Math.max(60, Number(data.expires_in || 3600) - 90) * 1000;
@@ -392,7 +393,7 @@ async function ibmQuantumRequest(path, options = {}) {
     },
     signal: AbortSignal.timeout(30000)
   });
-  const data = await response.json().catch(() => ({}));
+  const data = await readLimitedResponseJson(response, 2 * 1024 * 1024).catch(() => ({}));
   if (!response.ok) {
     const message = data?.errors?.[0]?.message || data?.message || "IBM Quantum request failed with HTTP " + response.status;
     throw new Error(String(message).slice(0, 400));
@@ -444,7 +445,7 @@ async function research(input) {
       const response = await fetch(url, { headers, signal: AbortSignal.timeout(timeout) });
       if (!response.ok) return null;
       successfulProviderResponses++;
-      return await response.json();
+      return await readLimitedResponseJson(response, 2 * 1024 * 1024);
     } catch { return null; }
   };
   const fetchText = async (url, timeout = 18000) => {
@@ -452,7 +453,7 @@ async function research(input) {
       const response = await fetch(url, { headers, signal: AbortSignal.timeout(timeout) });
       if (!response.ok) return "";
       successfulProviderResponses++;
-      return await response.text();
+      return await readLimitedResponseText(response, 2 * 1024 * 1024);
     } catch { return ""; }
   };
   const xmlText = value => String(value || "")
@@ -597,7 +598,7 @@ async function research(input) {
       });
       if (!response.ok) return { doi, ...classifyCrossrefDoiResult({ httpStatus: response.status }), crossrefTitle: "" };
       successfulProviderResponses++;
-      const payload = await response.json().catch(() => ({}));
+      const payload = await readLimitedResponseJson(response, 2 * 1024 * 1024).catch(() => ({}));
       const crossrefTitle = Array.isArray(payload?.message?.title) ? payload.message.title[0] : "";
       const similarity = titleSimilarity(source.title, crossrefTitle);
       return {
