@@ -2,12 +2,14 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import math
 from pathlib import Path
 
 import torch
 
 from core import ByteTokenizer, ModelConfig, QuantumGPT
+from datasets.validate_manifest import verify_training_corpus
 
 
 def make_batch(data: torch.Tensor, batch_size: int, block_size: int, device: torch.device):
@@ -52,7 +54,17 @@ def train(args: argparse.Namespace) -> Path:
     max_bytes = args.max_corpus_mb * 1024 * 1024
     if corpus_path.stat().st_size > max_bytes:
         raise ValueError(f"corpus exceeds configured {args.max_corpus_mb} MiB safety limit")
-    text = corpus_path.read_text(encoding="utf-8")
+    manifest_path = Path(args.manifest)
+    approved_record = verify_training_corpus(manifest_path, args.dataset_id, corpus_path)
+    # Hash and decode the same byte snapshot to avoid a file-change race between
+    # the approval check and the actual training read.
+    with corpus_path.open("rb") as corpus_file:
+        corpus_bytes = corpus_file.read(max_bytes + 1)
+    if len(corpus_bytes) > max_bytes:
+        raise ValueError(f"corpus exceeds configured {args.max_corpus_mb} MiB safety limit")
+    if hashlib.sha256(corpus_bytes).hexdigest() != approved_record["sha256"]:
+        raise ValueError("corpus changed after approval verification; refusing to train")
+    text = corpus_bytes.decode("utf-8")
     tokenizer = ByteTokenizer()
     tokens = torch.tensor(tokenizer.encode(text), dtype=torch.long)
     split = int(tokens.numel() * 0.9)
@@ -101,6 +113,20 @@ def train(args: argparse.Namespace) -> Path:
             "best_validation_loss": best_val,
             "tokenizer": "utf8-byte-v1",
             "seed": args.seed,
+            "dataset": {
+                "id": args.dataset_id,
+                "sha256": approved_record["sha256"],
+                "license_id": approved_record["license_id"],
+                "source_url": approved_record["source_url"],
+            },
+            "training": {
+                "steps": args.steps,
+                "batch_size": args.batch_size,
+                "block_size": args.block_size,
+                "learning_rate": args.learning_rate,
+                "eval_interval": args.eval_interval,
+                "max_corpus_mb": args.max_corpus_mb,
+            },
         },
         temporary,
     )
@@ -112,6 +138,12 @@ def train(args: argparse.Namespace) -> Path:
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--text-file", required=True)
+    parser.add_argument("--dataset-id", required=True, help="approved training dataset ID in the manifest")
+    parser.add_argument(
+        "--manifest",
+        default=str(Path(__file__).resolve().parent / "datasets" / "manifest.json"),
+        help="dataset governance manifest path",
+    )
     parser.add_argument("--output", default="quantum-small.pt")
     parser.add_argument("--steps", type=int, default=500)
     parser.add_argument("--batch-size", type=int, default=16)
