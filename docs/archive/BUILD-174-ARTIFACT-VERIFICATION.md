@@ -171,3 +171,28 @@ The remaining builds in this range returned zero Actions artifacts when queried.
 - No-artifact/cancelled or failed runs are documented as gaps, not treated as complete artifact sets.
 - Next build to inspect: **253**.
 - APK signature verification and physical-device install/runtime tests remain **NOT VERIFIED**.
+
+## Extended verification — Builds 253–283
+
+**25 additional artifact ZIPs were downloaded, opened and independently SHA-256 verified. All 25 matched the GitHub Actions API digest and passed ZIP member-integrity checks.** Details are in `BUILD-253-283-ARTIFACT-SHA256.csv`.
+
+Builds with retained artifacts:
+- 254, 255, 258, 259, 260: source-patch only.
+- 261: debug APK + source patch.
+- 264: source-patch only.
+- 267: signed APK + debug APK + source patch + multi-base delta.
+- 268, 271, 274, 275: source-patch only.
+- 276: signed APK + debug APK + source patch + multi-base delta.
+- 278, 279, 281, 282, 283: source-patch only.
+
+All other builds in 253–283 returned zero retained Actions artifacts when queried. Build 279 and Builds 281–283 are failed workflows with only source-patch artifacts; their APK and delta outputs are not present. The rest of the partial-output runs were cancelled or otherwise produced no Android artifacts.
+
+### Cumulative verified scope — Builds 174–283
+
+- Build numbers examined: **110**.
+- Artifact ZIPs downloaded and independently verified: **166/166**.
+- GitHub API SHA-256 comparisons: **166/166 PASS**.
+- ZIP member-integrity checks: **166/166 PASS**.
+- Full four-artifact sets found in this range: Builds 177, 178, 180, 182, 183, 184, 186–189, 191, 192, 194–198, 200–202, 205, 206, 208, 237, 242, 246, 267 and 276. All other builds with artifacts are partial sets and are recorded as such.
+- Next build to inspect: **284**.
+- APK cryptographic signer validation, package identity/install tests, and a permanent second copy of all ZIP payloads remain **NOT VERIFIED**.
