@@ -79,6 +79,82 @@ class ModelTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.model(torch.tensor([[1, 2, 3, 4]]), torch.ones((1, 4), dtype=torch.float32))
 
+    def _write_checkpoint(self, path, **overrides):
+        payload = {
+            "format": "quantum-gpt-research-v1",
+            "tokenizer": "utf8-byte-v1",
+            "config": self.model.config_dict(),
+            "state_dict": {key: value.detach().clone() for key, value in self.model.state_dict().items()},
+            "seed": 7,
+        }
+        payload.update(overrides)
+        torch.save(payload, path)
+        return payload
+
+    def test_checkpoint_round_trip_uses_safe_loader(self):
+        import tempfile
+        from core import load_checkpoint
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "model.pt"
+            self._write_checkpoint(path, best_validation_loss=2.5)
+            restored, metadata = load_checkpoint(path)
+            self.assertEqual(restored.config_dict(), self.model.config_dict())
+            self.assertEqual(metadata["seed"], 7)
+            self.assertEqual(metadata["best_validation_loss"], 2.5)
+            for key, value in self.model.state_dict().items():
+                torch.testing.assert_close(restored.state_dict()[key], value)
+
+    def test_checkpoint_rejects_unknown_format_and_tokenizer(self):
+        import tempfile
+        from core import load_checkpoint
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "bad.pt"
+            self._write_checkpoint(path, format="unknown")
+            with self.assertRaises(ValueError):
+                load_checkpoint(path)
+            self._write_checkpoint(path, tokenizer="unknown")
+            with self.assertRaises(ValueError):
+                load_checkpoint(path)
+
+    def test_checkpoint_rejects_missing_or_extra_state_keys(self):
+        import tempfile
+        from core import load_checkpoint
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "bad.pt"
+            state = {key: value.detach().clone() for key, value in self.model.state_dict().items()}
+            state.pop("final_norm.weight")
+            self._write_checkpoint(path, state_dict=state)
+            with self.assertRaises(ValueError):
+                load_checkpoint(path)
+
+    def test_checkpoint_rejects_non_finite_weights(self):
+        import tempfile
+        from core import load_checkpoint
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "bad.pt"
+            state = {key: value.detach().clone() for key, value in self.model.state_dict().items()}
+            state["token_embedding.weight"][0, 0] = float("nan")
+            state["lm_head.weight"][0, 0] = float("nan")
+            self._write_checkpoint(path, state_dict=state)
+            with self.assertRaises(ValueError):
+                load_checkpoint(path)
+
+    def test_checkpoint_rejects_broken_tied_embeddings(self):
+        import tempfile
+        from core import load_checkpoint
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "bad.pt"
+            state = {key: value.detach().clone() for key, value in self.model.state_dict().items()}
+            state["lm_head.weight"][0, 0] += 1
+            self._write_checkpoint(path, state_dict=state)
+            with self.assertRaises(ValueError):
+                load_checkpoint(path)
+
     def test_parameter_count_is_positive(self):
         self.assertGreater(self.model.parameter_count(), 0)
 
