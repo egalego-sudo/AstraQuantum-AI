@@ -31,31 +31,32 @@ This is an evidence-based status record. Code review and automated CI are not su
 
 ## Latest recheck (2026-11-18)
 
-- PR #40 remains open on branch `maintenance/quantum-ai-consistency-fixes`; its current head is `3034aea419f6669663fd412045b25ba751ba429a`. It has not been merged.
-- Capability CI run [44217894666](https://github.com/egalego-sudo/Quantum-AI/actions/runs/44217894666) completed successfully. Backend `npm ci`, high-severity `npm audit`, 51/51 backend tests, build-inventory validation, native malformed-patch smoke tests, Android unit tests, Android lint and Debug APK build all passed. The audit reported zero npm vulnerabilities.
-- The inventory validator confirmed 385 sequential rows, 380 Android-build workflow runs, five accounted gaps (91, 92, 203, 204, 207), and 36 releases. Builds 1–149 account for 147 Android-build runs (111 success, 36 failure); this validates the inventory, not a permanent backup of every artifact.
-- A recursive Git tree scan of the current PR head found 118 tracked files versus 98 on `main`; both trees were non-truncated, with zero zero-byte files and zero duplicate blob-SHA groups.
-- Static navigation check found 19 unique navigation labels and an exact matching route for each. App Builder and Website Builder were found to omit the backend Bearer token; the app now passes the private token and validates it. Quantum Lab and token-policy unit tests pass in the Android unit-test step.
-- Research-provider redirects are now manually checked against an HTTPS host allowlist. Groq, IBM and Crossref DOI requests reject redirects. Safe-redirect regression tests passed in the backend suite.
-- Build 149's source-patch artifact was inspected: its nested ZIP contains only `AppUpdateScreen.kt` plus `PATCH-MANIFEST.txt`, not a full source snapshot. Build 1 run `43766788471` currently has no Actions artifacts. Build 149 run `43902185256` has four unexpired artifacts, but these remain temporary GitHub Actions artifacts and have not been copied into a durable archive.
-- Render remains live on production `main` at `b8952cd25b5908e60e96b2794b0dc571e656b89d`, not at PR #40. No production configuration or deployment was changed. Render health endpoint, current secret presence/names and authenticated live provider requests remain unverified.
+- PR #40 remains open on branch `maintenance/quantum-ai-consistency-fixes`; latest verified head: `790569833c29e4a6bb2173c6472b27491b89f2e8`. It has not been merged.
+- Capability CI run [44219350718](https://github.com/egalego-sudo/Quantum-AI/actions/runs/44219350718) completed with conclusion **success** on that exact head. All 11 job steps completed successfully, including backend install/audit/tests, build inventory and source-tree validation, navigation validator, native malformed-patch smoke tests, Android unit tests, Android lint and Debug APK build.
+- The successful backend test run reported 51/51 tests passing and `npm audit --audit-level=high` reported zero vulnerabilities.
+- Build inventory validator: 385 sequential rows, 380 Android-build runs, five accounted gaps (91, 92, 203, 204, 207), 36 releases; all 380 Android build source commit trees are available in Git. This does not mean all historical APK/patch binaries are backed up.
+- Static navigation validator: 19 unique navigation entries, each matched to a top-level route; no missing or orphan route was reported.
+- Repository structure scan: 118 tracked files on PR head versus 98 on `main`; both trees were fully enumerated, with no zero-byte files or duplicate identical blob-SHA groups.
+- Builds 1–149 contain 147 Android-build runs (111 success, 36 failure); historical Actions artifacts are not fully preserved in a durable archive. Build 149's inspected nested source-patch ZIP contained only `AppUpdateScreen.kt` and `PATCH-MANIFEST.txt`, not a complete source snapshot.
+- Render production service remains on `main` at `b8952cd25b5908e60e96b2794b0dc571e656b89d`, not PR #40. No production configuration or deployment was changed. Public health endpoint, environment-variable presence/names and authenticated live provider requests remain unverified.
+- No physical Android phone acceptance test, airplane-mode test, signed APK installation/upgrade test, coverage-guided native fuzzing, independent penetration test or complete secret-history scan has been performed.
 
-## Remaining security and acceptance gates
+## Remaining gates
 
-1. Preserve the 122 currently available Build 1–149 Actions artifact sets before their retention expiry; identify runs that contain only APKs or source deltas and runs with no artifacts. The 147 source snapshots for Builds 1–149 are verified in Git; the remaining backup task is the binary APK/patch artifacts.
-2. Verify the live Render service's configured health check and required environment-variable names; never expose secret values.
-3. Run Android screen/navigation and encrypted-data migration tests on a physical phone.
-4. Verify authenticated text, image, research and PDF calls against the live backend without exposing credentials.
-5. Download and initialize the offline model, then test in airplane mode on a compatible phone.
-6. Verify the signed release APK and updater end-to-end on a phone, including full-APK fallback and a future patch carrying a signed patch hash.
-7. Add coverage-guided native patch fuzzing and run an independent security review. Current CI includes deterministic malformed-input smoke tests, not coverage-guided fuzzing.
-8. Review release publishing permissions and complete a full GitHub secret-history scan before calling the repository production-secure.
+1. Preserve and hash the available Build 1–149 Actions artifact sets before retention expiry; identify which runs contain APKs, deltas or no artifacts. Recover missing binaries only from verifiable backups.
+2. Verify Render's health-check configuration and required environment-variable names without exposing secret values; test public health and authenticated routes safely.
+3. Run Android screen/navigation, encrypted-data migration and recovery tests on a physical phone.
+4. Verify authenticated Groq text, vision, research and PDF flows against the live backend without exposing credentials.
+5. Download and initialize the offline model, then test actual airplane-mode behavior on a compatible phone.
+6. Verify signed APK installation, upgrade, updater integrity, full-APK fallback and patch-hash handling on a phone.
+7. Add coverage-guided native patch fuzzing and obtain an independent security review.
+8. Complete a repository-wide secret-history scan and review release publishing permissions.
 
 ## Current repository state
 
-- Proposed changes are isolated in [PR #40](https://github.com/egalego-sudo/Quantum-AI/pull/40).
+- Proposed changes remain isolated in [PR #40](https://github.com/egalego-sudo/Quantum-AI/pull/40).
 - Production `main` remains unchanged by this PR.
-- No merge, production deployment or signed release was performed.
-- The CI Debug APK is a test build, not a production release; this CI run did not upload an APK artifact.
+- No merge, production deployment, production configuration change or signed release was performed.
+- The CI Debug APK is a test build, not a production release; run 44219350718 did not upload an APK artifact.
+- Do not mark the project fully verified until every remaining gate above is completed.
 
-**Do not mark the whole project fully verified until the remaining gates above are completed.**
