@@ -58,7 +58,8 @@ def train(args: argparse.Namespace) -> Path:
     approved_record = verify_training_corpus(manifest_path, args.dataset_id, corpus_path)
     # Hash and decode the same byte snapshot to avoid a file-change race between
     # the approval check and the actual training read.
-    corpus_bytes = corpus_path.read_bytes()
+    with corpus_path.open("rb") as corpus_file:
+        corpus_bytes = corpus_file.read(max_bytes + 1)
     if len(corpus_bytes) > max_bytes:
         raise ValueError(f"corpus exceeds configured {args.max_corpus_mb} MiB safety limit")
     if hashlib.sha256(corpus_bytes).hexdigest() != approved_record["sha256"]:
