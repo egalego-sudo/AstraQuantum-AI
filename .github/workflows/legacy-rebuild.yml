@@ -1,0 +1,121 @@
+name: QUANTUM AI Legacy APK Repair
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_target:
+        description: "Choose the historical build source to rebuild"
+        required: true
+        type: choice
+        options:
+          - "1"
+          - "2"
+          - "91"
+          - "92"
+          - "203"
+          - "204"
+          - "207"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quantum-legacy-rebuild-${{ inputs.build_target }}
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    name: Rebuild historical APK ${{ inputs.build_target }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout selected historical source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.build_target == '1' && 'bd7b4357efe7455d43df0b70c7cd5cfb6570d992' || inputs.build_target == '2' && 'a043c2b4a4b279186af6bd53cf80451409d8a201' || inputs.build_target == '91' && '914f5e277f379b3ea0de945d3fe4fc4175024a83' || inputs.build_target == '92' && '7d641e42746e6d4c0591218ca8a72c0c878ca5b3' || inputs.build_target == '203' && '0f1e174eb2ce3ef7b2b5b493a6c1224e568fa22b' || inputs.build_target == '204' && '7067243578867845687d73ca7947d5055fce2b5f' || '07133cc4ae217e887a370fe59098677dcfde669f' }}
+          path: historical-repo
+
+      - name: Prepare historical Android project
+        id: prepare
+        shell: bash
+        env:
+          TARGET: ${{ inputs.build_target }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/source"
+          if [[ "$TARGET" == "1" || "$TARGET" == "2" ]]; then
+            archive="historical-repo/ASTRA_QUANTUM_AI_PLUS_COMPLETE_MASTER_UPDATED.zip"
+            test -s "$archive"
+            unzip -q "$archive" -d "$GITHUB_WORKSPACE/source"
+            project_root="$(find "$GITHUB_WORKSPACE/source" -name settings.gradle.kts -print -quit | xargs -r dirname)"
+            test -n "$project_root"
+            theme="$(find "$project_root" -path '*/ui/theme/Theme.kt' -print -quit)"
+            test -s "$theme"
+            python3 - "$theme" <<'PY'
+          import pathlib, sys
+          p = pathlib.Path(sys.argv[1])
+          s = p.read_text()
+          line = "import androidx.compose.ui.graphics.Color"
+          if line not in s:
+              parts = s.splitlines()
+              package_index = next((i for i, x in enumerate(parts) if x.startswith("package ")), -1)
+              if package_index < 0:
+                  raise SystemExit("Theme.kt has no package declaration; refusing an unsafe edit")
+              parts.insert(package_index + 1, "")
+              parts.insert(package_index + 2, line)
+              p.write_text("\n".join(parts) + "\n")
+          PY
+            echo "Historical ZIP extracted; applied only the missing Compose Color import."
+          else
+            rsync -a --exclude='.git' historical-repo/ "$GITHUB_WORKSPACE/source/"
+            project_root="$GITHUB_WORKSPACE/source"
+          fi
+          echo "project_root=$project_root" >> "$GITHUB_OUTPUT"
+          test -s "$project_root/settings.gradle.kts"
+          test -s "$project_root/app/build.gradle.kts"
+          echo "Project root: $project_root"
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install Android NDK and CMake for native patch builds
+        if: ${{ inputs.build_target == '203' || inputs.build_target == '204' || inputs.build_target == '207' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -maxdepth 3 -type f -name sdkmanager | sort -V | tail -n 1)"
+          test -n "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" --install "ndk;29.0.14206865" "cmake;3.31.6"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Build historical debug APK
+        shell: bash
+        env:
+          PROJECT_ROOT: ${{ steps.prepare.outputs.project_root }}
+        run: |
+          set -euo pipefail
+          cd "$PROJECT_ROOT"
+          gradle --no-daemon clean assembleDebug
+          mkdir -p "$GITHUB_WORKSPACE/artifact-output"
+          find app/build/outputs/apk/debug -maxdepth 1 -type f -name '*.apk' -exec cp {} "$GITHUB_WORKSPACE/artifact-output/" \;
+          test -n "$(find "$GITHUB_WORKSPACE/artifact-output" -maxdepth 1 -name '*.apk' -print -quit)"
+          sha256sum "$GITHUB_WORKSPACE/artifact-output"/*.apk | tee "$GITHUB_WORKSPACE/artifact-output/SHA256SUMS.txt"
+          printf 'Historical build target: %s\n' "${{ inputs.build_target }}" > "$GITHUB_WORKSPACE/artifact-output/BUILD-INFO.txt"
+          printf 'Source commit: %s\n' "${{ github.sha }}" >> "$GITHUB_WORKSPACE/artifact-output/BUILD-INFO.txt"
+
+      - name: Upload rebuilt APK and SHA-256
+        uses: actions/upload-artifact@v4
+        with:
+          name: QUANTUM-AI-legacy-build-${{ inputs.build_target }}
+          path: artifact-output/*
+          if-no-files-found: error
+          retention-days: 90
