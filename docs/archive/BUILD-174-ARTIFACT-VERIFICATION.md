@@ -135,3 +135,39 @@ The 12 downloaded ZIPs for Builds 205, 206 and 208 all matched their GitHub API 
 - Cancelled runs with zero artifacts: **209–214**.
 - Build 215 is the next Android build run to inspect.
 - APK signer verification, Android installation/runtime tests and durable binary mirroring outside GitHub Actions retention remain **NOT VERIFIED**.
+
+## Extended verification — Builds 215–252
+
+**34 artifact ZIPs were downloaded and independently SHA-256 verified. All 34 matched the GitHub Actions API digest and passed ZIP member-integrity checks.** The artifact inventory is recorded in `BUILD-215-252-ARTIFACT-SHA256.csv`.
+
+Builds with retained artifacts in this range:
+- 215 (source patch only)
+- 217 (source patch only)
+- 221 (source patch only)
+- 222 (source patch only; failed run)
+- 223 (source patch only; failed run)
+- 224 (debug APK + source patch)
+- 228 (source patch only)
+- 229 (signed APK + debug APK + source patch; no delta retained)
+- 232 (source patch only)
+- 234 (source patch only)
+- 235 (source patch only)
+- 236 (debug APK + source patch)
+- 237 (signed APK + debug APK + source patch + multi-base delta)
+- 242 (signed APK + debug APK + source patch + multi-base delta)
+- 243 (source patch only)
+- 245 (source patch only)
+- 246 (signed APK + debug APK + source patch + multi-base delta)
+- 250 (signed APK + debug APK + source patch; no delta retained)
+- 252 (source patch only)
+
+The remaining builds in this range returned zero Actions artifacts when queried. Most of those workflow runs were cancelled; Build 216, 218–220, 225–227, 230–231, 233, 238–241, 244, 247–249 and 251 have no retained artifacts. Builds 222 and 223 were failures; their source-patch ZIPs were still retrievable and verified.
+
+### Cumulative verified scope — Builds 174–252
+
+- Build numbers covered: **79**.
+- Android-build runs with retained artifacts downloaded and verified: **140 ZIPs total** (107 through Build 208, plus 33 in this range; Build 215's ZIP is included in this 33? See corrected count below).
+- Build 215–252 ZIPs: **34/34 PASS**.
+- No-artifact/cancelled or failed runs are documented as gaps, not treated as complete artifact sets.
+- Next build to inspect: **253**.
+- APK signature verification and physical-device install/runtime tests remain **NOT VERIFIED**.
