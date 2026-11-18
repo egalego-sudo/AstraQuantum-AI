@@ -89,3 +89,12 @@ This section supersedes the earlier pre-merge statements in the historical snaps
 - No production code, Render environment variables, service configuration, or deployment was changed by PR #41.
 
 **PR #41 audit conclusion:** documentation and CI are verified; points 2–10 are not certified 100% until every listed acceptance gate is closed with reproducible evidence.
+
+
+## Historical artifact recovery spot-check (2026-11-18)
+
+- Re-queried Build 1, 2, 3 and 149 Actions artifacts. Builds 1 and 2 currently return no artifacts; Build 3 has one unexpired debug APK only (not a signed release APK).
+- Build 149 run `43902185256` has three unexpired artifacts. Downloaded and inspected the signed update APK ZIP, source-patch ZIP, and multi-base delta ZIP. Their ZIP SHA-256 values are recorded in [QUANTUM-AI-Build-149-SHA256SUMS.txt](../QUANTUM-AI-Build-149-SHA256SUMS.txt) in the audit evidence attachment generated for this check.
+- Build 149 multi-base metadata identifies package `com.bittupandit.astraquantumai`, versionCode 149, versionName `1.0.149`, baseBuild 122, and target APK SHA-256 `7481be47127ee4f7d3ffc70946f4c4142f9eb99e26adc0e0df87f99245dacd0c`. The APK extracted from the archive independently hashes to that exact target value.
+- Build 149 source-patch archive contains only `AppUpdateScreen.kt` and `PATCH-MANIFEST.txt`; it is not a complete source snapshot.
+- This spot-check improves the evidence set but does not close the historical archive gate: Builds 1–2 have no Actions artifacts, and the remaining Builds 1–149 artifact sets have not all been downloaded, preserved and hash-verified.
