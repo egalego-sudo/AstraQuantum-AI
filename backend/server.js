@@ -6,6 +6,7 @@ import { buildResearchQueries, rankResearchSources } from "./research-quality.js
 import { fitContentToByteBudget, estimateInputBytes, truncateUtf8 } from "./token-budget.js";
 import { classifyCrossrefDoiResult } from "./doi-verification.js";
 import { readLimitedResponseJson, readLimitedResponseText } from "./response-limits.js";
+import { fetchWithSafeRedirects } from "./safe-fetch.js";
 import {
   INTELLIGENCE_ENGINE_INSTRUCTIONS,
   MAX_COMPLETION_CONTINUATIONS,
@@ -33,6 +34,18 @@ const GROQ_TPM_LIMIT = Math.max(2_000, Number(process.env.GROQ_TPM_LIMIT || 8_00
 const GROQ_MAX_INPUT_BYTES = Math.min(7_000, Math.max(3_000, Number(process.env.GROQ_MAX_INPUT_BYTES || 7_000)));
 const GROQ_OUTPUT_RESERVE = 900;
 const hits = new Map();
+const RESEARCH_ALLOWED_HOSTS = new Set([
+  "en.wikipedia.org",
+  "api.crossref.org",
+  "api.openalex.org",
+  "www.ebi.ac.uk",
+  "export.arxiv.org",
+  "arxiv.org",
+  "ar5iv.labs.arxiv.org",
+  "api.semanticscholar.org",
+  "europepmc.org",
+  "www.europepmc.org"
+]);
 
 
 function isRateLimited(clientKey, now = Date.now()) {
@@ -163,7 +176,7 @@ async function generate(input) {
     let lastError = null;
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const response = await fetch(url, { ...options, signal: AbortSignal.timeout(60_000) });
+        const response = await fetch(url, { ...options, redirect: "error", signal: AbortSignal.timeout(60_000) });
         if ((response.status === 429 || response.status >= 500) && attempt === 0) {
           await new Promise(resolve => setTimeout(resolve, 1200));
           continue;
@@ -366,6 +379,7 @@ async function getIbmAccessToken() {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
     body: form,
+    redirect: "error",
     signal: AbortSignal.timeout(15000)
   });
   const data = await readLimitedResponseJson(response, 2 * 1024 * 1024).catch(() => ({}));
@@ -391,6 +405,7 @@ async function ibmQuantumRequest(path, options = {}) {
       ...(options.body ? { "content-type": "application/json" } : {}),
       ...(options.headers || {})
     },
+    redirect: "error",
     signal: AbortSignal.timeout(30000)
   });
   const data = await readLimitedResponseJson(response, 2 * 1024 * 1024).catch(() => ({}));
@@ -442,7 +457,7 @@ async function research(input) {
   let successfulProviderResponses = 0;
   const fetchJson = async (url, timeout = 18000) => {
     try {
-      const response = await fetch(url, { headers, signal: AbortSignal.timeout(timeout) });
+      const response = await fetchWithSafeRedirects(url, { headers, signal: AbortSignal.timeout(timeout) }, RESEARCH_ALLOWED_HOSTS);
       if (!response.ok) return null;
       successfulProviderResponses++;
       return await readLimitedResponseJson(response, 2 * 1024 * 1024);
