@@ -29,17 +29,34 @@ def make_batch(data: torch.Tensor, batch_size: int, block_size: int, device: tor
 
 @torch.no_grad()
 def evaluate(model: QuantumGPT, data: torch.Tensor, batch_size: int, block_size: int, device: torch.device, batches: int = 10):
+    if batches < 1 or batch_size < 1 or block_size < 1:
+        raise ValueError("evaluation batches, batch_size and block_size must be positive")
+    if data.ndim != 1 or data.dtype != torch.long:
+        raise ValueError("evaluation data must be a one-dimensional torch.long token sequence")
+    max_start = data.numel() - block_size - 1
+    if data.numel() <= block_size + 1:
+        raise ValueError("evaluation split must contain at least block_size + 2 tokens")
+
+    # Fixed, evenly spaced windows make validation comparable between steps and
+    # avoid consuming the training RNG while selecting the best checkpoint.
+    sample_count = min(batches * batch_size, max_start + 1)
+    starts = torch.linspace(0, max_start, steps=sample_count).round().long().unique(sorted=True)
     was_training = model.training
     model.eval()
-    losses = []
+    total_loss = 0.0
+    total_targets = 0
     try:
-        for _ in range(batches):
-            x, y = make_batch(data, batch_size, block_size, device)
+        for offset in range(0, starts.numel(), batch_size):
+            batch_starts = starts[offset : offset + batch_size].tolist()
+            x = torch.stack([data[i : i + block_size] for i in batch_starts]).to(device)
+            y = torch.stack([data[i + 1 : i + block_size + 1] for i in batch_starts]).to(device)
             _, loss = model(x, y)
-            losses.append(float(loss.item()))
+            target_count = y.numel()
+            total_loss += float(loss.item()) * target_count
+            total_targets += target_count
     finally:
         model.train(was_training)
-    return sum(losses) / len(losses)
+    return total_loss / total_targets
 
 
 def train(args: argparse.Namespace) -> Path:
