@@ -48,4 +48,5 @@ The local SHA-256 was calculated from each downloaded ZIP's bytes and compared w
 - Only the working archive branch is in scope.
 - No production deployment, merge, release publication, destructive deletion or irreversible repository action was performed.
 - Verified after-202 range: **213 ZIPs**. With the user's stated baseline of 95 ZIPs for Builds 174–202, the stated cumulative count is **308 ZIPs**.
-- Next step: preserve a machine-readable per-artifact manifest for Builds 319–385, review repository diff and branch consistency, and independently validate the checkpoint before declaring completion.
+- Machine-readable per-artifact manifest: `docs/archive/BUILD-319-385-ARTIFACT-REHASH.csv` (115 artifact rows; each local SHA-256 was independently computed and matched the GitHub digest; ZIP integrity PASS).
+- Next step: validate manifest row counts, duplicate/missing artifact IDs, commit diff and branch consistency before final completion.
