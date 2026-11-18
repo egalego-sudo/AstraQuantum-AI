@@ -88,14 +88,17 @@ jobs:
         run: gradle --no-daemon testDebugUnitTest
 
       - name: Android emulator core-flow and memory persistence tests
+        timeout-minutes: 15
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 34
           target: google_apis
           arch: x86_64
           profile: pixel_2
+          emulator-boot-timeout: 600000
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -no-audio -no-boot-anim
           disable-animations: true
-          script: gradle --no-daemon connectedDebugAndroidTest
+          script: ./gradlew --no-daemon connectedDebugAndroidTest --stacktrace
 
       - name: Android lint
         run: gradle --no-daemon lintDebug
