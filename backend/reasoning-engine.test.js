@@ -109,6 +109,18 @@ test("checklist is bounded to four specialized modes", () => {
   assert.ok(specialized <= 4);
 });
 
+test("software engineering guidance covers HDL and verification boundaries", () => {
+  const guide = buildReasoningInstructions("Write a SystemVerilog UART testbench and synthesizable RTL");
+  assert.match(guide, /Verilog\/SystemVerilog/i);
+  assert.match(guide, /synthesizable RTL from testbench-only code/i);
+});
+
+test("software engineering guidance covers Kotlin platform and security", () => {
+  const guide = buildReasoningInstructions("Implement a Kotlin Android API client with secure token storage");
+  assert.match(guide, /Java\/Kotlin/i);
+  assert.match(guide, /secret handling/i);
+});
+
 test("recognizes every requested programming language family", () => {
   const languages = [
     "Python", "JavaScript", "TypeScript", "Java", "Kotlin", "C", "C++", "C#",
