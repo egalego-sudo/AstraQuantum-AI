@@ -83,14 +83,14 @@ jobs:
                       manifest.append(f'INCLUDED: {new}')
               z.writestr('PATCH-MANIFEST.txt', chr(10).join(manifest) + chr(10))
           print('Patch files:', len(included))
-          print('Patch archive:', out / 'ASTRA-SOURCE-PATCH.zip')
+          print('Patch archive:', out / 'QUANTUM-AI-SOURCE-PATCH.zip')
           PY
 
       - name: Upload changed-files source patch
         uses: actions/upload-artifact@v4
         with:
           name: QUANTUM-AI-SOURCE-PATCH
-          path: patch-output/ASTRA-SOURCE-PATCH.zip
+          path: patch-output/QUANTUM-AI-SOURCE-PATCH.zip
           if-no-files-found: error
           retention-days: 90
 
