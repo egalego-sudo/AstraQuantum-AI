@@ -97,7 +97,7 @@ internal object AppUpdateRepository {
 
         downloadToFile(if (useDelta) update.patchUrl else update.apkUrl, downloaded,
             if (useDelta) 80L * 1024 * 1024 else 150L * 1024 * 1024)
-        if (useDelta && !sha256(downloaded).equals(update.patchSha256, true)) {
+        if (useDelta && !UpdateArtifactIntegrity.matchesSha256(downloaded, update.patchSha256!!)) {
             downloaded.delete()
             error("Downloaded patch SHA-256 verification failed. Native patch processing was blocked.")
         }
