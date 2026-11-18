@@ -127,7 +127,7 @@ internal fun AppUpdateScreen() {
                         modifier = Modifier.fillMaxWidth()
                     ) { Text("OPEN ANDROID INSTALLER") }
                     Text(
-                        "इंस्टॉल Android की सिस्टम स्क्रीन पर आपकी अनुमति से ही होगा। ASTRA अपने-आप ऐप को बदल नहीं सकता।",
+                        "इंस्टॉल Android की सिस्टम स्क्रीन पर आपकी अनुमति से ही होगा। QUANTUM AI अपने-आप ऐप को बदल नहीं सकता।",
                         color = Color(0xFFB4B4B4), fontSize = 11.sp
                     )
                 }
