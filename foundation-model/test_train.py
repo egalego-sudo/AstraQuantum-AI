@@ -38,6 +38,13 @@ class TrainingTests(unittest.TestCase):
         torch.testing.assert_close(rng_before, rng_after_first)
         self.assertTrue(model.training)
 
+    def test_evaluation_rejects_short_validation_data(self):
+        from core import ModelConfig, QuantumGPT
+
+        model = QuantumGPT(ModelConfig(block_size=8, n_embd=16, n_head=4, n_layer=1))
+        with self.assertRaisesRegex(ValueError, "block_size \\+ 2"):
+            evaluate(model, torch.arange(9, dtype=torch.long), 2, 8, torch.device("cpu"), batches=2)
+
     def test_evaluation_rejects_invalid_batch_count(self):
         from core import ModelConfig, QuantumGPT
 
