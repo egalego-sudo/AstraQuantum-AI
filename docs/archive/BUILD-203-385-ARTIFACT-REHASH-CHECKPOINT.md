@@ -35,6 +35,12 @@ The local SHA-256 was calculated from each downloaded ZIP's bytes and compared w
 - No hash mismatch or ZIP integrity failure remained in the final verified set.
 - No artifact was fabricated for a missing/expired/zero-artifact run.
 
+## Cross-manifest consistency
+
+- Seven CSV manifests were read back from the working branch: 62 + 33 + 12 + 34 + 25 + 27 + 115 = **308 rows**.
+- All 308 artifact IDs are unique across the seven manifests; no within-file or cross-file duplicate IDs were found.
+- The 174–202 baseline manifests account for **95 rows** (62 + 33), consistent with the user's stated baseline.
+
 ## Explicitly NOT VERIFIED
 
 - APK/AAB cryptographic signing identity and certificate trust.
