@@ -10,7 +10,7 @@ Node.js HTTP service that keeps the Groq API key on the server, never in the And
   - `GROQ_MODEL` (default: `openai/gpt-oss-20b`)
   - `GROQ_VISION_MODEL` (default: `qwen/qwen3.8-27b`)
   - `PORT` (default: `8080`)
-  - `ALLOWED_ORIGIN` (default: `*`; restrict this when your deployment needs it)
+  - `ALLOWED_ORIGINS` (comma-separated exact origin allowlist for browser CORS; unset means no browser origin is allowed. Native Android requests do not rely on browser CORS.)
 
 Do not commit a real API key or a local `.env` file. Keep both Groq and IBM credentials only in Render's private Environment settings.
 
@@ -65,8 +65,8 @@ The `/v1/analyze` route is also accepted by the server and uses the same request
 
 ## Limits and deployment notes
 
-- Groq request budgeting: text input is conservatively bounded to a 5,000-byte ceiling including system instructions and overhead; output is capped at 1,800 tokens, with a further reserve based on the configured `GROQ_TPM_LIMIT` (default 8,000). This byte-based bound is a conservative guard, not an exact model tokenizer. A Groq HTTP 413 is never retried unchanged: the backend compacts the text once and reduces output to at most 800 tokens, then returns a clear error if still rejected.
-- Optional server overrides: `GROQ_TPM_LIMIT` and `GROQ_MAX_INPUT_BYTES` (the latter is clamped to a conservative 3,000–5,000 byte range).
+- Groq request bounds: input content is limited by `GROQ_MAX_INPUT_BYTES` (default 7,000 bytes; clamped to 3,000–7,000), with the system instructions accounted for separately by the budget helper. This is a UTF-8 byte limit, not a tokenizer-based token count. Requested output defaults to 4,096 tokens and is capped at 4,096. A Groq HTTP 413 is not retried with the same payload: the backend compacts the input once and lowers that retry's output cap to at most 800 tokens. If the provider explicitly reports an incomplete response due to `max_output_tokens`, the backend may make at most two bounded continuation calls, each capped at 1,200 tokens. `GROQ_TPM_LIMIT` (default 8,000) is currently reported as budget metadata/diagnostic context; it is not an enforced tokenizer-based TPM limiter.
+- Optional server overrides: `GROQ_TPM_LIMIT` (diagnostic/metadata value, not a hard TPM enforcement control) and `GROQ_MAX_INPUT_BYTES` (clamped to 3,000–7,000 bytes).
 - Encoded file limit: 10 MiB in the backend; the Android app currently applies a smaller 7 MiB source-file limit.
 - Basic rate limit: 20 requests per IP per minute.
 - Apply provider-level access controls, stronger abuse protection, monitoring and operational review before public production use.
