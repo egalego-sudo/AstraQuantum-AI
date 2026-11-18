@@ -83,6 +83,19 @@ class DatasetManifestTests(unittest.TestCase):
         })
         self.assertTrue(any("size_bytes" in error for error in errors))
 
+    def test_unhashable_permission_value_is_rejected_without_crashing(self):
+        errors = validate_manifest({
+            "manifest_version": 1,
+            "datasets": [valid_record(usage=["train"], split={}, review_status=[])],
+        })
+        self.assertTrue(any(".usage" in error for error in errors))
+        self.assertTrue(any(".split" in error for error in errors))
+        self.assertTrue(any(".review_status" in error for error in errors))
+
+    def test_boolean_manifest_version_is_rejected(self):
+        errors = validate_manifest({"manifest_version": True, "datasets": []})
+        self.assertTrue(any("manifest_version" in error for error in errors))
+
     def test_non_object_record_is_rejected(self):
         errors = validate_manifest({"manifest_version": 1, "datasets": ["bad"]})
         self.assertTrue(any("must be an object" in error for error in errors))
