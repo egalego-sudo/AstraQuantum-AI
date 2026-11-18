@@ -41,4 +41,65 @@ class ScientificIntelligenceTest {
         assertTrue(prompt.contains("Never ask the user to complete or rewrite a clear question"))
         assertTrue(prompt.contains("For short questions, give a short answer"))
     }
+
+    @Test
+    fun addsRootCauseAndSoftwareChecksForDebuggingRequests() {
+        val prompt = ScientificIntelligence.enhancePrompt("Android app error का root cause खोजकर code fix करो")
+        assertTrue(prompt.contains("ROOT-CAUSE CHECK"))
+        assertTrue(prompt.contains("SOFTWARE CHECK"))
+        assertTrue(prompt.contains("regression check"))
+    }
+
+    @Test
+    fun addsResearchAndExperimentChecksForScientificQuestions() {
+        val prompt = ScientificIntelligence.enhancePrompt("इस hypothesis पर research करके experiment design करो")
+        assertTrue(prompt.contains("RESEARCH CHECK"))
+        assertTrue(prompt.contains("EXPERIMENT CHECK"))
+        assertTrue(prompt.contains("UNVERIFIED"))
+    }
+
+    @Test
+    fun addsAiEngineeringAndEducationChecks() {
+        val aiPrompt = ScientificIntelligence.enhancePrompt("Transformer foundation model with RAG बनाना है")
+        val learningPrompt = ScientificIntelligence.enhancePrompt("मुझे calculus शुरुआत से समझाइए")
+        assertTrue(aiPrompt.contains("AI ENGINEERING CHECK"))
+        assertTrue(aiPrompt.contains("trained model capability"))
+        assertTrue(learningPrompt.contains("EDUCATION CHECK"))
+        assertTrue(learningPrompt.contains("worked example"))
+    }
+
+    @Test
+    fun capsTaskSpecificChecksAtFourAndKeepsGeneralFallback() {
+        val complex = ScientificIntelligence.enhancePrompt("AI research hypothesis experiment code debugging physics decision strategy")
+        val specialized = complex.lines().count { it.contains(" CHECK:") }
+        assertTrue(specialized <= 4)
+        val general = ScientificIntelligence.enhancePrompt("नमस्ते")
+        assertTrue(general.contains("GENERAL CHECK"))
+    }
+
+
+    @Test
+    fun recognizesTheRequestedProgrammingLanguageNamesOffline() {
+        val languages = listOf(
+            "Python", "JavaScript", "TypeScript", "Java", "Kotlin", "C", "C++", "C#",
+            "Go", "Golang", "Rust", "PHP", "Swift", "SQL", "HTML", "CSS",
+            "Verilog", "SystemVerilog", "Bash"
+        )
+        languages.forEach { language ->
+            val prompt = ScientificIntelligence.enhancePrompt(language)
+            assertTrue("Language not recognized offline: $language", prompt.contains("SOFTWARE CHECK"))
+        }
+    }
+
+
+    @Test
+    fun priorConversationDoesNotPolluteCurrentTaskClassification() {
+        val question = "मुझे calculus समझाइए\n\n[QUANTUM AI CONTEXT INTELLIGENCE]\nपुरानी बातचीत में research root cause experiment और code हैं"
+        val prompt = ScientificIntelligence.enhancePrompt(question)
+        assertTrue(prompt.contains("EDUCATION CHECK"))
+        assertTrue(!prompt.contains("ROOT-CAUSE CHECK"))
+        assertTrue(!prompt.contains("RESEARCH CHECK"))
+        assertTrue(!prompt.contains("EXPERIMENT CHECK"))
+    }
+
 }
