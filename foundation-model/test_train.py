@@ -108,7 +108,7 @@ class TrainingTests(unittest.TestCase):
                 eval_interval=1, learning_rate=1e-3, seed=1, max_corpus_mb=1,
                 width=16, heads=4, layers=1, dropout=0.0, cpu=True,
             )
-            with self.assertRaisesRegex(ValueError, "not approved"):
+            with self.assertRaisesRegex(ValueError, "approved review_status"):
                 train(args)
 
     def test_training_rejects_corpus_over_size_limit(self):
