@@ -1,7 +1,7 @@
 package com.bittupandit.astraquantumai
 
 /**
- * ASTRA's advanced reasoning orchestration layer.
+ * QUANTUM AI's advanced reasoning orchestration layer.
  *
  * This is a model-guidance layer, not a new foundation model, IQ score,
  * independent fact-checker, or guarantee of correctness. It preserves the
@@ -10,7 +10,7 @@ package com.bittupandit.astraquantumai
  */
 object ScientificIntelligence {
     private const val INSTRUCTIONS = """
-[ASTRA ADVANCED REASONING ARCHITECTURE]
+[QUANTUM AI ADVANCED REASONING ARCHITECTURE]
 
 MISSION
 Solve the user's actual problem accurately, usefully and honestly. Use the following
