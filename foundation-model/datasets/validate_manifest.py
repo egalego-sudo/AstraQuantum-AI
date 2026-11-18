@@ -1,6 +1,7 @@
 """Validate the QUANTUM AI dataset governance manifest using only the stdlib."""
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import sys
@@ -99,6 +100,30 @@ def validate_manifest(data: object) -> list[str]:
             errors.append(f"{prefix}.size_bytes must be a non-negative integer")
 
     return errors
+
+
+
+def verify_training_corpus(manifest_path: Path, dataset_id: str, corpus_path: Path) -> dict:
+    """Require an approved training record and verify the exact local artifact."""
+    try:
+        data = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"cannot read dataset manifest: {exc}") from exc
+    errors = validate_manifest(data)
+    if errors:
+        raise ValueError("dataset manifest is invalid: " + "; ".join(errors))
+    matches = [item for item in data["datasets"] if item["id"] == dataset_id]
+    if len(matches) != 1:
+        raise ValueError(f"dataset_id must identify exactly one manifest record: {dataset_id}")
+    record = matches[0]
+    if record["usage"] != "train" or record["review_status"] != "approved":
+        raise ValueError("dataset is not approved for training")
+    if record["split"] != "train":
+        raise ValueError("training requires a dataset record with split=train")
+    digest = hashlib.sha256(corpus_path.read_bytes()).hexdigest()
+    if digest != record["sha256"]:
+        raise ValueError("local corpus SHA-256 does not match the approved manifest record")
+    return record
 
 
 def main() -> int:
