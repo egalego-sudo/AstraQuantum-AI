@@ -206,3 +206,6 @@ This section adds independent byte-level checks performed after the earlier audi
 9. Resolve or close stale PR #41 only after reviewing its documentation conflict; it remains unmerged.
 
 **Checkpoint status:** work is intentionally incomplete; do not report whole-project 100% until all applicable gates above have reproducible evidence.
+
+
+- A local PyYAML parse of the changed workflow's trigger/permissions/job/env/checkout header passed, and assertions confirmed the main-only job guard plus all four main-only signing-secret expressions. The full 17 KB workflow has not yet been run through GitHub Actions or a complete actionlint/schema validator.
