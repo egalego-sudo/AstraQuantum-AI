@@ -32,11 +32,11 @@ This is an evidence-based status record. Code review and automated CI are not su
 ## Latest recheck (2026-11-18)
 
 - Repository PR history was inspected across all states: 36 earlier PRs (#1–#39, excluding unused numbers) are closed and merged into `main`; PR #40 is the only open PR. The 37 non-main branches correspond to those merged PRs plus PR #40. Do not re-merge old feature branches merely because their branch tips have diverged from current `main`; their PRs already landed.
-- GitHub reports PR #40 head `a273acd61b376ac4a53e1ae934f10ff583947ab7`, still open and not merged.
-- Capability CI run `44214014677` completed successfully: backend syntax/tests, Android unit tests and Debug APK build all passed. Knowledge Base Tests run `44214014697` also passed.
+- GitHub reports PR #40 head `92f60c0448e5d63ef11a772502b914f12cf16f69`, still open and not merged (after the deterministic-lock CI workflow correction).
+- Capability CI run `44215826014` completed successfully on PR head `ffba65860852e1aff542b9d80a30a194fc3658a0`: backend install/audit/tests, Android unit tests, Android lint and Debug APK build all passed. Knowledge Base Tests run `44215826018` also passed. A subsequent CI workflow correction at `92f60c0448e5d63ef11a772502b914f12cf16f69` removed runtime lockfile generation and now consumes the committed lockfile directly; its Capability CI run `44216443003` was in progress at this snapshot.
 - The connected Render service is live on `main` at `b8952cd25b5908e60e96b2794b0dc571e656b89d`, not at the PR head. Startup logs show Node `26.13.1` and Groq model `openai/gpt-oss-20b`; this does not verify an authenticated provider call.
 - Render has no configured health-check path; the source exposes `GET /health`. The inspected request-log query and HTTP request/latency metrics had no data, so live endpoint and AI success remain unverified.
-- A recursive tree check found 98 files on `main` and 107 on the PR branch; neither tree was truncated, and neither contained zero-byte files or duplicate blob-SHA groups.
+- A recursive tree check found 98 files on `main` and 107 on the earlier PR tree snapshot; neither tree was truncated, and neither contained zero-byte files or duplicate blob-SHA groups. Re-run this check against the current PR head before closing point 1.
 - Targeted artifact checks: Build 1 run `43766788471` currently has no Actions artifacts. Build 149 run `43902185256` has four unexpired artifacts: signed update APK (29,733,141 bytes), source patch (2,882 bytes), delta APK (37,361,703 bytes), and debug APK (33,100,340 bytes). The debug artifact expires 2026-11-30; the other three currently expire 2027-02-14. These are downloadable CI artifacts, not files already copied into the repository.
 - GitHub currently exposes 36 Build tags/releases (150, 154, 159, 161, 168, 172, 178, 183, 189, 192, 194, 196, 198, 201, 206, 208, 237, 242, 246, 276, 285, 293, 297, 321, 329, 335, 337, 344, 345, 362, 379, 380, 381, 382, 384, 385). Builds 1–149 do not have corresponding release tags. Actions history contains 147 Android-build runs in that range; run numbers 91 and 92 are workflow-file runs, not Android build runs. Existing artifact inventory remains partial and is not a durable complete source archive.
 
@@ -44,7 +44,7 @@ This is an evidence-based status record. Code review and automated CI are not su
 
 1. Preserve the 122 currently available Build 1–149 Actions artifact sets before their retention expiry; identify which runs have only APKs or source deltas and which have no artifacts. Recover source only from verifiable Git commits or user-held backups; do not fabricate missing historical builds.
 2. Inspect the live Render service and required environment-variable *names* after the user confirms the workspace; never expose secret values. Confirm the configured HTTP health check.
-3. Generate a backend `package-lock.json` and use deterministic dependency installation; the current backend has an exact direct `pdf-parse` version but no lockfile for the transitive dependency tree. Dependency audit has not been run.
+3. Keep the committed `backend/package-lock.json` in sync with `backend/package.json`; CI now uses `npm ci` against that committed lockfile and runs `npm audit --audit-level=high`. Recheck this on every dependency change.
 4. Consider splitting release publishing into a separate least-privilege job. Checkout credentials are no longer persisted, but the release workflow still requires repository write permission to publish assets.
 5. Run Android screen/navigation and encrypted-data migration tests on a physical phone.
 6. Verify authenticated text, image, research and PDF calls against the live backend without exposing credentials.
