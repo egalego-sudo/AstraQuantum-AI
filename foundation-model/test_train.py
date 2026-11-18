@@ -57,11 +57,11 @@ class TrainingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             corpus = root / "corpus.txt"
-            corpus.write_text("x" * 32, encoding="utf-8")
+            corpus.write_text("x" * (1024 * 1024 + 1), encoding="utf-8")
             args = argparse.Namespace(
                 text_file=str(corpus), output=str(root / "out.pt"), steps=1,
                 batch_size=1, block_size=8, eval_interval=1, learning_rate=1e-3,
-                seed=1, max_corpus_mb=0, width=16, heads=4, layers=1,
+                seed=1, max_corpus_mb=1, width=16, heads=4, layers=1,
                 dropout=0.0, cpu=True,
             )
             with self.assertRaises(ValueError):
