@@ -13,8 +13,12 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import org.json.JSONArray
+import org.json.JSONObject
 import org.junit.BeforeClass
 import org.junit.Rule
 import org.junit.Test
@@ -31,6 +35,19 @@ class MainActivityCoreFlowTest {
                 .edit()
                 .putBoolean("app_lock_enabled", false)
                 .commit()
+
+            val masterKey = MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build()
+            val secure = EncryptedSharedPreferences.create(
+                context,
+                "quantum_private_secure",
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+            val seededHistory = JSONArray()
+                .put(JSONObject().put("from", "USER").put("text", "QUANTUM-AI chat restore smoke check"))
+                .put(JSONObject().put("from", "QUANTUM AI").put("text", "नमस्ते — chat history restored"))
+            secure.edit().clear().putString("chat_history", seededHistory.toString()).commit()
         }
     }
 
@@ -45,6 +62,7 @@ class MainActivityCoreFlowTest {
 
         composeRule.onNodeWithText("AI Chat", useUnmergedTree = true).performClick()
         composeRule.onNodeWithText("AI CONVERSATION").assertExists()
+        composeRule.onNodeWithText("QUANTUM-AI chat restore smoke check", substring = true).assertExists()
 
         repeat(4) { composeRule.onNodeWithTag("main_navigation").performTouchInput { swipeLeft() } }
         composeRule.onNodeWithText("Memory", useUnmergedTree = true).performClick()
@@ -61,6 +79,8 @@ class MainActivityCoreFlowTest {
         composeRule.waitUntil(timeoutMillis = 15_000) {
             composeRule.onAllNodesWithText("Memory", substring = false).fetchSemanticsNodes().isNotEmpty()
         }
+        composeRule.onNodeWithText("AI Chat", useUnmergedTree = true).performClick()
+        composeRule.onNodeWithText("QUANTUM-AI chat restore smoke check", substring = true).assertExists()
         repeat(4) { composeRule.onNodeWithTag("main_navigation").performTouchInput { swipeLeft() } }
         composeRule.onNodeWithText("Memory", useUnmergedTree = true).performClick()
         composeRule.onNodeWithText("ADVANCED PRIVATE MEMORY").assertExists()
