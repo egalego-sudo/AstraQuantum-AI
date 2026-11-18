@@ -168,7 +168,7 @@ fun Quantum64SparseLab() {
     val controlled = gate == "CNOT" || gate == "CZ"
 
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("ASTRA QUANTUM ENGINE · SPARSE MODE", color = Color(0xFF8E8EA0), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+        Text("QUANTUM AI QUANTUM ENGINE · SPARSE MODE", color = Color(0xFF8E8EA0), fontWeight = FontWeight.Bold, fontSize = 12.sp)
         Text("64-Qubit Sparse Simulator", color = white, fontWeight = FontWeight.Bold, fontSize = 18.sp)
         Text("Qubits: $qubits  •  संभावित basis states: 2^$qubits  •  वर्तमान circuit gates: ${operations.size}", color = muted, fontSize = 12.sp)
         Slider(value = qubits.toFloat(), onValueChange = {
