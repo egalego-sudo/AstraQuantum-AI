@@ -168,3 +168,6 @@ This section adds independent byte-level checks performed after the earlier audi
 - This preserves debug builds on non-main refs and preserves the existing signed-release behavior on `main`. No signing secret values were read or exposed.
 - The changed workflow file was re-fetched and the four expressions verified. **CI validation of this new workflow change is pending**; it has not been merged or run against production. A Capability CI run must validate the workflow syntax/behavior before merge.
 - Workflow-level `contents: write` remains broader than ideal because the current single build job also publishes Releases. Splitting build and publish into separate permission-scoped jobs is a further hardening opportunity and is not included in this minimal fix.
+
+
+- Cross-workflow permissions review found `capability-ci.yml`, `knowledge-base-tests.yml` and `legacy-rebuild.yml` declare `contents: read` and contain no repository signing-secret references. The Android build workflow is the only inspected workflow that needs write access for Release publication; its workflow-level write permission remains a documented least-privilege gap.
