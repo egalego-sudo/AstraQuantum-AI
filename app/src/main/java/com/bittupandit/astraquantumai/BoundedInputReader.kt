@@ -38,5 +38,10 @@ internal object BoundedInputReader {
         return output.toByteArray()
     }
 
+    fun readText(input: InputStream?, maxBytes: Int, tooLargeMessage: String): String {
+        if (input == null) return ""
+        return input.use { read(it, maxBytes, tooLargeMessage).toString(Charsets.UTF_8) }
+    }
+
     private const val BUFFER_SIZE = 8 * 1024
 }
