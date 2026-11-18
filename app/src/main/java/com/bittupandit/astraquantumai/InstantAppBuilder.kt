@@ -60,7 +60,7 @@ private val builderMuted = Color(0xFFB4B4B4)
 private val builderAccent = Color(0xFFD6D6D6)
 
 @Composable
-fun InstantAppBuilderScreen(backendUrl: String, initialWebsiteMode: Boolean = false) {
+fun InstantAppBuilderScreen(backendUrl: String, accessToken: String, initialWebsiteMode: Boolean = false) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var websiteMode by remember { mutableStateOf(initialWebsiteMode) }
@@ -156,7 +156,7 @@ fun InstantAppBuilderScreen(backendUrl: String, initialWebsiteMode: Boolean = fa
                 status = if (websiteMode) "QUANTUM AI आपकी वेबसाइट बना रहा है…" else "QUANTUM AI आपका ऐप बना रहा है…"
                 scope.launch {
                     try {
-                        val result = withContext(Dispatchers.IO) { buildPrototype(backendUrl, idea, websiteMode) }
+                        val result = withContext(Dispatchers.IO) { buildPrototype(backendUrl, accessToken, idea, websiteMode) }
                         html = result
                         showPreview = true
                         status = if (websiteMode) "वेबसाइट तैयार है। नीचे Preview देखें।" else "वेब ऐप प्रोटोटाइप तैयार है। नीचे Preview देखें।"
@@ -254,7 +254,7 @@ fun InstantAppBuilderScreen(backendUrl: String, initialWebsiteMode: Boolean = fa
     }
 }
 
-private fun buildPrototype(backendUrl: String, idea: String, websiteMode: Boolean): String {
+private fun buildPrototype(backendUrl: String, accessToken: String, idea: String, websiteMode: Boolean): String {
     require(idea.isNotBlank()) { "पहले अपना आइडिया लिखें।" }
     val prompt = if (websiteMode) {
         """
@@ -294,12 +294,14 @@ User's app idea:
     }
     val cleanBase = backendUrl.trim().trimEnd('/')
     require(cleanBase.startsWith("https://")) { "Settings में सही HTTPS Backend URL सेव करें।" }
+    require(accessToken.matches(Regex("^[a-f0-9]{64}$"))) { "पहले Settings में QUANTUM AI का 64-अक्षरों वाला Private API Access Token सेव करें।" }
     val connection = (URL(cleanBase + "/v1/generate").openConnection() as HttpURLConnection).apply {
         requestMethod = "POST"
         connectTimeout = 15000
         readTimeout = 90000
         doOutput = true
         setRequestProperty("Content-Type", "application/json; charset=utf-8")
+        setRequestProperty("Authorization", "Bearer " + accessToken)
     }
     try {
         connection.outputStream.use { it.write(JSONObject().put("prompt", prompt).toString().toByteArray(Charsets.UTF_8)) }
