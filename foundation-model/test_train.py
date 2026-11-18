@@ -10,6 +10,7 @@ from pathlib import Path
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import train as train_module
 from train import make_batch, train
 
 
@@ -75,7 +76,22 @@ class TrainingTests(unittest.TestCase):
                 max_corpus_mb=1,
                 cpu=True,
             )
-            result = train(args)
+            validation_snapshots = []
+            evaluation_calls = 0
+            evaluation_losses = [5.0, 1.0, 4.0, 2.0]
+
+            def controlled_evaluate(model, data, batch_size, block_size, device, batches=10):
+                nonlocal evaluation_calls
+                evaluation_calls += 1
+                if evaluation_calls in (2, 4):
+                    validation_snapshots.append({
+                        key: value.detach().cpu().clone()
+                        for key, value in model.state_dict().items()
+                    })
+                return evaluation_losses[evaluation_calls - 1]
+
+            with patch("train.evaluate", side_effect=controlled_evaluate):
+                result = train(args)
             self.assertEqual(result, output)
             self.assertGreater(output.stat().st_size, 0)
             checkpoint = torch.load(output, map_location="cpu", weights_only=True)
@@ -87,7 +103,11 @@ class TrainingTests(unittest.TestCase):
             self.assertEqual(checkpoint["dataset"]["license_id"], "CC-BY-4.0")
             self.assertEqual(checkpoint["training"]["steps"], 2)
             self.assertEqual(checkpoint["training"]["block_size"], 8)
-            self.assertGreater(checkpoint["best_validation_loss"], 0)
+            self.assertEqual(checkpoint["best_validation_loss"], 1.0)
+            self.assertEqual(checkpoint["best_step"], 1)
+            self.assertEqual(len(validation_snapshots), 2)
+            for key, expected in validation_snapshots[0].items():
+                torch.testing.assert_close(checkpoint["state_dict"][key], expected)
 
     def test_training_rejects_corpus_hash_mismatch(self):
         with tempfile.TemporaryDirectory() as directory:
