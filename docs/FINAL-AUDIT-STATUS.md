@@ -80,4 +80,7 @@ This section adds independent byte-level checks performed after the earlier audi
 - The APK has not been installed on a physical Android device in this audit. Installed-app version, update continuity, runtime behavior, device-specific stability and offline inference remain NOT VERIFIED.
 - The signed APK is 104,060,996 bytes (about 99.2 MiB). A conversation copy was created for user download; this does not constitute a durable repository backup.
 
+
+- The 2026-11-18 release-asset CSV was independently reconciled against the live GitHub Releases API: 38 releases and 280 assets on both sides, with zero missing rows, zero extra rows, zero mismatched names/sizes/digests/download URLs, and a valid SHA-256 digest present for every listed asset. This verifies the inventory metadata only; it does not mean all 280 asset payloads were downloaded or independently hashed.
+
 **Build 387 artifact-integrity conclusion:** APK digest, metadata digest, update-signing certificate fingerprint, detached metadata signature and all six patch hashes/sizes match. **Whole-project audit remains incomplete.**
