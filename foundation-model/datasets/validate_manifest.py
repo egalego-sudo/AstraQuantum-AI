@@ -31,7 +31,7 @@ def validate_manifest(data: object) -> list[str]:
     errors: list[str] = []
     if not isinstance(data, dict):
         return ["manifest root must be an object"]
-    if data.get("manifest_version") != 1:
+    if type(data.get("manifest_version")) is not int or data.get("manifest_version") != 1:
         errors.append("manifest_version must equal 1")
     datasets = data.get("datasets")
     if not isinstance(datasets, list):
@@ -81,11 +81,11 @@ def validate_manifest(data: object) -> list[str]:
         else:
             seen_hashes.add(digest)
 
-        if record["usage"] not in ALLOWED_USAGE:
+        if not isinstance(record["usage"], str) or record["usage"] not in ALLOWED_USAGE:
             errors.append(f"{prefix}.usage is not an allowed explicit permission")
-        if record["split"] not in ALLOWED_SPLITS:
+        if not isinstance(record["split"], str) or record["split"] not in ALLOWED_SPLITS:
             errors.append(f"{prefix}.split is invalid")
-        if record["review_status"] not in ALLOWED_REVIEW:
+        if not isinstance(record["review_status"], str) or record["review_status"] not in ALLOWED_REVIEW:
             errors.append(f"{prefix}.review_status is invalid")
         if record["usage"] == "train" and record["review_status"] != "approved":
             errors.append(f"{prefix}: training use requires approved review_status")
