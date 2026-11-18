@@ -98,3 +98,11 @@ This section supersedes the earlier pre-merge statements in the historical snaps
 - Build 149 multi-base metadata identifies package `com.bittupandit.astraquantumai`, versionCode 149, versionName `1.0.149`, baseBuild 122, and target APK SHA-256 `7481be47127ee4f7d3ffc70946f4c4142f9eb99e26adc0e0df87f99245dacd0c`. The APK extracted from the archive independently hashes to that exact target value.
 - Build 149 source-patch archive contains only `AppUpdateScreen.kt` and `PATCH-MANIFEST.txt`; it is not a complete source snapshot.
 - This spot-check improves the evidence set but does not close the historical archive gate: Builds 1–2 have no Actions artifacts, and the remaining Builds 1–149 artifact sets have not all been downloaded, preserved and hash-verified.
+
+
+## Build 386 signing and delta verification evidence (2026-11-18)
+
+- Android release workflow run [44222056232](https://github.com/egalego-sudo/Quantum-AI/actions/runs/44222056232) completed successfully. Its job log confirms Android SDK `apksigner verify --print-certs` was executed on the newly built release APK.
+- The same run reports `Verified multi-base patches: 6`; the workflow reconstructs each candidate base APK with `bspatch` and compares the rebuilt APK SHA-256 to the release APK SHA-256 before accepting each patch.
+- The metadata-signing step completed with OpenSSL output `Verified OK`, verifying the detached metadata signature against the public certificate bundled in the app.
+- This is CI evidence for Build 386 APK signing and metadata/delta validation. It does not substitute for verifying the downloaded APK on a physical phone or confirming successful install/update and runtime behavior there.
