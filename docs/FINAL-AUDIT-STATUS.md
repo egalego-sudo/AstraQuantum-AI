@@ -77,3 +77,15 @@ This section supersedes the earlier pre-merge statements in the historical snaps
 - This verification does not prove an authenticated AI request, all feature workflows, a full physical-device regression, offline inference, or independent security penetration testing. Those remain acceptance gates under points 3–10. Build 1–149 historical binaries are still not durably archived; the historical inventory's binary-backup limitation remains open.
 
 **Current verified release/deploy state:** PR #40 merged; Build 386 signed release workflow successful; Render deploy live; health endpoint user-verified. **Overall ten-point audit: not yet certified 100%.**
+
+
+## PR #41 evidence recheck (2026-11-18)
+
+- PR #41 is open against `main`, one documentation file changed, and GitHub reports `mergeable=true` / `mergeable_state=clean` at the time of this check.
+- Capability CI run [44226118723](https://github.com/egalego-sudo/Quantum-AI/actions/runs/44226118723) completed successfully for PR #41 head `dc630dad017e29e4c8d73ba6111c71ce25979d23`. Its single job passed backend install/audit/tests, native patch parser smoke tests, Android unit tests, Android lint and debug APK build.
+- Render deployment `dep-dbugqns9v7es738hb29g` remains `live` on merge commit `225d4c5bcf9c692d0ebee317e1d7aff79bd44d59`. Render events confirm build and deploy succeeded; startup logs confirm the QUANTUM AI backend process started.
+- A fresh Render request-log query from 2026-11-18 02:29 UTC through the current audit check returned no request entries. Therefore this audit cannot claim a fresh independently observed HTTP health request or authenticated API request from Render logs. The earlier user-reported Android `/health` response remains user-supplied evidence, not an independent request-log trace.
+- The PR #41 CI pass is not a 100% acceptance certificate. Open gates remain: historical Build 1–149 binary archive completeness; physical Android UI/data migration/update acceptance; authenticated live Groq text/vision/research/PDF calls; real offline-model initialization and airplane-mode test; special-feature device/provider tests; native coverage-guided fuzzing; independent penetration testing; complete secret-history review. These require retained source/artifacts, live provider access without exposing credentials, and/or a physical Android device.
+- No production code, Render environment variables, service configuration, or deployment was changed by PR #41.
+
+**PR #41 audit conclusion:** documentation and CI are verified; points 2–10 are not certified 100% until every listed acceptance gate is closed with reproducible evidence.
