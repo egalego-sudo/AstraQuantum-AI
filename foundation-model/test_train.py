@@ -22,6 +22,14 @@ class TrainingTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             make_batch(torch.arange(8), batch_size=2, block_size=8, device=torch.device("cpu"))
 
+    def test_make_batch_rejects_exactly_one_target_token_short(self):
+        with self.assertRaises(ValueError):
+            make_batch(torch.arange(9), batch_size=2, block_size=8, device=torch.device("cpu"))
+
+    def test_make_batch_rejects_non_vector_data(self):
+        with self.assertRaises(ValueError):
+            make_batch(torch.arange(40).reshape(20, 2), batch_size=2, block_size=8, device=torch.device("cpu"))
+
     def test_tiny_training_run_writes_checkpoint(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
