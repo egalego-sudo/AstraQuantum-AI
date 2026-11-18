@@ -45,7 +45,7 @@ assert.ok(releases.every(row => Number(row.releaseAssets) > 0), "Every listed re
 const sourceCommits = androidRuns.filter(row => row.commitSha);
 const missingCommitTrees = sourceCommits.filter(row => {
   try {
-    execFileSync("git", ["cat-file", "-e", row.commitSha + "^{commit}"], { stdio: "ignore" });
+    execFileSync("git", ["cat-file", "-e", row.commitSha + "^{tree}"], { stdio: "ignore" });
     return false;
   } catch {
     return true;
