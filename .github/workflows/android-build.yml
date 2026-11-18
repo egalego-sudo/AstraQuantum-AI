@@ -236,7 +236,7 @@ jobs:
               rebuilt=out/f"verify-{build}.apk"; subprocess.run(["bspatch",str(base),str(rebuilt),str(patch)],check=True)
               good=hashlib.sha256(rebuilt.read_bytes()).hexdigest()==os.environ["NEW_HASH"]; rebuilt.unlink()
               if not good: raise SystemExit(f"Patch verification failed for base {build}")
-              patches.append({"baseBuild":build,"baseApkSha256":hashlib.sha256(base.read_bytes()).hexdigest(),"patchFile":name,"patchSizeBytes":patch.stat().st_size})
+              patches.append({"baseBuild":build,"baseApkSha256":hashlib.sha256(base.read_bytes()).hexdigest(),"patchFile":name,"patchSizeBytes":patch.stat().st_size,"patchSha256":hashlib.sha256(patch.read_bytes()).hexdigest()})
           if not patches: raise SystemExit("No compatible signed base APKs; release blocked.")
           json.dump(patches,open(out/"patches.json","w"),indent=2)
           print("Verified multi-base patches:",len(patches))
@@ -259,7 +259,7 @@ jobs:
           apk=glob.glob("app/build/outputs/apk/release/**/*.apk",recursive=True)[0]
           cert=subprocess.check_output(["openssl","x509","-in","app/src/main/assets/update_signer.pem","-outform","DER"])
           legacy=next((p for p in patches if p["baseBuild"]==194),patches[0])
-          data={"packageName":"com.bittupandit.astraquantumai","targetVersionCode":int(os.environ["GITHUB_RUN_NUMBER"]),"targetVersionName":"1.0."+os.environ["GITHUB_RUN_NUMBER"],"targetApkSha256":hashlib.sha256(open(apk,"rb").read()).hexdigest(),"signerCertificateSha256":hashlib.sha256(cert).hexdigest(),"apkUrl":base+"ASTRA-QUANTUM-AI.apk","patches":patches,"baseApkSha256":legacy["baseApkSha256"],"patchUrl":legacy["patchUrl"]}
+          data={"packageName":"com.bittupandit.astraquantumai","targetVersionCode":int(os.environ["GITHUB_RUN_NUMBER"]),"targetVersionName":"1.0."+os.environ["GITHUB_RUN_NUMBER"],"targetApkSha256":hashlib.sha256(open(apk,"rb").read()).hexdigest(),"signerCertificateSha256":hashlib.sha256(cert).hexdigest(),"apkUrl":base+"ASTRA-QUANTUM-AI.apk","patches":patches,"baseApkSha256":legacy["baseApkSha256"],"patchUrl":legacy["patchUrl"],"patchSha256":legacy["patchSha256"]}
           json.dump(data,open("delta-output/UPDATE-METADATA.json","w"),separators=(",",":"),sort_keys=True)
           PY
           cat > "$RUNNER_TEMP/SignUpdateMetadata.java" <<'JAVA'
