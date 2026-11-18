@@ -15,8 +15,8 @@
 | 284–318 | 27 | 27/27 PASS | 27/27 PASS |
 | 319–337 | 42 | 42/42 PASS | 42/42 PASS |
 | 344–362 | 30 | 30/30 PASS | 30/30 PASS |
-| 364–385 | 43 | 43/43 PASS | 43/43 PASS |
-| **Total after Build 202** | **213** | **213/213 PASS** | **213/213 PASS** |
+| 364–385 | 44 | 44/44 PASS | 44/44 PASS |
+| **Total after Build 202** | **214** | **214/214 PASS** | **214/214 PASS** |
 
 The local SHA-256 was calculated from each downloaded ZIP's bytes and compared with the GitHub Actions artifact API digest. ZIP CRC/member integrity was tested independently. The audit did not substitute the API digest for the local calculation.
 
@@ -25,20 +25,20 @@ The local SHA-256 was calculated from each downloaded ZIP's bytes and compared w
 - Builds 203, 204 and 207: no Android-build workflow run in the inventory (workflow-file runs only).
 - Builds 209–214: queried runs returned zero artifacts.
 - Builds 215–318: all 104 Android-build workflow runs were re-queried for artifacts. Exactly 52 runs returned artifacts (86 artifact IDs) and 52 returned zero; the returned IDs matched the three existing manifests exactly, with no missing or unexpected IDs. All 86 ZIPs were re-downloaded, locally SHA-256 re-hashed and ZIP-integrity tested.
-- Builds 319–385 with retained artifacts: 115 ZIPs were independently verified. The following runs returned zero artifacts: 324, 326–327, 330, 338–343, 356, 363, 365, 367–368, 370–371, 376 and 383. Builds 319–323, 325, 328–329, 331–337, 344–355, 357–362, 364, 366, 369, 372–375, 377–382 and 384–385 had retained artifacts as itemized in the run/artifact API.
+- Builds 319–385 with retained artifacts: 116 ZIPs were independently verified. The following runs returned zero artifacts: 324, 326–327, 330, 338–343, 356, 363, 365, 367–368, 370–371, 376 and 383. Builds 319–323, 325, 328–329, 331–337, 344–355, 357–362, 364, 366, 369, 372–375, 377–382 and 384–385 had retained artifacts as itemized in the run/artifact API.
 - Failed/cancelled workflow status is not treated as a successful Android build. A retained source-patch artifact is recorded as a partial artifact set, not a complete APK release set.
 
 ## Corrections and integrity notes
 
 - The earlier CSV manifests for Builds 215–318 had `independent_sha256` values copied from `github_sha256`. That was insufficient proof by itself. This checkpoint records that all 86 corresponding ZIPs were subsequently downloaded and locally re-hashed; all 86 local results matched the GitHub digests and passed ZIP integrity tests.
-- A temporary filename/build-label offset was detected while processing Builds 375 and 377. Artifact IDs and workflow-run IDs were used to correct the local labels; the missing Build 378 artifacts were downloaded and verified. The final Build 319–385 count is 115 ZIPs, including Builds 375, 377 and 378 correctly attributed.
+- A temporary filename/build-label offset was detected while processing Builds 375 and 377. Artifact IDs and workflow-run IDs were used to correct the local labels; the missing Build 378 artifacts and the initially omitted Build 369 source-patch ZIP were downloaded and verified. The final Build 319–385 count is 116 ZIPs, including Builds 375, 377 and 378 correctly attributed.
 - No hash mismatch or ZIP integrity failure remained in the final verified set.
 - No artifact was fabricated for a missing/expired/zero-artifact run.
 
 ## Cross-manifest consistency
 
-- Seven CSV manifests were read back from the working branch: 62 + 33 + 12 + 34 + 25 + 27 + 115 = **308 rows**.
-- All 308 artifact IDs are unique across the seven manifests; no within-file or cross-file duplicate IDs were found.
+- Seven CSV manifests were read back from the working branch: 62 + 33 + 12 + 34 + 25 + 27 + 116 = **309 rows**.
+- All 309 artifact IDs are unique across the seven manifests; no within-file or cross-file duplicate IDs were found.
 - The 174–202 baseline manifests account for **95 rows** (62 + 33), consistent with the user's stated baseline.
 
 ## Explicitly NOT VERIFIED
@@ -53,6 +53,6 @@ The local SHA-256 was calculated from each downloaded ZIP's bytes and compared w
 
 - Only the working archive branch is in scope.
 - No production deployment, merge, release publication, destructive deletion or irreversible repository action was performed.
-- Verified after-202 range: **213 ZIPs**. With the user's stated baseline of 95 ZIPs for Builds 174–202, the stated cumulative count is **308 ZIPs**.
-- Machine-readable per-artifact manifest: `docs/archive/BUILD-319-385-ARTIFACT-REHASH.csv` (115 artifact rows; each local SHA-256 was independently computed and matched the GitHub digest; ZIP integrity PASS).
+- Verified after-202 range: **214 ZIPs**. With the user's stated baseline of 95 ZIPs for Builds 174–202, the stated cumulative count is **309 ZIPs**.
+- Machine-readable per-artifact manifest: `docs/archive/BUILD-319-385-ARTIFACT-REHASH.csv` (116 artifact rows; each local SHA-256 was independently computed and matched the GitHub digest; ZIP integrity PASS).
 - Next step: validate manifest row counts, duplicate/missing artifact IDs, commit diff and branch consistency before final completion.
