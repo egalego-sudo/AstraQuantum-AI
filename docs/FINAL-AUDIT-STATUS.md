@@ -209,3 +209,21 @@ This section adds independent byte-level checks performed after the earlier audi
 
 
 - A local PyYAML parse of the changed workflow's trigger/permissions/job/env/checkout header passed, and assertions confirmed the main-only job guard plus all four main-only signing-secret expressions. The full 17 KB workflow has not yet been run through GitHub Actions or a complete actionlint/schema validator.
+
+
+
+## Superseding Render health-check verification (2026-11-18, 08:30 UTC)
+
+This section supersedes the earlier Render workspace-selection and empty-health-check-path notes above.
+
+- The user confirmed the Render workspace and subsequently configured the service health-check path as `/health`.
+- A fresh read of the Render service configuration confirms `healthCheckPath: /health`; the service remains on the Free plan, attached to `egalego-sudo/Quantum-AI` branch `main`, root directory `backend/`.
+- Render event history records the health-check-path service update followed by deployment `dep-dbum411srm7s73faa6n0`, which finished with status `live` / `succeeded` at 2026-11-18 08:30:08 UTC.
+- The new deployment started the Node backend successfully. Logs show `QUANTUM AI backend listening on port 10000; provider=Groq; model=openai/gpt-oss-20b` and Render's `Your service is live` message.
+- No failure event was present in the latest 15-event history returned for this service.
+- HTTP request-count and latency metric queries returned empty data arrays. The connected web retrieval client could not open `https://astraquantum-ai.onrender.com/health`; therefore an independent external HTTP status/body check and a request-log confirmation remain **NOT VERIFIED**.
+- The deployment being live and configured with `/health` is positive platform evidence, but does not prove that authenticated Groq text, vision, research or PDF requests succeed. Those live-provider checks remain open.
+- No production code, environment variable, release or repository main-branch setting was changed in this verification. The user applied the Render health-check setting in the dashboard.
+
+**Render health-check configuration gate:** PASS (configuration read-back and successful deployment).  
+**External HTTP response / authenticated AI acceptance:** NOT VERIFIED.
