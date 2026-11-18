@@ -45,6 +45,6 @@ test("empty prompts produce no injected checklist", () => {
 
 test("checklist is bounded to four specialized modes", () => {
   const guide = buildReasoningInstructions("AI model research hypothesis experiment code debugging physics decision strategy");
-  const specialized = (guide.match(/CHECK:/g) || []).length;
+  const specialized = guide.split("\n").filter(line => line.includes(" CHECK:")).length;
   assert.ok(specialized <= 4);
 });
