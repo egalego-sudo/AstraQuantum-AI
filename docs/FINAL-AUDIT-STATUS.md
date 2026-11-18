@@ -174,3 +174,6 @@ This section adds independent byte-level checks performed after the earlier audi
 
 
 - As defense in depth, the release-capable Android build job now has a job-level condition requiring `refs/heads/main`. Non-main manual dispatches are skipped entirely; pull-request/debug builds remain handled by the read-only Capability CI workflow. The signing-secret expressions remain main-only as a second guard.
+
+
+- A focused static assertion over the branch's re-fetched workflow returned 7/7 checks true: main-only job guard; each of the four signing secrets gated to main; checkout credentials disabled; and release publication still main-only. This is a static text/structure check, not a GitHub Actions execution or full YAML/schema validation.
