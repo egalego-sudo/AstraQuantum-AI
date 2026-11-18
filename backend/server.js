@@ -437,7 +437,7 @@ async function quantumJob(jobId) {
 async function research(input) {
   const query = String(input.query || "").trim();
   if (!query || query.length > 500) throw new Error("Research query is empty or too long.");
-  const headers = { "user-agent": "ASTRA-Quantum-AI/2.0 (evidence research assistant)" };
+  const headers = { "user-agent": "Quantum-AI/2.0 (evidence research assistant)" };
   let successfulProviderResponses = 0;
   const fetchJson = async (url, timeout = 18000) => {
     try {
@@ -670,7 +670,7 @@ async function research(input) {
     skipKnowledgeRetrieval: true,
     returnMetadata: true,
     maxOutputTokens: 1_500,
-    prompt: "आप ASTRA Deep Research Engine हैं। इस प्रश्न पर गहन, संतुलित और प्रमाण-आधारित रिपोर्ट तैयार करें: " + query +
+    prompt: "आप QUANTUM AI Deep Research Engine हैं। इस प्रश्न पर गहन, संतुलित और प्रमाण-आधारित रिपोर्ट तैयार करें: " + query +
       "\n\nस्रोतों का सीमित live retrieval किया गया है। यह पूरा इंटरनेट, exhaustive literature review या सभी प्रकाशित/अप्रकाशित सामग्री नहीं है। केवल नीचे उपलब्ध सामग्री पर दावे करें।" +
       "\nहर तथ्यात्मक दावे के तुरंत बाद संबंधित [source id] दें। स्रोत metadata स्वयं दावे का प्रमाण नहीं है। abstract या indexed summary को full-text पढ़ा हुआ न बताएं। arXiv को preprint कहें। Wikipedia को tertiary source मानें।" +
       "\nरिपोर्ट की संरचना अनिवार्य है:" +
@@ -779,11 +779,11 @@ const server = http.createServer(async (req, res) => {
       message === "Request too large" ? 413 :
       message.includes("job submission is disabled") ? 403 :
       message === "Invalid JSON" || message.startsWith("Prompt") || message.startsWith("Only ") || message.startsWith("File ") || message.startsWith("PDF ") ? 400 : 502;
-    console.error("ASTRA request failed:", message);
+    console.error("QUANTUM AI request failed:", message);
     return send(res, status, { error: message }, requestOrigin);
   }
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`ASTRA backend listening on port ${PORT}; provider=Groq; model=${MODEL}`);
+  console.log(`QUANTUM AI backend listening on port ${PORT}; provider=Groq; model=${MODEL}`);
 });
