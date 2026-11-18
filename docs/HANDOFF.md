@@ -1,80 +1,80 @@
-# ASTRA QUANTUM AI PLUS — Project Handoff & Backup Guide
+# QUANTUM AI — Project Handoff & Backup Guide
 
 **Creator by Bittu Pandit**
 
-This file is the restart guide for continuing the project from another Android phone, laptop, or computer.
+This document describes the current repository and how to resume work safely.
 
-## Canonical source of truth
+## Canonical source
 
-- Repository: https://github.com/egalego-sudo/AstraQuantum-AI
+- Repository: https://github.com/egalego-sudo/Quantum-AI
 - Default branch: `main`
-- Latest verified source revision at the time this guide was written: see the latest commit on the main branch.
-- Full source ZIP: https://github.com/egalego-sudo/AstraQuantum-AI/archive/refs/heads/main.zip
+- Source ZIP: https://github.com/egalego-sudo/Quantum-AI/archive/refs/heads/main.zip
+- Current maintenance branch (review before merging): `maintenance/quantum-ai-consistency-fixes`
 
-All source files and their Git commit history are stored in this GitHub repository. Download the ZIP again whenever you need the newest snapshot. Do not continue from an older ZIP if newer commits exist on GitHub.
+The GitHub repository is the canonical source backup. Download the ZIP from the branch you intend to use; a ZIP is only a snapshot and does not include deployment secrets, phone-local app data, or downloaded model weights.
 
 ## Project layout
 
-- `.github/workflows/android-build.yml` — CI workflow for backend syntax check and Android debug APK build.
-- `README.md` — project overview and implemented feature boundaries.
-- `build.gradle.kts` — Android Gradle Plugin and Kotlin plugin versions.
-- `settings.gradle.kts` — plugin and dependency repositories.
-- `gradle.properties` — Gradle/Android build settings.
-- `app/build.gradle.kts` — Android app dependencies and build configuration.
-- `app/src/main/AndroidManifest.xml` — app permissions, app label, optional native libraries, launcher activity.
-- `app/src/main/java/com/bittupandit/astraquantumai/MainActivity.kt` — Compose UI, chat, navigation, research shortcuts, memory/projects, Quantum Lab, offline AI screen, backend requests.
-- `app/src/main/java/com/bittupandit/astraquantumai/OfflineAiEngine.kt` — on-device model download and LiteRT-LM engine integration.
-- `backend/server.js` — Node.js API server and Groq connection.
-- `backend/package.json` — backend runtime definition.
-- `backend/.env.example` — names of expected environment variables only; no live secret.
-- `backend/README.md` — backend setup and API notes.
-- `docs/HYBRID_ARCHITECTURE.md` — online/offline design, boundaries, and acceptance tests.
-- `docs/HANDOFF.md` — this restart and backup guide.
+- `.github/workflows/android-build.yml` — backend checks and Android debug/release build workflow.
+- `README.md` — implemented capabilities and their limits.
+- `app/` — Kotlin + Jetpack Compose Android application.
+- `ApkPatchLibrary/` — native/library support used by the Android update mechanism.
+- `backend/` — Node.js API service, research retrieval, knowledge handling and tests.
+- `knowledge-base/` — knowledge schema, seed records and source registry.
+- `docs/HYBRID_ARCHITECTURE.md` — online/offline architecture and acceptance gates.
+- `docs/CAPABILITY-EXPANSION-PLAN.md` — staged engineering plan.
+
+The existing Android application ID and Kotlin namespace are `com.bittupandit.astraquantumai`. Keep them unchanged unless a deliberate application-identity migration is planned; changing them can prevent in-place updates and access to existing app-private data.
 
 ## Build environment
 
-- Android: Java 17, Android Gradle Plugin 8.7.3, Kotlin Gradle Plugin 2.4.20, Gradle 8.9, compileSdk 35.
-- Backend: Node.js 20+.
-- CI: GitHub Actions workflow `.github/workflows/android-build.yml`.
-- CI creates a debug APK artifact when a build succeeds. The artifact is temporary (14-day retention) and is not a signed Play Store release.
+- Android: Java 17, Gradle 8.9, compile SDK 35.
+- Backend: Node.js 20.16 or newer.
+- CI: GitHub Actions workflows under `.github/workflows/`.
+- CI debug APK artifacts are temporary test builds, not automatically Play Store-ready signed releases.
 
-## Online backend configuration
+Check the latest GitHub Actions run before treating a source revision as build-verified. A successful CI build does not replace installation and acceptance testing on a real Android device.
 
-The Android app calls the ASTRA backend at the URL configured in the app's Settings screen. The backend deployment currently uses Render:
-- Service URL: https://astraquantum-ai.onrender.com
-- Render dashboard: https://dashboard.render.com/web/srv-dbt2v3vf3r2c73bpcn0g
+## Backend deployment
 
-The Groq API key and any other live environment values are intentionally NOT stored in this repository or source ZIP. They must remain in Render's private Environment settings. Never paste API keys into GitHub source files, screenshots, or chat messages.
+The connected Render workspace currently lists the backend service as:
+- Service: `AstraQuantum-AI` (Render display name)
+- Repository: https://github.com/egalego-sudo/Quantum-AI
+- Branch: `main`
+- Root directory: `backend/`
+- Runtime URL: https://astraquantum-ai.onrender.com
+- Dashboard: https://dashboard.render.com/web/srv-dbt2v3vf3r2c73bpcn0g
 
-## Current implementation and limitations
+The Android app currently uses this HTTPS backend URL as its default. The Render service name and URL are legacy infrastructure identifiers; do not rename the service or change its URL without updating the app configuration and verifying the deployment.
 
-- Online Groq text chat and image analysis are implemented in source.
-- Voice input and text-to-speech use Android/device speech services.
-- The Research screen calls /v1/research, which retrieves Wikipedia overview text and Crossref scholarly metadata, then returns a Groq-generated report with a source list. This is a first research layer; it is not exhaustive web search, and source retrieval does not by itself prove a claim. Browser search shortcuts remain available.
-- Local notes, projects and chat history are stored in app-private local storage/preferences. Personal Memory supports user-authored notes and an explicit opt-in switch before notes are sent with AI prompts; semantic retrieval, automatic memory proposals and cross-device sync are not implemented.
-- The local Quantum Lab is an educational classical pure-state state-vector simulator (maximum 10 qubits / 1,024 amplitudes) with H, X, Y, Z, S, T, RX90, RY90, RZ90, CNOT and CZ gates; Bell-state and two-qubit Grover presets; full-state QFT/inverse-QFT; and a small Shor order-finding demonstration for N=15. The Shor demo applies the modular-function oracle directly in mathematics and is not a reversible gate-by-gate Shor circuit. None of these local simulations runs on quantum hardware. A separate IBM Quantum REST connector supports backend listing, a confirmation-gated one-qubit sampler job and job status; it remains inactive until IBM API key and instance CRN are added as Render secrets and an actual IBM job is verified.
-- Offline Qwen3-0.6B model download, LiteRT-LM initialization, and text fallback are present in source but must pass CI and a real airplane-mode phone test before being described as verified.
-- Offline vision is not implemented.
-- PDF text extraction and AI analysis are implemented in source for text-based PDFs; current limits are 7 MiB upload, up to 60 pages and 80,000 extracted characters. Scanned/image-only PDFs require OCR, which is not yet integrated.
-- A debug APK is not a Play Store-signed release.
+Keep `GROQ_API_KEY`, IBM Quantum credentials, signing keys and any access tokens in private provider environment settings. Never commit real secrets to GitHub or paste them into chat.
 
-## Latest build diagnosis
+## Current implementation boundaries
 
-A recent CI build failed because LiteRT-LM 0.19.0 dependencies contain Kotlin metadata version 2.4.0 while the project was using Kotlin compiler 2.0.21. The project Kotlin Gradle plugins were upgraded to 2.4.20 to resolve this compiler metadata mismatch. The new CI run must complete successfully before the source is considered build-verified. Check the Actions tab in GitHub for the latest run and its logs.
+- Online Hindi/English chat and image analysis use the configured Groq backend.
+- Voice input and text-to-speech depend on Android/device speech services.
+- Research uses bounded public-source retrieval and model-assisted synthesis; it is not exhaustive web search or independent proof of claims.
+- Local notes, projects and chat history are stored in app-private preferences. Personal-context sharing requires the app's explicit opt-in.
+- The arithmetic calculator is bounded and does not execute arbitrary code.
+- Generated HTML previews use a restricted WebView; do not treat preview isolation as a general-purpose code-execution sandbox.
+- Text PDFs are extracted by the backend. For scanned PDFs, the Android app attempts bounded on-device Latin and Devanagari OCR; quality still requires real-device acceptance testing.
+- The local Quantum Lab is a classical educational simulator, not a physical quantum processor. IBM Quantum connector code requires credentials and successful hardware-job verification before a live QPU connection can be claimed.
+- The optional Qwen3-0.6B on-device text model requires model download and initialization. Offline capability must be verified in airplane mode on a real device before being described as proven.
 
-## Resume from a new computer
+## Resume safely
 
-1. Sign in to the same GitHub account.
-2. Open the repository above.
-3. Download the latest `main.zip`, or clone the repository:
-   `git clone https://github.com/egalego-sudo/AstraQuantum-AI.git`
-4. Open the project root (the folder containing `settings.gradle.kts`) in Android Studio.
-5. Use JDK 17 and allow Gradle sync to finish.
-6. Run the GitHub Actions workflow or build a debug APK with:
-   `gradle --no-daemon assembleDebug`
-7. Keep Render secrets in Render; do not add them to the downloaded source.
-8. Before making changes, pull the latest `main` branch. Commit and push each stable change so it is saved remotely.
+1. Open the repository above and inspect the latest commit.
+2. Download the ZIP for the intended branch or clone the repository.
+3. Open the project root (the folder containing `settings.gradle.kts`) in Android Studio.
+4. Use JDK 17 and allow Gradle sync to finish.
+5. Run backend tests with `npm test --prefix backend`.
+6. Run the Android CI workflow or build locally with `gradle --no-daemon assembleDebug`.
+7. Install and test the resulting APK on a real Android device.
+8. Keep provider credentials and signing material in their private secret stores.
 
-## Backup rule
+## Backup and compatibility rules
 
-GitHub `main` is the canonical, persistent source backup. The ZIP is a portable snapshot of the branch at the time it is downloaded. For a second independent backup, download the ZIP to a laptop/drive and retain the repository URL. A downloaded ZIP does not include Render's private environment variables, GitHub secrets, model weights downloaded by the app, or any data stored privately on a phone.
+- Preserve the Android application ID, namespace, legacy preference keys and update-signing identity unless a migration plan explicitly covers them.
+- Treat Build releases and patch files as historical snapshots/deltas; do not copy every historical build over the current source tree.
+- Do not claim all Builds 1–385 are archived until every requested release/patch is inventoried and verified.
+- GitHub source does not contain Render secrets, user phone data or downloaded model weights.

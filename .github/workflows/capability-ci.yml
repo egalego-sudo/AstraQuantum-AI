@@ -5,11 +5,15 @@ on:
     branches: [main]
     paths:
       - "app/**"
+      - "ApkPatchLibrary/**"
       - "backend/**"
       - "docs/**"
+      - "scripts/**"
       - "*.gradle.kts"
       - "settings.gradle.kts"
       - ".github/workflows/capability-ci.yml"
+      - ".github/workflows/android-build.yml"
+      - ".github/workflows/knowledge-base-tests.yml"
 
 permissions:
   contents: read
@@ -25,6 +29,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -37,10 +44,31 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Backend syntax and tests
+      - name: Install, audit and test backend
         run: |
+          npm ci --ignore-scripts --prefix backend
+          npm audit --prefix backend --audit-level=high
           node --check backend/server.js
           npm test --prefix backend
+          node scripts/verify-build-inventory.mjs
+          node scripts/verify-android-navigation.mjs
+
+      - name: Host native patch parser smoke tests
+        shell: bash
+        run: |
+          cc -std=c11 -D_POSIX_C_SOURCE=200809L \
+            -I ApkPatchLibrary/src/main/cpp \
+            ApkPatchLibrary/src/test/cpp/bspatch_smoke_test.c \
+            ApkPatchLibrary/src/main/cpp/bspatch.c \
+            ApkPatchLibrary/src/main/cpp/bzip2/bzlib.c \
+            ApkPatchLibrary/src/main/cpp/bzip2/compress.c \
+            ApkPatchLibrary/src/main/cpp/bzip2/decompress.c \
+            ApkPatchLibrary/src/main/cpp/bzip2/crctable.c \
+            ApkPatchLibrary/src/main/cpp/bzip2/randtable.c \
+            ApkPatchLibrary/src/main/cpp/bzip2/blocksort.c \
+            ApkPatchLibrary/src/main/cpp/bzip2/huffman.c \
+            -o "$RUNNER_TEMP/bspatch-smoke-tests"
+          "$RUNNER_TEMP/bspatch-smoke-tests"
 
       - name: Install Android NDK and CMake
         shell: bash
@@ -58,6 +86,9 @@ jobs:
 
       - name: Android unit tests
         run: gradle --no-daemon testDebugUnitTest
+
+      - name: Android lint
+        run: gradle --no-daemon lintDebug
 
       - name: Build debug APK
         run: gradle --no-daemon assembleDebug

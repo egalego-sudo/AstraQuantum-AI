@@ -58,6 +58,10 @@
 
 #define BSDIFF_HEADER_SIZE 32
 #define BSDIFF_INT_SIZE 8
+/* Keep native allocations within the same limits enforced by the Android updater. */
+#define BSPATCH_MAX_APK_SIZE (150LL * 1024LL * 1024LL)
+#define BSPATCH_MAX_PATCH_SIZE (80LL * 1024LL * 1024LL)
+#define BSPATCH_MAX_CONTROL_TUPLES 1000000ULL
 
 /* bsdiff 的整数编码是 63 位绝对值 + 最高位符号位。 */
 static int64_t offtin(const uint8_t *buf) {
@@ -224,6 +228,7 @@ int bspatch(const char *oldfile, const char *newfile, const char *patchfile) {
 	uint8_t header[BSDIFF_HEADER_SIZE], ctrl_buffer[BSDIFF_INT_SIZE];
 	uint8_t *old_data = NULL, *new_data = NULL;
 	int64_t old_pos = 0, new_pos = 0, ctrl[3];
+	uint64_t control_tuples = 0;
 	char *temporary_path = NULL;
 	int temporary_created = 0;
 	int result = BSPATCH_SUCCESS;
@@ -235,7 +240,9 @@ int bspatch(const char *oldfile, const char *newfile, const char *patchfile) {
 	header_file = fopen(patchfile, "rb");
 	if (header_file == NULL)
 		return BSPATCH_ERR_OPEN_PATCH;
-	if (fstat(fileno(header_file), &patch_stat) != 0 || patch_stat.st_size < BSDIFF_HEADER_SIZE) {
+	if (fstat(fileno(header_file), &patch_stat) != 0 ||
+			patch_stat.st_size < BSDIFF_HEADER_SIZE ||
+			patch_stat.st_size > BSPATCH_MAX_PATCH_SIZE) {
 		result = BSPATCH_ERR_CORRUPT_PATCH;
 		goto cleanup;
 	}
@@ -250,7 +257,8 @@ int bspatch(const char *oldfile, const char *newfile, const char *patchfile) {
 	ctrl_length = offtin(header + 8);
 	diff_length = offtin(header + 16);
 	new_size64 = offtin(header + 24);
-	if (ctrl_length < 0 || diff_length < 0 || new_size64 < 0 ||
+	if (ctrl_length < 0 || diff_length < 0 || new_size64 <= 0 ||
+			new_size64 > BSPATCH_MAX_APK_SIZE ||
 			ctrl_length > patch_size - BSDIFF_HEADER_SIZE) {
 		result = BSPATCH_ERR_CORRUPT_PATCH;
 		goto cleanup;
@@ -285,7 +293,8 @@ int bspatch(const char *oldfile, const char *newfile, const char *patchfile) {
 		result = BSPATCH_ERR_OPEN_OLD;
 		goto cleanup;
 	}
-	if (fstat(old_fd, &old_stat) != 0 || old_stat.st_size < 0 ||
+	if (fstat(old_fd, &old_stat) != 0 || old_stat.st_size <= 0 ||
+			old_stat.st_size > BSPATCH_MAX_APK_SIZE ||
 			(uint64_t)old_stat.st_size > (uint64_t)SIZE_MAX ||
 			lseek(old_fd, 0, SEEK_SET) < 0) {
 		result = BSPATCH_ERR_READ_OLD;
@@ -312,6 +321,10 @@ int bspatch(const char *oldfile, const char *newfile, const char *patchfile) {
 
 	while (new_pos < new_size64) {
 		int64_t old_after_diff;
+		if (++control_tuples > BSPATCH_MAX_CONTROL_TUPLES) {
+			result = BSPATCH_ERR_CORRUPT_PATCH;
+			goto cleanup;
+		}
 
 		for (index = 0; index < 3; ++index) {
 			if (!bz_read_exact(cpfbz2, &cbz2err, &ctrl_ended,

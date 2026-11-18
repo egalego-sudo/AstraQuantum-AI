@@ -16,6 +16,7 @@ internal object AppUpdateRepository {
         val versionCode: Long,
         val versionName: String,
         val patchSizeBytes: Long,
+        val patchSha256: String?,
         val apkSizeBytes: Long,
         val deltaCompatible: Boolean,
         val baseApkSha256: String?
@@ -50,29 +51,35 @@ internal object AppUpdateRepository {
         var selectedPatchUrl = ""
         var selectedBaseHash: String? = null
         var selectedPatchSize = 0L
+        var selectedPatchSha256: String? = null
         if (patches != null) {
             for (i in 0 until patches.length()) {
                 val item = patches.getJSONObject(i)
                 val candidateUrl = item.getString("patchUrl")
                 check(urls.values.any { it == candidateUrl }) { "Signed patch URL does not match an asset in the latest release." }
-                if (installedHash.equals(item.getString("baseApkSha256"), true)) {
+                val candidatePatchHash = item.optString("patchSha256")
+                if (installedHash.equals(item.getString("baseApkSha256"), true) &&
+                    candidatePatchHash.matches(Regex("[0-9a-fA-F]{64}"))) {
                     selectedPatchUrl = candidateUrl
                     selectedBaseHash = item.getString("baseApkSha256")
                     selectedPatchSize = item.optLong("patchSizeBytes", 0L)
+                    selectedPatchSha256 = candidatePatchHash
                     break
                 }
             }
         } else if (json.has("patchUrl") && json.has("baseApkSha256") &&
+            json.optString("patchSha256").matches(Regex("[0-9a-fA-F]{64}")) &&
             installedHash.equals(json.getString("baseApkSha256"), true)) {
             selectedPatchUrl = json.getString("patchUrl")
             check(urls.values.any { it == selectedPatchUrl }) { "Signed legacy patch URL does not match a release asset." }
             selectedBaseHash = json.getString("baseApkSha256")
+            selectedPatchSha256 = json.getString("patchSha256")
             selectedPatchSize = sizes["ASTRA-build150-to-current.patch"] ?: 0L
         }
         return AvailableUpdate(
             verified, selectedPatchUrl, apkUrl,
             json.getLong("targetVersionCode"), json.getString("targetVersionName"),
-            selectedPatchSize, sizes["ASTRA-QUANTUM-AI.apk"] ?: 0L,
+            selectedPatchSize, selectedPatchSha256, sizes["ASTRA-QUANTUM-AI.apk"] ?: 0L,
             selectedBaseHash != null, selectedBaseHash
         )
     }
@@ -81,7 +88,7 @@ internal object AppUpdateRepository {
         val json = update.metadata.json
         val installedApk = File(context.applicationInfo.sourceDir)
         val installedHash = sha256(installedApk)
-        val useDelta = update.deltaCompatible && update.baseApkSha256 != null &&
+        val useDelta = update.deltaCompatible && update.baseApkSha256 != null && update.patchSha256 != null &&
             installedHash.equals(update.baseApkSha256, true)
         val directory = File(context.cacheDir, "updates")
         check(directory.exists() || directory.mkdirs()) { "Cannot create update download folder." }
@@ -90,6 +97,10 @@ internal object AppUpdateRepository {
 
         downloadToFile(if (useDelta) update.patchUrl else update.apkUrl, downloaded,
             if (useDelta) 80L * 1024 * 1024 else 150L * 1024 * 1024)
+        if (useDelta && !UpdateArtifactIntegrity.matchesSha256(downloaded, update.patchSha256!!)) {
+            downloaded.delete()
+            error("Downloaded patch SHA-256 verification failed. Native patch processing was blocked.")
+        }
 
         val expectedSigner = json.getString("signerCertificateSha256")
         val expectedPackage = json.getString("packageName")

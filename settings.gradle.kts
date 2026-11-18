@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "AstraQuantumAI"
+rootProject.name = "QuantumAI"
 include(":app", ":ApkPatchLibrary")

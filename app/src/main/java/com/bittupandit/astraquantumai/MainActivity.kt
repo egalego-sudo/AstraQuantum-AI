@@ -63,7 +63,7 @@ import java.util.Locale
 import io.noties.markwon.Markwon
 import io.noties.markwon.ext.tables.TablePlugin
 
-// ASTRA ChatGPT-inspired neutral charcoal palette.
+// QUANTUM AI ChatGPT-inspired neutral charcoal palette.
 private val ink = Color(0xFF212121)
 private val charcoal = Color(0xFF2F2F2F)
 private val graphite = Color(0xFF3A3A3A)
@@ -213,22 +213,7 @@ private fun securePreferences(context: Context): SharedPreferences {
         EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
         EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM)
     val legacy = context.getSharedPreferences("astra_private", Context.MODE_PRIVATE)
-    if (!secure.getBoolean("_secure_migration_complete", false)) {
-        val editor = secure.edit()
-        legacy.all.forEach { (key, value) ->
-            when (value) {
-                is String -> editor.putString(key, value)
-                is Boolean -> editor.putBoolean(key, value)
-                is Int -> editor.putInt(key, value)
-                is Long -> editor.putLong(key, value)
-                is Float -> editor.putFloat(key, value)
-                is Set<*> -> editor.putStringSet(key, value.filterIsInstance<String>().toSet())
-            }
-        }
-        editor.putBoolean("_secure_migration_complete", true)
-        check(editor.commit()) { "Secure migration failed" }
-        check(legacy.edit().clear().commit()) { "Legacy storage cleanup failed" }
-    }
+    migrateLegacyPreferences(secure, legacy)
     return secure
 }
 private object AppSecurity { @Volatile var accessToken: String = "" }
@@ -248,16 +233,16 @@ private fun SecurityGate(message: String, onUnlock: () -> Unit) {
 private data class ChatLine(val from: String, val text: String)
 
 private fun restoreChatHistory(raw: String?): List<ChatLine> {
-    if (raw.isNullOrBlank()) return listOf(ChatLine("ASTRA", "नमस्ते! मैं ASTRA हूँ। अपना सवाल पूछिए—मैं Groq AI से उत्तर तैयार करूँगा।"))
+    if (raw.isNullOrBlank()) return listOf(ChatLine("QUANTUM AI", "नमस्ते! मैं QUANTUM AI हूँ। अपना सवाल पूछिए—मैं Groq AI से उत्तर तैयार करूँगा।"))
     return runCatching {
         val array = JSONArray(raw)
         List(array.length()) { index ->
             val item = array.getJSONObject(index)
-            ChatLine(item.optString("from", "ASTRA"), item.optString("text"))
+            ChatLine(item.optString("from", "QUANTUM AI"), item.optString("text"))
         }.filter { it.text.isNotBlank() }.ifEmpty {
-            listOf(ChatLine("ASTRA", "नमस्ते! मैं ASTRA हूँ। अपना सवाल पूछिए।"))
+            listOf(ChatLine("QUANTUM AI", "नमस्ते! मैं QUANTUM AI हूँ। अपना सवाल पूछिए।"))
         }
-    }.getOrElse { listOf(ChatLine("ASTRA", "पुरानी चैट पढ़ी नहीं जा सकी। नई बातचीत शुरू करें।")) }
+    }.getOrElse { listOf(ChatLine("QUANTUM AI", "पुरानी चैट पढ़ी नहीं जा सकी। नई बातचीत शुरू करें।")) }
 }
 
 private fun encodeChatHistory(chat: List<ChatLine>): String {
@@ -315,7 +300,7 @@ private fun AstraApp(
     var offlineProgress by remember { mutableIntStateOf(0) }
     var offlineStatus by remember { mutableStateOf("मॉडल अभी डाउनलोड नहीं हुआ है।") }
     var offlineBusy by remember { mutableStateOf(false) }
-    var offlineTestPrompt by remember { mutableStateOf("नमस्ते ASTRA, अपना परिचय दीजिए।") }
+    var offlineTestPrompt by remember { mutableStateOf("नमस्ते QUANTUM AI, अपना परिचय दीजिए।") }
     var offlineTestAnswer by remember { mutableStateOf("") }
     var researchResult by remember { mutableStateOf("") }
     var researchBusy by remember { mutableStateOf(false) }
@@ -346,7 +331,7 @@ private fun AstraApp(
 
     fun copyText(value: String) {
         val clipboard = context.getSystemService(ClipboardManager::class.java)
-        clipboard.setPrimaryClip(ClipData.newPlainText("ASTRA", value))
+        clipboard.setPrimaryClip(ClipData.newPlainText("QUANTUM AI", value))
         Toast.makeText(context, "कॉपी हो गया", Toast.LENGTH_SHORT).show()
     }
     fun addMemory(value: String) {
@@ -398,9 +383,9 @@ private fun AstraApp(
         HorizontalDivider(color = line)
         when (page) {
             "Benchmark" -> BenchmarkScreen(backend)
-            "App Builder" -> InstantAppBuilderScreen(backend, initialWebsiteMode = false)
-            "Website Builder" -> InstantAppBuilderScreen(backend, initialWebsiteMode = true)
-            "Cores" -> SimplePage("ASTRA FIVE CORE ARCHITECTURE", "पाँचों Core मिलकर ASTRA का काम बाँटते हैं। किसी सुविधा की उपलब्धता उसके वास्तविक मॉड्यूल और डिवाइस/सर्वर समर्थन पर निर्भर है।") {
+            "App Builder" -> InstantAppBuilderScreen(backend, apiAccessToken, initialWebsiteMode = false)
+            "Website Builder" -> InstantAppBuilderScreen(backend, apiAccessToken, initialWebsiteMode = true)
+            "Cores" -> SimplePage("QUANTUM AI FIVE CORE ARCHITECTURE", "पाँचों Core मिलकर QUANTUM AI का काम बाँटते हैं। किसी सुविधा की उपलब्धता उसके वास्तविक मॉड्यूल और डिवाइस/सर्वर समर्थन पर निर्भर है।") {
                 val coreCards = listOf(
                     Triple("01 · PERCEPTION CORE", "देखना • सुनना • दस्तावेज़ समझना", "Files" to "इमेज/PDF विश्लेषण और Voice इनपुट"),
                     Triple("02 · REASONING CORE", "तर्क • विश्लेषण • समस्या समाधान", "AI Chat" to "ऑनलाइन AI; स्थानीय मॉडल अलग Offline AI स्क्रीन में"),
@@ -427,7 +412,7 @@ private fun AstraApp(
                 Text("ईमानदार क्षमता स्थिति", color = mint, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 Text("• इमेज समझना अभी ऑनलाइन Vision पर निर्भर है; Offline Vision उपलब्ध नहीं।\n• आवाज़ की पहचान फोन के speech provider पर निर्भर है।\n• स्रोत जुटाना और AI रिपोर्ट बनाना उपलब्ध है, पर स्वतः निर्णायक सत्यापन नहीं।\n• Action Core अभी सुरक्षित planning/workspace स्तर पर है; कोई संदेश, भुगतान या फोन-सेटिंग बिना स्पष्ट अनुमति नहीं की जाती।\n• Quantum Learning अभी शैक्षिक classical simulation है; वास्तविक QPU के लिए IBM credentials और अलग पुष्टि चाहिए।", color = muted, fontSize = 11.sp, lineHeight = 18.sp)
                 Spacer(Modifier.height(8.dp))
-                Text("ASTRA INTELLIGENCE LAYER", color = Color(0xFFD6D6D6), fontSize = 14.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
+                Text("QUANTUM AI INTELLIGENCE LAYER", color = Color(0xFFD6D6D6), fontSize = 14.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
                 val intelligenceCards = listOf(
                     "EVIDENCE INTELLIGENCE" to "रिपोर्ट में समर्थित तथ्य, स्रोत-संदर्भ, संभावित विरोधाभास और अनिश्चितता अलग दिखाने का नियम। स्रोत-जाँच अभी सीमित Wikipedia/Crossref डेटा पर आधारित है।",
                     "LONG-TERM PERSONAL INTELLIGENCE" to "आपकी अनुमति पर Saved Memory, Projects और हाल की बातचीत का संदर्भ AI को दिया जाता है; इससे पिछला काम आगे बढ़ाने में मदद मिलती है।",
@@ -448,7 +433,7 @@ private fun AstraApp(
                 Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.size(42.dp).clip(RoundedCornerShape(13.dp)).background(Brush.linearGradient(listOf(white, violet, mint))), contentAlignment = Alignment.Center) {
-                            Text("A", color = ink, fontSize = 27.sp, fontWeight = FontWeight.Black)
+                            Text("Q", color = ink, fontSize = 27.sp, fontWeight = FontWeight.Black)
                         }
                         Spacer(Modifier.width(11.dp))
                         Column(Modifier.weight(1f)) {
@@ -476,7 +461,7 @@ private fun AstraApp(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text("⌕", color = white, fontSize = 25.sp, fontWeight = FontWeight.Bold)
                                 Spacer(Modifier.width(8.dp))
-                                Text("Ask ASTRA anything", color = white, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                Text("Ask QUANTUM AI anything", color = white, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                 Spacer(Modifier.weight(1f))
                                 TextButton(onClick = onListen) { Text("🎙", color = mint, fontSize = 19.sp) }
                             }
@@ -492,7 +477,7 @@ private fun AstraApp(
                             )
                             Spacer(Modifier.height(8.dp))
                             Button(enabled = prompt.isNotBlank(), onClick = { page = "AI Chat" }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A4A4A), contentColor = Color.White), shape = RoundedCornerShape(13.dp)) {
-                                Text("ASK ASTRA  →", fontWeight = FontWeight.ExtraBold)
+                                Text("ASK QUANTUM AI  →", fontWeight = FontWeight.ExtraBold)
                             }
                         }
                     }
@@ -505,7 +490,7 @@ private fun AstraApp(
                         Triple("WEBSITE BUILDER", "वेबसाइट और Preview", "Website Builder"),
                         Triple("QUANTUM LAB", "क्वांटम सिमुलेशन", "Quantum"),
                         Triple("PROJECTS", "आपके सेव किए प्रोजेक्ट और नोट्स", "Projects"),
-                        Triple("UPDATES", "नया ASTRA संस्करण जाँचें", "Updates")
+                        Triple("UPDATES", "नया QUANTUM AI संस्करण जाँचें", "Updates")
                     )
                     controlModules.chunked(2).forEach { pair ->
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -526,7 +511,7 @@ private fun AstraApp(
                         }
                         Spacer(Modifier.height(8.dp))
                     }
-                    Text("EXPLORE ASTRA", color = Color(0xFFFFD86B), fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
+                    Text("EXPLORE QUANTUM AI", color = Color(0xFFFFD86B), fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 2.sp)
                     Spacer(Modifier.height(10.dp))
                     val modules = listOf(
                         AstraModule("Smart Search", "Find anything", "⌕"),
@@ -580,7 +565,7 @@ private fun AstraApp(
                                 useMemoryInChat = it
                                 prefs.edit().putBoolean("use_memory_in_chat", it).apply()
                             })
-                            TextButton(onClick = { chat = listOf(ChatLine("ASTRA", "नई बातचीत शुरू हुई। अपना सवाल पूछिए।")) }) { Text("नई चैट", color = muted) }
+                            TextButton(onClick = { chat = listOf(ChatLine("QUANTUM AI", "नई बातचीत शुरू हुई। अपना सवाल पूछिए।")) }) { Text("नई चैट", color = muted) }
                         }
                     }
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -599,16 +584,16 @@ private fun AstraApp(
                     }
                     LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp), contentPadding = PaddingValues(vertical = 10.dp)) {
                         items(chat) { item ->
-                            val isAi = item.from == "ASTRA"
+                            val isAi = item.from == "QUANTUM AI" || item.from == "ASTRA"
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = if (isAi) Arrangement.Start else Arrangement.End) {
                                 if (isAi) {
                                     Box(Modifier.size(30.dp).clip(CircleShape).background(Color(0xFF444444)), contentAlignment = Alignment.Center) {
-                                        Text("A", color = white, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                        Text("Q", color = white, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                                     }
                                     Spacer(Modifier.width(10.dp))
                                 }
                                 Column(Modifier.widthIn(max = 310.dp).clip(RoundedCornerShape(if (isAi) 8.dp else 20.dp)).background(if (isAi) Color(0xAA182747) else Color(0xCC123A52)).padding(horizontal = 14.dp, vertical = 11.dp)) {
-                                    if (isAi) Text("ASTRA", color = muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                                    if (isAi) Text("QUANTUM AI", color = muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                                     AndroidView(
                                         modifier = Modifier.fillMaxWidth().wrapContentHeight(),
                                         factory = { viewContext ->
@@ -641,7 +626,7 @@ private fun AstraApp(
                             value = prompt,
                             onValueChange = { prompt = it },
                             modifier = Modifier.weight(1f),
-                            placeholder = { Text("ASTRA से कुछ भी पूछें", color = muted, fontSize = 13.sp) },
+                            placeholder = { Text("QUANTUM AI से कुछ भी पूछें", color = muted, fontSize = 13.sp) },
                             shape = RoundedCornerShape(24.dp),
                             maxLines = 4,
                             colors = OutlinedTextFieldDefaults.colors(
@@ -688,7 +673,7 @@ private fun AstraApp(
                                                 researchAnswer.contains("पर्याप्त विषय-संगत स्रोत नहीं मिले")) {
                                                 val directAnswer = askBackend(backend, questionWithMemory)
                                                 if (directAnswer.startsWith("Groq सेवा में त्रुटि") ||
-                                                    directAnswer.startsWith("ASTRA सर्वर से कनेक्शन नहीं हो पाया")) {
+                                                    directAnswer.startsWith("QUANTUM AI सर्वर से कनेक्शन नहीं हो पाया")) {
                                                     directAnswer
                                                 } else {
                                                     "सामान्य AI उत्तर (Deep Research में पर्याप्त स्रोत नहीं मिले; नीचे उत्तर स्रोत-सत्यापित शोध रिपोर्ट नहीं है):\n\n" + directAnswer
@@ -699,8 +684,8 @@ private fun AstraApp(
                                         } else {
                                             askBackend(backend, questionWithMemory)
                                         }
-                                        val remoteFailed = onlineResult.startsWith("ASTRA सर्वर से कनेक्शन नहीं हो पाया") ||
-                                            onlineResult.startsWith("ASTRA से जुड़ने के लिए Backend HTTPS URL") ||
+                                        val remoteFailed = onlineResult.startsWith("QUANTUM AI सर्वर से कनेक्शन नहीं हो पाया") ||
+                                            onlineResult.startsWith("QUANTUM AI से जुड़ने के लिए Backend HTTPS URL") ||
                                             onlineResult.startsWith("Groq सेवा में त्रुटि") ||
                                             onlineResult.startsWith("सुरक्षा के लिए backend URL") ||
                                             onlineResult.startsWith("Deep Research कनेक्शन विफल") ||
@@ -709,7 +694,7 @@ private fun AstraApp(
                                             runCatching { "ON-DEVICE · QWEN3-0.6B\n" + offlineEngine.answer(questionWithMemory) }
                                                 .getOrElse { "ऑनलाइन सेवा और स्थानीय मॉडल दोनों उपलब्ध नहीं हुए: ${it.message}" }
                                         } else if (remoteFailed && imageUri != null) {
-                                            onlineResult + "\n\nOFFLINE VISION अभी ASTRA में उपलब्ध नहीं है।"
+                                            onlineResult + "\n\nOFFLINE VISION अभी QUANTUM AI में उपलब्ध नहीं है।"
                                         } else if (imageUri != null) {
                                             "ONLINE · GROQ VISION\n" + onlineResult
                                         } else if (deepResearchMode && onlineResult.startsWith("सामान्य AI उत्तर")) {
@@ -720,7 +705,7 @@ private fun AstraApp(
                                             "ONLINE · GROQ\n" + onlineResult
                                         }
                                     }
-                                    chat = chat + ChatLine("ASTRA", answer)
+                                    chat = chat + ChatLine("QUANTUM AI", answer)
                                     busy = false
                                     status = when {
                                         answer.startsWith("ON-DEVICE") -> "OFFLINE AI · READY"
@@ -739,14 +724,14 @@ private fun AstraApp(
             }
             "Science Lab" -> ScienceLabScreen()
             "Calculator" -> ExpressionCalculatorScreen()
-            "Science QA" -> SimplePage("ASTRA SCIENTIFIC QUESTION & REASONING", "वैज्ञानिक प्रश्न पूछें। ASTRA उत्तर में स्थापित तथ्य, गणना/मॉडल, मान्यताएँ, सीमाएँ और अनिश्चितता अलग रखने का प्रयास करेगा। शोध-स्रोतों की जाँच अलग बटन से करें।") {
+            "Science QA" -> SimplePage("QUANTUM AI SCIENTIFIC QUESTION & REASONING", "वैज्ञानिक प्रश्न पूछें। QUANTUM AI उत्तर में स्थापित तथ्य, गणना/मॉडल, मान्यताएँ, सीमाएँ और अनिश्चितता अलग रखने का प्रयास करेगा। शोध-स्रोतों की जाँच अलग बटन से करें।") {
                 OutlinedTextField(scienceQuestion, { scienceQuestion = it }, Modifier.fillMaxWidth(), label = { Text("विज्ञान का प्रश्न लिखें…") }, minLines = 2)
                 Button(enabled = scienceQuestion.isNotBlank() && !scienceBusy, onClick = {
                     scienceBusy = true
                     scienceAnswer = "वैज्ञानिक विश्लेषण तैयार हो रहा है…"
                     val q = scienceQuestion.trim()
                     val scientificPrompt = """
-                        आप ASTRA Scientific Reasoning Assistant हैं। उपयोगकर्ता के प्रश्न का उत्तर हिंदी में दें।
+                        आप QUANTUM AI Scientific Reasoning Assistant हैं। उपयोगकर्ता के प्रश्न का उत्तर हिंदी में दें।
                         अनिवार्य ढाँचा:
                         1. संक्षिप्त उत्तर।
                         2. स्थापित वैज्ञानिक तथ्य बनाम मॉडल/सैद्धांतिक व्याख्या।
@@ -762,7 +747,7 @@ private fun AstraApp(
                         scienceBusy = false
                     }
                 }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = violet, contentColor = Color.White)) {
-                    Text(if (scienceBusy) "विश्लेषण जारी…" else "ASTRA से वैज्ञानिक उत्तर लें")
+                    Text(if (scienceBusy) "विश्लेषण जारी…" else "QUANTUM AI से वैज्ञानिक उत्तर लें")
                 }
                 OutlinedButton(enabled = scienceQuestion.isNotBlank() && !scienceResearchBusy, onClick = {
                     scienceResearchBusy = true
@@ -810,13 +795,13 @@ private fun AstraApp(
                         researchBusy = false
                     }
                 }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = violet, contentColor = Color.White)) {
-                    Text(if (researchBusy) "गहन शोध जारी…" else "ASTRA Deep Research + Source Check")
+                    Text(if (researchBusy) "गहन शोध जारी…" else "QUANTUM AI Deep Research + Source Check")
                 }
                 if (researchResult.isNotBlank()) {
                     SelectionContainer { Text(researchResult, color = white, lineHeight = 20.sp) }
                     val researchLinks = Regex("https?://[^\\s)]+").findAll(researchResult)
                         .map { it.value.trimEnd('.', ',', ';', ')', ']') }
-                        .distinct().take(12).toList()
+                        .distinct().filter(ExternalLinkPolicy::allows).take(12).toList()
                     if (researchLinks.isNotEmpty()) {
                         Text("स्रोत सीधे खोलें", color = mint, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         researchLinks.forEachIndexed { index, link ->
@@ -848,15 +833,15 @@ private fun AstraApp(
                     runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/search?q=" + q))) }
                         .onFailure { Toast.makeText(context, "ब्राउज़र नहीं खुल पाया", Toast.LENGTH_SHORT).show() }
                 }, modifier = Modifier.fillMaxWidth()) { Text("Fact Check · दावे की जाँच", color = white) }
-                Text("ध्यान दें: ये खोज पेज खोलते हैं; ASTRA अभी स्रोतों की स्वतंत्र सत्यता अपने-आप प्रमाणित नहीं करता।", color = muted, fontSize = 11.sp)
+                Text("ध्यान दें: ये खोज पेज खोलते हैं; QUANTUM AI अभी स्रोतों की स्वतंत्र सत्यता अपने-आप प्रमाणित नहीं करता।", color = muted, fontSize = 11.sp)
             }
-            "Memory" -> SimplePage("ADVANCED PRIVATE MEMORY", "ASTRA आपकी लिखी हुई यादें इसी फोन में सुरक्षित रखता है। Memory को AI चैट में भेजना अलग से आपकी अनुमति पर निर्भर है।") {
+            "Memory" -> SimplePage("ADVANCED PRIVATE MEMORY", "QUANTUM AI आपकी लिखी हुई यादें इसी फोन में सुरक्षित रखता है। Memory को AI चैट में भेजना अलग से आपकी अनुमति पर निर्भर है।") {
                 OutlinedTextField(memoryInput, { memoryInput = it }, Modifier.fillMaxWidth(), label = { Text("व्यक्तिगत तथ्य, पसंद या प्रोजेक्ट नोट") }, minLines = 2)
                 Button(enabled = memoryInput.isNotBlank(), onClick = { addMemory(memoryInput) }, colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)) { Text("Memory में सेव करें") }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Column(Modifier.weight(1f)) {
                         Text("AI चैट में Personal Context इस्तेमाल करें", color = white, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        Text("चालू करने पर Saved Memory, Projects और हाल की चैट का सीमित संदर्भ चुने गए सवाल के साथ ASTRA backend को भेजा जाएगा।", color = muted, fontSize = 10.sp)
+                        Text("चालू करने पर Saved Memory, Projects और हाल की चैट का सीमित संदर्भ चुने गए सवाल के साथ QUANTUM AI backend को भेजा जाएगा।", color = muted, fontSize = 10.sp)
                     }
                     Switch(checked = useMemoryInChat, onCheckedChange = {
                         useMemoryInChat = it
@@ -938,7 +923,7 @@ private fun AstraApp(
                     TextButton(onClick = { copyText(fileAnalysis) }) { Text("कॉपी करें", color = white) }
                 }
             }
-            "Quantum" -> SimplePage("ASTRA QUANTUM ENGINE · 10 + 64 QUBIT MODES", "10-Qubit dense state-vector simulator और 64-Qubit sparse state-vector simulator। 64-Qubit mode structured circuits को exact रूप से चलाता है, जब non-zero amplitudes 100,000 तक सीमित रहें। दोनों classical simulations हैं, physical quantum processors नहीं।") {
+            "Quantum" -> SimplePage("QUANTUM AI QUANTUM ENGINE · 10 + 64 QUBIT MODES", "10-Qubit dense state-vector simulator और 64-Qubit sparse state-vector simulator। 64-Qubit mode structured circuits को exact रूप से चलाता है, जब non-zero amplitudes 100,000 तक सीमित रहें। दोनों classical simulations हैं, physical quantum processors नहीं।") {
                 QuantumCircuitLab()
                 HorizontalDivider(color = line, modifier = Modifier.padding(vertical = 10.dp))
                 Quantum64SparseLab()
@@ -1014,7 +999,7 @@ private fun AstraApp(
                 }
                 Text("जब तक IBM credentials configure नहीं होते, यह connector सक्रिय hardware connection नहीं है।", color = muted, fontSize = 10.sp)
             }
-            "Offline AI" -> SimplePage("OFFLINE AI CORE", "इंटरनेट बंद होने पर ASTRA इस स्थानीय मॉडल से जवाब दे सकेगा। पहली बार मॉडल डाउनलोड करने के लिए इंटरनेट और लगभग 328 MiB खाली जगह चाहिए।") {
+            "Offline AI" -> SimplePage("OFFLINE AI CORE", "इंटरनेट बंद होने पर QUANTUM AI इस स्थानीय मॉडल से जवाब दे सकेगा। पहली बार मॉडल डाउनलोड करने के लिए इंटरनेट और लगभग 328 MiB खाली जगह चाहिए।") {
                 Text("स्थानीय मॉडल: ${OfflineAiEngine.MODEL_NAME}", color = mint, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 Text(if (offlineEngine.isModelInstalled) "स्थिति: मॉडल फोन में इंस्टॉल है" else "स्थिति: मॉडल डाउनलोड होना बाकी है", color = white, fontSize = 12.sp)
                 if (offlineBusy && offlineProgress > 0) {
@@ -1074,7 +1059,7 @@ private fun AstraApp(
                 Text("मॉडल लाइसेंस: Apache 2.0 · Qwen3-0.6B. लाइव इंटरनेट खोज और वर्तमान समाचार ऑफलाइन उपलब्ध नहीं होंगे।", color = muted, fontSize = 11.sp)
                 Text("Creator by Bittu Pandit", color = mint, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             }
-            "Action" -> SimplePage("ASTRA ACTION INTELLIGENCE", "यह मॉड्यूल आपके काम को चरणों में बाँटकर समीक्षा योग्य योजना बनाता है। अभी यह फोन/बाहरी ऐप पर स्वतः बदलाव नहीं करता; योजना सेव करने से पहले आपकी पुष्टि आवश्यक है।") {
+            "Action" -> SimplePage("QUANTUM AI ACTION INTELLIGENCE", "यह मॉड्यूल आपके काम को चरणों में बाँटकर समीक्षा योग्य योजना बनाता है। अभी यह फोन/बाहरी ऐप पर स्वतः बदलाव नहीं करता; योजना सेव करने से पहले आपकी पुष्टि आवश्यक है।") {
                 OutlinedTextField(
                     value = actionRequest,
                     onValueChange = { actionRequest = it },
@@ -1086,7 +1071,7 @@ private fun AstraApp(
                     enabled = actionRequest.isNotBlank() && !actionBusy,
                     onClick = {
                         actionBusy = true
-                        actionPlan = "ASTRA सुरक्षित कार्य-योजना बना रहा है…"
+                        actionPlan = "QUANTUM AI सुरक्षित कार्य-योजना बना रहा है…"
                         val request = actionRequest.trim()
                         activity.lifecycleScope.launch {
                             actionPlan = withContext(Dispatchers.IO) {
@@ -1109,7 +1094,7 @@ private fun AstraApp(
                             Text("समीक्षा के लिए योजना", color = mint, fontWeight = FontWeight.Bold)
                             SelectionContainer { Text(actionPlan, color = white, lineHeight = 20.sp) }
                             Button(
-                                enabled = !actionBusy && !actionPlan.startsWith("ASTRA सुरक्षित"),
+                                enabled = !actionBusy && !actionPlan.startsWith("QUANTUM AI सुरक्षित"),
                                 onClick = { confirmSaveActionPlan = true },
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = ButtonDefaults.buttonColors(containerColor = white, contentColor = ink)
@@ -1121,7 +1106,7 @@ private fun AstraApp(
                     AlertDialog(
                         onDismissRequest = { confirmSaveActionPlan = false },
                         title = { Text("योजना सेव करने की पुष्टि") },
-                        text = { Text("यह योजना आपके फोन के ASTRA Projects में स्थानीय checkpoint के रूप में सेव होगी। कोई बाहरी कार्रवाई नहीं होगी। क्या सेव करें?") },
+                        text = { Text("यह योजना आपके फोन के QUANTUM AI Projects में स्थानीय checkpoint के रूप में सेव होगी। कोई बाहरी कार्रवाई नहीं होगी। क्या सेव करें?") },
                         confirmButton = {
                             TextButton(onClick = {
                                 addProject("ACTION PLAN · " + actionRequest.trim() + "\n" + actionPlan)
@@ -1203,10 +1188,10 @@ private fun SplashScreen(modifier: Modifier = Modifier) {
     Box(modifier.background(ink), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(Modifier.size(112.dp).clip(RoundedCornerShape(34.dp)).background(Brush.linearGradient(listOf(white, violet, mint))), contentAlignment = Alignment.Center) {
-                Text("A", color = ink, fontSize = 76.sp, fontWeight = FontWeight.Black)
+                Text("Q", color = ink, fontSize = 76.sp, fontWeight = FontWeight.Black)
             }
             Spacer(Modifier.height(24.dp))
-            Text("ASTRA", color = white, fontSize = 31.sp, fontWeight = FontWeight.Black, letterSpacing = 8.sp)
+            Text("QUANTUM AI", color = white, fontSize = 31.sp, fontWeight = FontWeight.Black, letterSpacing = 8.sp)
             Text("QUANTUM AI", color = muted, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 5.sp)
             Spacer(Modifier.height(22.dp))
             Text("Explore the unknown", color = mint, fontSize = 12.sp, letterSpacing = 2.sp)
@@ -1371,7 +1356,7 @@ private fun checkAstraBackend(baseUrl: String): String {
         if (code !in 200..299) "सर्वर उपलब्ध नहीं · HTTP $code"
         else {
             val json = JSONObject(body)
-            if (json.optBoolean("ok")) "कनेक्शन सफल · " + json.optString("provider", "AI") + " · " + json.optString("model", "मॉडल सक्रिय")
+            if (json.optBoolean("ok")) "Backend server reachable · AI API/model की अलग जाँच अभी नहीं हुई।"
             else "सर्वर मिला, पर health check सफल नहीं हुआ।"
         }
     } catch (e: Exception) {
@@ -1380,7 +1365,7 @@ private fun checkAstraBackend(baseUrl: String): String {
 }
 
 private fun quantumApiRequest(baseUrl: String, path: String, method: String, payload: JSONObject? = null): String {
-    if (baseUrl.isBlank()) return "ASTRA backend URL सेव करें।"
+    if (baseUrl.isBlank()) return "QUANTUM AI backend URL सेव करें।"
     return try {
         val clean = baseUrl.trim().trimEnd('/')
         if (!isTrustedBackend(clean)) return "सुरक्षा के लिए केवल आधिकारिक QUANTUM AI backend स्वीकार है।"
@@ -1411,7 +1396,7 @@ private fun quantumApiRequest(baseUrl: String, path: String, method: String, pay
 }
 
 private fun askResearch(baseUrl: String, query: String): String {
-    if (baseUrl.isBlank()) return "ASTRA backend URL सेव करें।"
+    if (baseUrl.isBlank()) return "QUANTUM AI backend URL सेव करें।"
     return try {
         val clean = baseUrl.trim().trimEnd('/')
         if (!isTrustedBackend(clean)) return "सुरक्षा के लिए केवल आधिकारिक QUANTUM AI backend स्वीकार है।"
@@ -1507,7 +1492,7 @@ internal fun askBackend(baseUrl: String, prompt: String, mimeType: String? = nul
             json.optString("text").ifBlank { json.optString("response").ifBlank { "सर्वर से उत्तर मिला, लेकिन टेक्स्ट नहीं मिला।" } }
         }
     } catch (e: Exception) {
-        "ASTRA सर्वर से कनेक्शन नहीं हो पाया: ${e.message ?: "नेटवर्क त्रुटि"}"
+        "QUANTUM AI सर्वर से कनेक्शन नहीं हो पाया: ${e.message ?: "नेटवर्क त्रुटि"}"
     }
 }
 
@@ -1550,7 +1535,7 @@ private fun ScienceLabScreen() {
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("ASTRA UNIVERSAL SCIENCE LAB", color = white, fontSize = 18.sp, fontWeight = FontWeight.Black)
+        Text("QUANTUM AI UNIVERSAL SCIENCE LAB", color = white, fontSize = 18.sp, fontWeight = FontWeight.Black)
         Text("सूत्र, गणना और जाँच योग्य परिणाम। यह शुरुआती वैज्ञानिक टूलकिट है, सभी विज्ञानों का पूर्ण डेटाबेस नहीं।", color = muted, fontSize = 12.sp)
         Card(colors = CardDefaults.cardColors(containerColor = charcoal)) {
             Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

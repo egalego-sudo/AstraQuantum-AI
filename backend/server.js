@@ -5,6 +5,8 @@ import { searchKnowledge, validateKnowledgeCitations } from "./knowledge.js";
 import { buildResearchQueries, rankResearchSources } from "./research-quality.js";
 import { fitContentToByteBudget, estimateInputBytes, truncateUtf8 } from "./token-budget.js";
 import { classifyCrossrefDoiResult } from "./doi-verification.js";
+import { readLimitedResponseJson, readLimitedResponseText } from "./response-limits.js";
+import { fetchWithSafeRedirects } from "./safe-fetch.js";
 import {
   INTELLIGENCE_ENGINE_INSTRUCTIONS,
   MAX_COMPLETION_CONTINUATIONS,
@@ -26,12 +28,24 @@ const MAX_REQUESTS = Number.isFinite(configuredMaxRequests)
   ? Math.min(1_000, Math.max(1, Math.floor(configuredMaxRequests)))
   : 20;
 const MAX_TRACKED_CLIENTS = 10_000;
-// Groq on-demand GPT-OSS currently advertises an 8K TPM ceiling on this tier.
-// Keep a conservative byte-based input ceiling plus explicit output reserve.
+// Bound UTF-8 request bytes independently from provider token quotas.
+// Byte counts are not model tokens; the provider remains authoritative for TPM limits.
 const GROQ_TPM_LIMIT = Math.max(2_000, Number(process.env.GROQ_TPM_LIMIT || 8_000));
 const GROQ_MAX_INPUT_BYTES = Math.min(7_000, Math.max(3_000, Number(process.env.GROQ_MAX_INPUT_BYTES || 7_000)));
 const GROQ_OUTPUT_RESERVE = 900;
 const hits = new Map();
+const RESEARCH_ALLOWED_HOSTS = new Set([
+  "en.wikipedia.org",
+  "api.crossref.org",
+  "api.openalex.org",
+  "www.ebi.ac.uk",
+  "export.arxiv.org",
+  "arxiv.org",
+  "ar5iv.labs.arxiv.org",
+  "api.semanticscholar.org",
+  "europepmc.org",
+  "www.europepmc.org"
+]);
 
 
 function isRateLimited(clientKey, now = Date.now()) {
@@ -162,7 +176,7 @@ async function generate(input) {
     let lastError = null;
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const response = await fetch(url, { ...options, signal: AbortSignal.timeout(60_000) });
+        const response = await fetch(url, { ...options, redirect: "error", signal: AbortSignal.timeout(60_000) });
         if ((response.status === 429 || response.status >= 500) && attempt === 0) {
           await new Promise(resolve => setTimeout(resolve, 1200));
           continue;
@@ -193,7 +207,7 @@ async function generate(input) {
     },
     body: JSON.stringify(requestBody)
   });
-  let data = await response.json().catch(() => ({}));
+  let data = await readLimitedResponseJson(response, 2 * 1024 * 1024).catch(() => ({}));
   // A Groq 413 is a hard per-request ceiling, not a transient rate limit.
   // Never resend the same payload: compact it once and lower the output reserve.
   if (response.status === 413) {
@@ -208,9 +222,9 @@ async function generate(input) {
       headers: { "content-type": "application/json", authorization: `Bearer ${API_KEY}` },
       body: JSON.stringify(compactRequest)
     });
-    data = await response.json().catch(() => ({}));
+    data = await readLimitedResponseJson(response, 2 * 1024 * 1024).catch(() => ({}));
     if (response.status === 413) {
-      const budgetError = new Error(`Groq request still exceeds the ${GROQ_TPM_LIMIT}-token request budget after automatic compaction. The same oversized request was not retried.`);
+      const budgetError = new Error("Groq rejected the request with HTTP 413 even after one bounded compaction; no further oversized retry was attempted.");
       budgetError.statusCode = 413;
       throw budgetError;
     }
@@ -234,7 +248,7 @@ async function generate(input) {
           max_tokens: safeOutputTokens
         })
       });
-      const fallbackData = await fallbackResponse.json().catch(() => ({}));
+      const fallbackData = await readLimitedResponseJson(fallbackResponse, 2 * 1024 * 1024).catch(() => ({}));
       if (fallbackResponse.ok) {
         const fallbackContent = fallbackData?.choices?.[0]?.message?.content;
         const fallbackText = typeof fallbackContent === "string"
@@ -281,7 +295,7 @@ async function generate(input) {
       completionStillIncomplete = true;
       break;
     }
-    const continuationData = await continuationResponse.json().catch(() => ({}));
+    const continuationData = await readLimitedResponseJson(continuationResponse, 2 * 1024 * 1024).catch(() => ({}));
     const continuationText = extractResponsesText(continuationData);
     if (!continuationText) {
       completionStillIncomplete = isResponsesIncomplete(continuationData);
@@ -310,7 +324,7 @@ async function generate(input) {
         max_tokens: safeOutputTokens
       })
     });
-    const fallbackData = await fallbackResponse.json().catch(() => ({}));
+    const fallbackData = await readLimitedResponseJson(fallbackResponse, 2 * 1024 * 1024).catch(() => ({}));
     if (!fallbackResponse.ok) {
       const message = fallbackData?.error?.message || `Groq Chat Completions returned HTTP ${fallbackResponse.status}`;
       throw new Error(`Groq fallback HTTP ${fallbackResponse.status}: ${message}`);
@@ -365,9 +379,10 @@ async function getIbmAccessToken() {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
     body: form,
+    redirect: "error",
     signal: AbortSignal.timeout(15000)
   });
-  const data = await response.json().catch(() => ({}));
+  const data = await readLimitedResponseJson(response, 2 * 1024 * 1024).catch(() => ({}));
   if (!response.ok || !data.access_token) throw new Error("IBM Quantum authentication failed. Check the server-side IBM API key.");
   ibmAccessToken = data.access_token;
   ibmTokenExpiresAt = Date.now() + Math.max(60, Number(data.expires_in || 3600) - 90) * 1000;
@@ -390,9 +405,10 @@ async function ibmQuantumRequest(path, options = {}) {
       ...(options.body ? { "content-type": "application/json" } : {}),
       ...(options.headers || {})
     },
+    redirect: "error",
     signal: AbortSignal.timeout(30000)
   });
-  const data = await response.json().catch(() => ({}));
+  const data = await readLimitedResponseJson(response, 2 * 1024 * 1024).catch(() => ({}));
   if (!response.ok) {
     const message = data?.errors?.[0]?.message || data?.message || "IBM Quantum request failed with HTTP " + response.status;
     throw new Error(String(message).slice(0, 400));
@@ -437,22 +453,22 @@ async function quantumJob(jobId) {
 async function research(input) {
   const query = String(input.query || "").trim();
   if (!query || query.length > 500) throw new Error("Research query is empty or too long.");
-  const headers = { "user-agent": "ASTRA-Quantum-AI/2.0 (evidence research assistant)" };
+  const headers = { "user-agent": "Quantum-AI/2.0 (evidence research assistant)" };
   let successfulProviderResponses = 0;
   const fetchJson = async (url, timeout = 18000) => {
     try {
-      const response = await fetch(url, { headers, signal: AbortSignal.timeout(timeout) });
+      const response = await fetchWithSafeRedirects(url, { headers, signal: AbortSignal.timeout(timeout) }, RESEARCH_ALLOWED_HOSTS);
       if (!response.ok) return null;
       successfulProviderResponses++;
-      return await response.json();
+      return await readLimitedResponseJson(response, 2 * 1024 * 1024);
     } catch { return null; }
   };
   const fetchText = async (url, timeout = 18000) => {
     try {
-      const response = await fetch(url, { headers, signal: AbortSignal.timeout(timeout) });
+      const response = await fetchWithSafeRedirects(url, { headers, signal: AbortSignal.timeout(timeout) }, RESEARCH_ALLOWED_HOSTS);
       if (!response.ok) return "";
       successfulProviderResponses++;
-      return await response.text();
+      return await readLimitedResponseText(response, 2 * 1024 * 1024);
     } catch { return ""; }
   };
   const xmlText = value => String(value || "")
@@ -593,11 +609,11 @@ async function research(input) {
     const doi = String(source.doi).replace(/^https?:\/\/doi\.org\//i, "").trim();
     try {
       const response = await fetch("https://api.crossref.org/works/" + encodeURIComponent(doi), {
-        headers, signal: AbortSignal.timeout(12000)
+        headers, redirect: "error", signal: AbortSignal.timeout(12000)
       });
       if (!response.ok) return { doi, ...classifyCrossrefDoiResult({ httpStatus: response.status }), crossrefTitle: "" };
       successfulProviderResponses++;
-      const payload = await response.json().catch(() => ({}));
+      const payload = await readLimitedResponseJson(response, 2 * 1024 * 1024).catch(() => ({}));
       const crossrefTitle = Array.isArray(payload?.message?.title) ? payload.message.title[0] : "";
       const similarity = titleSimilarity(source.title, crossrefTitle);
       return {
@@ -670,7 +686,7 @@ async function research(input) {
     skipKnowledgeRetrieval: true,
     returnMetadata: true,
     maxOutputTokens: 1_500,
-    prompt: "आप ASTRA Deep Research Engine हैं। इस प्रश्न पर गहन, संतुलित और प्रमाण-आधारित रिपोर्ट तैयार करें: " + query +
+    prompt: "आप QUANTUM AI Deep Research Engine हैं। इस प्रश्न पर गहन, संतुलित और प्रमाण-आधारित रिपोर्ट तैयार करें: " + query +
       "\n\nस्रोतों का सीमित live retrieval किया गया है। यह पूरा इंटरनेट, exhaustive literature review या सभी प्रकाशित/अप्रकाशित सामग्री नहीं है। केवल नीचे उपलब्ध सामग्री पर दावे करें।" +
       "\nहर तथ्यात्मक दावे के तुरंत बाद संबंधित [source id] दें। स्रोत metadata स्वयं दावे का प्रमाण नहीं है। abstract या indexed summary को full-text पढ़ा हुआ न बताएं। arXiv को preprint कहें। Wikipedia को tertiary source मानें।" +
       "\nरिपोर्ट की संरचना अनिवार्य है:" +
@@ -779,11 +795,11 @@ const server = http.createServer(async (req, res) => {
       message === "Request too large" ? 413 :
       message.includes("job submission is disabled") ? 403 :
       message === "Invalid JSON" || message.startsWith("Prompt") || message.startsWith("Only ") || message.startsWith("File ") || message.startsWith("PDF ") ? 400 : 502;
-    console.error("ASTRA request failed:", message);
+    console.error("QUANTUM AI request failed:", message);
     return send(res, status, { error: message }, requestOrigin);
   }
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`ASTRA backend listening on port ${PORT}; provider=Groq; model=${MODEL}`);
+  console.log(`QUANTUM AI backend listening on port ${PORT}; provider=Groq; model=${MODEL}`);
 });

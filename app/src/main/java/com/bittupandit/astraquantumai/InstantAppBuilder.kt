@@ -60,7 +60,7 @@ private val builderMuted = Color(0xFFB4B4B4)
 private val builderAccent = Color(0xFFD6D6D6)
 
 @Composable
-fun InstantAppBuilderScreen(backendUrl: String, initialWebsiteMode: Boolean = false) {
+fun InstantAppBuilderScreen(backendUrl: String, accessToken: String, initialWebsiteMode: Boolean = false) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var websiteMode by remember { mutableStateOf(initialWebsiteMode) }
@@ -71,7 +71,7 @@ fun InstantAppBuilderScreen(backendUrl: String, initialWebsiteMode: Boolean = fa
     var showPreview by remember { mutableStateOf(true) }
     var previewDevice by remember { mutableStateOf("मोबाइल") }
     var previewWebView by remember { mutableStateOf<WebView?>(null) }
-    var nativeAppName by remember { mutableStateOf("My Astra App") }
+    var nativeAppName by remember { mutableStateOf("My Quantum AI App") }
     var pendingNativeZip by remember { mutableStateOf<ByteArray?>(null) }
     val nativeZipLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri: Uri? ->
         val bytes = pendingNativeZip
@@ -87,7 +87,7 @@ fun InstantAppBuilderScreen(backendUrl: String, initialWebsiteMode: Boolean = fa
         Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text("ASTRA WEB APP BUILDER", color = builderText, fontSize = 17.sp, fontWeight = FontWeight.Black)
+        Text("QUANTUM AI WEB APP BUILDER", color = builderText, fontSize = 17.sp, fontWeight = FontWeight.Black)
         Text("WEB PROTOTYPE → LIVE PREVIEW", color = builderAccent, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (websiteMode) {
@@ -99,7 +99,7 @@ fun InstantAppBuilderScreen(backendUrl: String, initialWebsiteMode: Boolean = fa
             }
         }
         Text(
-            if (websiteMode) "अपनी वेबसाइट का नाम, उद्देश्य और जरूरी पेज बताइए। ASTRA मोबाइल-फ्रेंडली वेबसाइट का डिजाइन और कोड बनाकर यहीं Preview दिखाएगा।"
+            if (websiteMode) "अपनी वेबसाइट का नाम, उद्देश्य और जरूरी पेज बताइए। QUANTUM AI मोबाइल-फ्रेंडली वेबसाइट का डिजाइन और कोड बनाकर यहीं Preview दिखाएगा।"
             else "यह विकल्प केवल HTML/CSS/JavaScript वेब-ऐप प्रोटोटाइप बनाता है। यह Native Android प्रोजेक्ट या APK नहीं बनाता। APK निर्माण अलग सुविधा है और अभी उपलब्ध नहीं है।",
             color = builderMuted, fontSize = 12.sp, lineHeight = 18.sp
         )
@@ -115,7 +115,7 @@ fun InstantAppBuilderScreen(backendUrl: String, initialWebsiteMode: Boolean = fa
                         scope.launch {
                             try {
                                 pendingNativeZip = withContext(Dispatchers.IO) { createNativeAndroidProjectZip(nativeAppName) }
-                                val fileName = nativeAppName.trim().replace(Regex("[^A-Za-z0-9_-]+"), "_").trim('_').ifBlank { "AstraAndroidApp" } + "-Android-Project.zip"
+                                val fileName = nativeAppName.trim().replace(Regex("[^A-Za-z0-9_-]+"), "_").trim('_').ifBlank { "QuantumAIAndroidApp" } + "-Android-Project.zip"
                                 nativeZipLauncher.launch(fileName)
                                 status = "अब ZIP सेव करने की जगह चुनें।"
                             } catch (error: Exception) {
@@ -153,10 +153,10 @@ fun InstantAppBuilderScreen(backendUrl: String, initialWebsiteMode: Boolean = fa
             onClick = {
                 busy = true
                 html = ""
-                status = if (websiteMode) "ASTRA आपकी वेबसाइट बना रहा है…" else "ASTRA आपका ऐप बना रहा है…"
+                status = if (websiteMode) "QUANTUM AI आपकी वेबसाइट बना रहा है…" else "QUANTUM AI आपका ऐप बना रहा है…"
                 scope.launch {
                     try {
-                        val result = withContext(Dispatchers.IO) { buildPrototype(backendUrl, idea, websiteMode) }
+                        val result = withContext(Dispatchers.IO) { buildPrototype(backendUrl, accessToken, idea, websiteMode) }
                         html = result
                         showPreview = true
                         status = if (websiteMode) "वेबसाइट तैयार है। नीचे Preview देखें।" else "वेब ऐप प्रोटोटाइप तैयार है। नीचे Preview देखें।"
@@ -254,11 +254,11 @@ fun InstantAppBuilderScreen(backendUrl: String, initialWebsiteMode: Boolean = fa
     }
 }
 
-private fun buildPrototype(backendUrl: String, idea: String, websiteMode: Boolean): String {
+private fun buildPrototype(backendUrl: String, accessToken: String, idea: String, websiteMode: Boolean): String {
     require(idea.isNotBlank()) { "पहले अपना आइडिया लिखें।" }
     val prompt = if (websiteMode) {
         """
-You are ASTRA INSTANT WEBSITE BUILDER. Create a complete, polished, production-style responsive single-file WEBSITE from the user's brief.
+You are QUANTUM AI INSTANT WEBSITE BUILDER. Create a complete, polished, production-style responsive single-file WEBSITE from the user's brief.
 Return ONLY raw HTML, no Markdown fences or explanations.
 Requirements:
 - This is a WEBSITE, not an app dashboard. Create a professional public-facing site with strong visual hierarchy and clear navigation.
@@ -277,7 +277,7 @@ Website brief:
 """ + idea
     } else {
         """
-You are ASTRA INSTANT APP BUILDER. Create a complete, polished, responsive single-file web app prototype from the user's idea.
+You are QUANTUM AI INSTANT APP BUILDER. Create a complete, polished, responsive single-file web app prototype from the user's idea.
 Return ONLY raw HTML, no Markdown fences or explanations.
 Requirements:
 - Include all CSS and JavaScript inline in this one HTML document.
@@ -294,12 +294,14 @@ User's app idea:
     }
     val cleanBase = backendUrl.trim().trimEnd('/')
     require(cleanBase.startsWith("https://")) { "Settings में सही HTTPS Backend URL सेव करें।" }
+    require(PrivateApiTokenPolicy.isValid(accessToken)) { "पहले Settings में QUANTUM AI का 64-अक्षरों वाला Private API Access Token सेव करें।" }
     val connection = (URL(cleanBase + "/v1/generate").openConnection() as HttpURLConnection).apply {
         requestMethod = "POST"
         connectTimeout = 15000
         readTimeout = 90000
         doOutput = true
         setRequestProperty("Content-Type", "application/json; charset=utf-8")
+        setRequestProperty("Authorization", PrivateApiTokenPolicy.authorizationHeader(accessToken))
     }
     try {
         connection.outputStream.use { it.write(JSONObject().put("prompt", prompt).toString().toByteArray(Charsets.UTF_8)) }
@@ -323,7 +325,7 @@ User's app idea:
 
 private fun copyGeneratedCode(context: Context, value: String, websiteMode: Boolean) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    clipboard.setPrimaryClip(ClipData.newPlainText(if (websiteMode) "ASTRA generated website" else "ASTRA generated app", value))
+    clipboard.setPrimaryClip(ClipData.newPlainText(if (websiteMode) "QUANTUM AI generated website" else "QUANTUM AI generated app", value))
 }
 
 
@@ -332,13 +334,13 @@ private fun createNativeAndroidProjectZip(appNameInput: String): ByteArray {
         .replace(Regex("[^\\p{L}\\p{N} _-]"), " ")
         .replace(Regex("\\s+"), " ")
         .take(40)
-        .ifBlank { "My Astra App" }
-    val slugRaw = appName.lowercase().replace(Regex("[^a-z0-9]+"), "_").trim('_').ifBlank { "my_astra_app" }
+        .ifBlank { "My Quantum AI App" }
+    val slugRaw = appName.lowercase().replace(Regex("[^a-z0-9]+"), "_").trim('_').ifBlank { "my_quantum_ai_app" }
     val slug = if (slugRaw.firstOrNull()?.isLetter() == true) slugRaw else "app_$slugRaw"
     val packageName = "com.example." + slug.take(32)
     val packagePath = packageName.replace('.', '/')
     val files = linkedMapOf(
-        "README.md" to "# $appName\n\nNative Android starter project generated by ASTRA. Open this folder in Android Studio and let Gradle sync.\n\nThis is source code, not a compiled APK. Build with Build > Build Bundle(s) / APK(s) > Build APK(s).\n\nCreator by Bittu Pandit\n",
+        "README.md" to "# $appName\n\nNative Android starter project generated by QUANTUM AI. Open this folder in Android Studio and let Gradle sync.\n\nThis is source code, not a compiled APK. Build with Build > Build Bundle(s) / APK(s) > Build APK(s).\n\nCreator by Bittu Pandit\n",
         "settings.gradle.kts" to """pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
 dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
 rootProject.name = "$appName"

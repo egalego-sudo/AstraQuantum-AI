@@ -4,7 +4,7 @@
 **Creator credit:** Creator by Bittu Pandit  
 **Target:** Android-first personal AI assistant; preserve the existing signed-app identity, private local data, and zero-budget operating constraint.
 
-This plan is an engineering checklist, not a claim that every capability is complete. Current work is isolated in PR #37; no feature changes are merged into the production branch yet. A capability is complete only after implementation, automated tests where practical, and a documented device/backend acceptance test.
+This plan is an engineering checklist, not a claim that every capability is complete. The capability-expansion work described here was merged through PR #37; remaining items below are verification or future-work gates unless explicitly marked complete. A capability is complete only after implementation, automated tests where practical, and a documented device/backend acceptance test.
 
 ## 1. Knowledge and reasoning
 
