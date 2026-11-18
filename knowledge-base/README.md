@@ -12,6 +12,7 @@ This directory is the versioned foundation for QUANTUM AI's source-attributed kn
 - Support Hindi and English metadata and retrieval; preserve original source wording where licensing permits.
 - Record uncertainty, date sensitivity and review status.
 - Do not ingest private, paywalled, copyrighted bulk text or personal data without permission.
+- A factual/source review is separate from a rights review. Records marked `license_review_pending` are excluded from RAG until the exact source's AI-ingestion permissions are documented. OpenStax titles that expressly require prior written permission are disabled.
 - Keep provider credentials out of this repository.
 
 ## Layout
@@ -38,7 +39,7 @@ Run `npm run knowledge:collect -- --query "quantum mechanics"` from `backend/` t
 
 ## Current status
 
-The current starter corpus contains 22 records across English and Hindi, including mathematics, physics, chemistry, biology, astronomy and computing. It establishes a repository data contract and a small reviewed seed set; it is not yet a comprehensive encyclopedia. It does **not** yet connect this directory to the running backend, create embeddings, train model weights, or claim a large-scale corpus. Those require separate implementation, tests and a build.
+The current starter file contains 22 records across English and Hindi, including mathematics, physics, chemistry, biology, astronomy and computing. Five OpenStax-derived records are retained for audit but marked `license_review_pending` and excluded from RAG until written permission is documented. Factual `source_checked` status does not imply reuse permission. The corpus is not a comprehensive encyclopedia. It does **not** yet connect this directory to the running backend, create embeddings, train model weights, or claim a large-scale corpus. Those require separate implementation, tests and a build.
 
 ## Record fields
 
