@@ -307,7 +307,7 @@ User's app idea:
         connection.outputStream.use { it.write(JSONObject().put("prompt", prompt).toString().toByteArray(Charsets.UTF_8)) }
         val code = connection.responseCode
         val stream = if (code in 200..299) connection.inputStream else connection.errorStream
-        val body = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
+        val body = BoundedInputReader.readText(stream, 2 * 1024 * 1024, "Generated app response is too large.")
         if (code !in 200..299) {
             val message = runCatching { JSONObject(body).optString("error") }.getOrDefault("")
             throw IllegalStateException(message.ifBlank { "Backend HTTP " + code })
