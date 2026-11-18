@@ -49,6 +49,23 @@ jobs:
           node --check backend/server.js
           npm test --prefix backend
 
+      - name: Host native patch parser smoke tests
+        shell: bash
+        run: |
+          cc -std=c11 -D_POSIX_C_SOURCE=200809L \
+            -I ApkPatchLibrary/src/main/cpp \
+            ApkPatchLibrary/src/test/cpp/bspatch_smoke_test.c \
+            ApkPatchLibrary/src/main/cpp/bspatch.c \
+            ApkPatchLibrary/src/main/cpp/bzip2/bzlib.c \
+            ApkPatchLibrary/src/main/cpp/bzip2/compress.c \
+            ApkPatchLibrary/src/main/cpp/bzip2/decompress.c \
+            ApkPatchLibrary/src/main/cpp/bzip2/crctable.c \
+            ApkPatchLibrary/src/main/cpp/bzip2/randtable.c \
+            ApkPatchLibrary/src/main/cpp/bzip2/blocksort.c \
+            ApkPatchLibrary/src/main/cpp/bzip2/huffman.c \
+            -o "$RUNNER_TEMP/bspatch-smoke-tests"
+          "$RUNNER_TEMP/bspatch-smoke-tests"
+
       - name: Install Android NDK and CMake
         shell: bash
         run: |
