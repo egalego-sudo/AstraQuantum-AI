@@ -184,7 +184,11 @@ def train(args: argparse.Namespace) -> Path:
             requested_value = getattr(args, field, 0 if field == "warmup_steps" else None)
             if saved_value != requested_value:
                 raise ValueError(f"resume checkpoint {field} does not match the requested training configuration")
-        if saved_training.get("device_type") != device.type:
+        saved_device_type = saved_training.get("device_type")
+        if saved_device_type is None:
+            # Backward compatibility for resumable checkpoints written before device_type was recorded.
+            saved_device_type = "cuda" if metadata.get("cuda_rng_state") else "cpu"
+        if saved_device_type != device.type:
             raise ValueError("resume checkpoint device type does not match the current training device")
         optimizer_state = metadata.get("optimizer_state_dict")
         rng_state = metadata.get("rng_state")
