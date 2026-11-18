@@ -43,6 +43,7 @@ assert.equal(releases.length, 36, "Expected 36 published build releases");
 assert.ok(releases.every(row => Number(row.releaseAssets) > 0), "Every listed release must include asset-count metadata");
 
 const sourceCommits = androidRuns.filter(row => row.commitSha);
+assert.equal(sourceCommits.length, androidRuns.length, "Every Android-build run must include a source commit SHA");
 const missingCommitTrees = sourceCommits.filter(row => {
   try {
     execFileSync("git", ["cat-file", "-e", row.commitSha + "^{tree}"], { stdio: "ignore" });
