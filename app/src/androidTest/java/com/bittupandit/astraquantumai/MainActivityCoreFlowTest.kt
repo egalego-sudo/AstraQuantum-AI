@@ -6,9 +6,12 @@ import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.onAllNodes
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -43,6 +46,7 @@ class MainActivityCoreFlowTest {
         composeRule.onNodeWithText("AI Chat", useUnmergedTree = true).performClick()
         composeRule.onNodeWithText("AI CONVERSATION").assertExists()
 
+        repeat(4) { composeRule.onNodeWithTag("main_navigation").performTouchInput { swipeLeft() } }
         composeRule.onNodeWithText("Memory", useUnmergedTree = true).performClick()
         composeRule.onNodeWithText("ADVANCED PRIVATE MEMORY").assertExists()
 
@@ -72,6 +76,7 @@ class MainActivityCoreFlowTest {
         composeRule.waitUntil(timeoutMillis = 15_000) {
             composeRule.onAllNodesWithText("Settings", substring = false).fetchSemanticsNodes().isNotEmpty()
         }
+        repeat(4) { composeRule.onNodeWithTag("main_navigation").performTouchInput { swipeLeft() } }
         composeRule.onNodeWithText("Projects", useUnmergedTree = true).performClick()
         composeRule.onNodeWithText("QUANTUM-AI project persistence check", substring = true).assertExists()
 
