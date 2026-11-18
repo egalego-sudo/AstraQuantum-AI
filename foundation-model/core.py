@@ -133,6 +133,8 @@ class QuantumGPT(nn.Module):
     ) -> tuple[torch.Tensor, torch.Tensor | None]:
         if input_ids.ndim != 2:
             raise ValueError("input_ids must have shape [batch, sequence]")
+        if input_ids.dtype != torch.long:
+            raise ValueError("input_ids must use torch.long token IDs")
         batch, steps = input_ids.shape
         if steps < 1 or steps > self.config.block_size:
             raise ValueError("sequence length is outside the configured context window")
@@ -146,6 +148,10 @@ class QuantumGPT(nn.Module):
         if targets is not None:
             if targets.shape != input_ids.shape:
                 raise ValueError("targets must have the same shape as input_ids")
+            if targets.dtype != torch.long:
+                raise ValueError("targets must use torch.long token IDs")
+            if torch.any(targets < 0) or torch.any(targets >= self.config.vocab_size):
+                raise ValueError("target token id is outside the vocabulary")
             loss = F.cross_entropy(logits.reshape(-1, logits.size(-1)), targets.reshape(-1))
         return logits, loss
 
@@ -161,6 +167,8 @@ class QuantumGPT(nn.Module):
             raise ValueError("max_new_tokens must be a non-negative integer")
         if input_ids.ndim != 2 or input_ids.size(1) < 1:
             raise ValueError("input_ids must have shape [batch, non-empty sequence]")
+        if input_ids.dtype != torch.long:
+            raise ValueError("input_ids must use torch.long token IDs")
         if torch.any(input_ids < 0) or torch.any(input_ids >= self.config.vocab_size):
             raise ValueError("input token id is outside the vocabulary")
         if not math.isfinite(float(temperature)) or temperature <= 0:
