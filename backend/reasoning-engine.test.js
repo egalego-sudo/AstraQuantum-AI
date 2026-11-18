@@ -48,3 +48,17 @@ test("checklist is bounded to four specialized modes", () => {
   const specialized = guide.split("\n").filter(line => line.includes(" CHECK:")).length;
   assert.ok(specialized <= 4);
 });
+
+test("recognizes every requested programming language family", () => {
+  const languages = [
+    "Python", "JavaScript", "TypeScript", "Java", "Kotlin", "C", "C++", "C#",
+    "CSharp", "Go", "Golang", "Rust", "PHP", "Swift", "SQL", "HTML", "CSS",
+    "Verilog", "SystemVerilog", "Bash"
+  ];
+  for (const language of languages) {
+    assert.ok(
+      selectReasoningModes(language).includes("software_engineering"),
+      `language not recognized: ${language}`
+    );
+  }
+});
