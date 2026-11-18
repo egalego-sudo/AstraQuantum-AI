@@ -68,3 +68,32 @@ Perplexity and token accuracy measure byte-level language modeling, not
 reasoning, factuality, instruction following, safety, or general intelligence.
 The generated text is not quality-scored by this harness. A separate curated
 task suite and human review are required for those claims.
+
+## Curated reasoning task benchmark
+
+For a task-level check, prepare a UTF-8 JSONL file with one object per line.
+Each object must contain exactly `id`, `category`, `prompt`, and
+`reference`. Use human-reviewed, unambiguous questions and expected answers.
+Register the exact JSONL artifact in the dataset manifest with
+`usage=evaluate`, `review_status=approved`, and a held-out
+`split=validation` or `split=test` before running.
+
+```bash
+python foundation-model/evaluate_reasoning.py \
+  --checkpoint ./quantum-small.pt \
+  --task-file ./reasoning-heldout.jsonl \
+  --dataset-id YOUR_APPROVED_REASONING_DATASET_ID \
+  --manifest foundation-model/datasets/manifest.json \
+  --output ./reasoning-report.json \
+  --max-new-tokens 24 \
+  --cpu
+```
+
+The report includes exact-match accuracy overall and by category, raw model
+outputs, task references, dataset provenance, checkpoint metadata, and seed.
+Normalization only case-folds Unicode, trims ends, and collapses whitespace;
+it does not forgive semantically equivalent wording or alternate numeric
+formats. This deliberately strict score needs human review for ambiguous
+answers. Do not tune on the test split. The current randomly initialized
+research model is expected to perform poorly until it is trained; this harness
+measures performance and does not itself improve model capability.
