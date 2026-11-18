@@ -17,7 +17,7 @@ internal object BoundedInputReader {
         require(maxBytes > 0) { "maxBytes must be positive." }
 
         val output = ByteArrayOutputStream(minOf(maxBytes, BUFFER_SIZE))
-        val buffer = ByteArray(minOf(BUFFER_SIZE, maxBytes + 1))
+        val buffer = ByteArray(minOf(BUFFER_SIZE, maxBytes))
         var total = 0
 
         while (true) {
