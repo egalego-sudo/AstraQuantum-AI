@@ -1,4 +1,4 @@
-name: ASTRA Android Build
+name: QUANTUM AI Android Build
 
 on:
   workflow_dispatch:
@@ -24,12 +24,12 @@ permissions:
 
 # Keep only one APK pipeline active; a newer fix supersedes a stuck run.
 concurrency:
-  group: astra-android-build-v4
+  group: quantum-ai-android-build-v4
   cancel-in-progress: true
 
 jobs:
   build:
-    name: Build ASTRA APKs
+    name: Build QUANTUM AI APKs
     # This release-capable workflow must only execute on main. PR/debug validation runs in capability-ci.yml.
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -66,9 +66,9 @@ jobs:
               else:
                   name = parts[i]; i += 1
                   entries.append((status, name, name))
-          manifest = ['ASTRA QUANTUM AI PLUS - SOURCE PATCH', '', 'Overlay included files onto the same repository root.', 'Deleted files are listed below and must be removed manually if applying by hand.', '']
+          manifest = ['QUANTUM AI - SOURCE PATCH', '', 'Overlay included files onto the same repository root.', 'Deleted files are listed below and must be removed manually if applying by hand.', '']
           included = []
-          with zipfile.ZipFile(out / 'ASTRA-SOURCE-PATCH.zip', 'w', zipfile.ZIP_DEFLATED) as z:
+          with zipfile.ZipFile(out / 'QUANTUM-AI-SOURCE-PATCH.zip', 'w', zipfile.ZIP_DEFLATED) as z:
               for status, old, new in entries:
                   if status.startswith('D'):
                       manifest.append(f'DELETED: {old}')
@@ -89,7 +89,7 @@ jobs:
       - name: Upload changed-files source patch
         uses: actions/upload-artifact@v4
         with:
-          name: ASTRA-SOURCE-PATCH
+          name: QUANTUM-AI-SOURCE-PATCH
           path: patch-output/ASTRA-SOURCE-PATCH.zip
           if-no-files-found: error
           retention-days: 90
@@ -148,7 +148,7 @@ jobs:
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: ASTRA-QUANTUM-AI-debug-apk
+          name: QUANTUM-AI-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
@@ -193,7 +193,7 @@ jobs:
         if: env.RELEASE_PUBLISH_APPROVED == 'true' && env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
         uses: actions/upload-artifact@v4
         with:
-          name: ASTRA-QUANTUM-AI-signed-update-apk
+          name: QUANTUM-AI-signed-update-apk
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 90
@@ -242,7 +242,7 @@ jobs:
               cert=subprocess.check_output([os.environ["APKSIGNER"],"verify","--print-certs",str(base)],text=True,stderr=subprocess.STDOUT)
               signer=next((x.split(": ",1)[1].strip() for x in cert.splitlines() if "Signer #1 certificate SHA-256 digest:" in x),"")
               if signer.lower()!=os.environ["NEW_CERT"].lower(): continue
-              name=f"ASTRA-build{build}-to-{os.environ['GITHUB_RUN_NUMBER']}.patch"; patch=out/name
+              name=f"QUANTUM-AI-build{build}-to-{os.environ['GITHUB_RUN_NUMBER']}.patch"; patch=out/name
               subprocess.run(["bsdiff",str(base),os.environ["NEW_APK"],str(patch)],check=True)
               rebuilt=out/f"verify-{build}.apk"; subprocess.run(["bspatch",str(base),str(rebuilt),str(patch)],check=True)
               good=hashlib.sha256(rebuilt.read_bytes()).hexdigest()==os.environ["NEW_HASH"]; rebuilt.unlink()
@@ -295,13 +295,13 @@ jobs:
         run: |
           set -euo pipefail
           TAG="astra-build-${GITHUB_RUN_NUMBER}"
-          gh release create "$TAG" delta-output/*.patch delta-output/UPDATE-METADATA.json delta-output/UPDATE-METADATA.sig delta-output/ASTRA-QUANTUM-AI.apk --repo "$GITHUB_REPOSITORY" --title "ASTRA QUANTUM AI PLUS Build ${GITHUB_RUN_NUMBER}" --notes "Signed per-build delta patches for the 20 most recent compatible releases. Full APK fallback only." --latest --target "$GITHUB_SHA"
+          gh release create "$TAG" delta-output/*.patch delta-output/UPDATE-METADATA.json delta-output/UPDATE-METADATA.sig delta-output/ASTRA-QUANTUM-AI.apk --repo "$GITHUB_REPOSITORY" --title "QUANTUM AI Build ${GITHUB_RUN_NUMBER}" --notes "Signed per-build delta patches for the 20 most recent compatible releases. Full APK fallback only." --latest --target "$GITHUB_SHA"
 
       - name: Upload verified APK binary delta
         if: env.RELEASE_PUBLISH_APPROVED == 'true' && env.ASTRA_KEYSTORE_BASE64 != '' && env.ASTRA_KEYSTORE_PASSWORD != '' && env.ASTRA_KEY_PASSWORD != ''
         uses: actions/upload-artifact@v4
         with:
-          name: ASTRA-QUANTUM-AI-APK-DELTA-multi-base
+          name: QUANTUM-AI-APK-DELTA-multi-base
           path: |
             delta-output/*.patch
             delta-output/UPDATE-METADATA.json

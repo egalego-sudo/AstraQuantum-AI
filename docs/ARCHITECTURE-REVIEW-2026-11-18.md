@@ -112,6 +112,7 @@ Build environment observed in Gradle configuration: Java 17, Gradle 8.9, Android
 | Android package/application ID | `com.bittupandit.astraquantumai` | Preserve for update lineage; a rename requires a deliberate migration and separate app identity. |
 | Backend URL | `https://astraquantum-ai.onrender.com` | Legacy Render endpoint is embedded as the default; migrate only with a coordinated backend/app config and health verification. |
 | Backend secrets | `GROQ_API_KEY`, `APP_ACCESS_TOKEN`, optional IBM secrets | Keep in server environment only; never commit to Git or bundle in APK. |
+| Legacy update identifiers | Historical `astra-build-*` tags, old `ASTRA-QUANTUM-AI.apk` base assets and `ASTRA_*` signing-secret names | Retained only so already-installed updater clients and existing GitHub secrets continue to work. New workflow display names and CI artifact labels use QUANTUM AI. Do not rename the package ID, legacy tags or historical assets without a tested migration. |
 | Production model identity | Groq provider + optional third-party Qwen offline | Not a QUANTUM AI-owned trained foundation model. |
 | Training data | Manifest currently empty | Actual training is blocked until suitable data is sourced, rights/privacy/quality reviewed and explicitly approved. |
 | Evaluation data | No approved held-out artifact registered | No independent benchmark score can yet be reported. |
