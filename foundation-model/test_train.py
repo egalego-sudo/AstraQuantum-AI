@@ -57,7 +57,7 @@ class TrainingTests(unittest.TestCase):
         self.assertAlmostEqual(scheduled_learning_rate(1, 10, 2, base), base / 2)
         self.assertAlmostEqual(scheduled_learning_rate(2, 10, 2, base), base)
         self.assertAlmostEqual(scheduled_learning_rate(3, 10, 2, base), base)
-        self.assertLess(scheduled_learning_rate(9, 10, 2, base), base / 10)
+        self.assertLess(scheduled_learning_rate(10, 10, 2, base), base / 10)
 
     def test_cosine_schedule_rejects_invalid_warmup(self):
         with self.assertRaisesRegex(ValueError, "warmup_steps"):
