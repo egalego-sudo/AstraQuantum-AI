@@ -7,6 +7,7 @@ from __future__ import annotations
 import math
 
 from dataclasses import asdict, dataclass
+from pathlib import Path
 from typing import Iterable
 
 import torch
@@ -198,3 +199,67 @@ class QuantumGPT(nn.Module):
 
     def config_dict(self) -> dict[str, int | float]:
         return asdict(self.config)
+
+def load_checkpoint(
+    path: str | Path,
+    map_location: str | torch.device = "cpu",
+) -> tuple[QuantumGPT, dict[str, object]]:
+    """Load a research checkpoint using PyTorch's restricted weights-only loader.
+
+    The checkpoint format, tokenizer, configuration and every state tensor are
+    validated before the model is returned. Never load untrusted checkpoints
+    with unrestricted pickle deserialization.
+    """
+    try:
+        payload = torch.load(path, map_location=map_location, weights_only=True)
+    except Exception as exc:
+        raise ValueError("checkpoint could not be safely loaded") from exc
+
+    if not isinstance(payload, dict):
+        raise ValueError("checkpoint root must be a dictionary")
+    if payload.get("format") != "quantum-gpt-research-v1":
+        raise ValueError("unsupported checkpoint format")
+    if payload.get("tokenizer") != "utf8-byte-v1":
+        raise ValueError("unsupported checkpoint tokenizer")
+
+    config_data = payload.get("config")
+    expected_config_keys = set(ModelConfig.__dataclass_fields__)
+    if not isinstance(config_data, dict) or set(config_data) != expected_config_keys:
+        raise ValueError("checkpoint model configuration is incomplete or contains unknown fields")
+    try:
+        config = ModelConfig(**config_data)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("checkpoint model configuration is invalid") from exc
+
+    state = payload.get("state_dict")
+    if not isinstance(state, dict) or not all(
+        isinstance(key, str) and isinstance(value, torch.Tensor)
+        for key, value in state.items()
+    ):
+        raise ValueError("checkpoint state_dict must contain only named tensors")
+
+    model = QuantumGPT(config)
+    expected_state = model.state_dict()
+    if set(state) != set(expected_state):
+        raise ValueError("checkpoint state_dict keys do not match this model architecture")
+    for key, expected_tensor in expected_state.items():
+        tensor = state[key]
+        if tensor.shape != expected_tensor.shape:
+            raise ValueError(f"checkpoint tensor has an invalid shape: {key}")
+        if torch.is_floating_point(tensor) and not torch.isfinite(tensor).all().item():
+            raise ValueError(f"checkpoint tensor contains non-finite values: {key}")
+
+    if not torch.equal(state["token_embedding.weight"], state["lm_head.weight"]):
+        raise ValueError("checkpoint violates tied token/output embedding weights")
+
+    try:
+        model.load_state_dict(state, strict=True)
+    except (RuntimeError, TypeError) as exc:
+        raise ValueError("checkpoint weights are incompatible with the model") from exc
+
+    metadata = {
+        key: value
+        for key, value in payload.items()
+        if key not in {"format", "tokenizer", "config", "state_dict"}
+    }
+    return model, metadata
