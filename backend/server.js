@@ -144,7 +144,7 @@ async function generate(input) {
   const reasoningGuide = buildReasoningInstructions(prompt);
   content.push({
     type: "input_text",
-    text: prompt + (reasoningGuide ? "\\n\\n" + reasoningGuide : "") + knowledgeContext
+    text: prompt + (reasoningGuide ? "\n\n" + reasoningGuide : "") + knowledgeContext
   });
   const boundedContent = fitContentToByteBudget(content, Buffer.byteLength(ASTRA_INSTRUCTIONS), GROQ_MAX_INPUT_BYTES);
   let boundedPromptText = boundedContent.filter(part => part.type === "input_text").map(part => part.text || "").join("\n");
