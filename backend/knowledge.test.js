@@ -21,20 +21,21 @@ test("retrieves scientific concepts across the expanded corpus", async () => {
 });
 
 
-test("retrieves the reviewed English Calvin-Benson cycle terminology", async () => {
-  const results = await searchKnowledge("Calvin cycle Rubisco RuBP 3-PGA G3P ATP NADPH", 8);
-  const match = results.find(record => record.id === "biology.photosynthesis.calvin-cycle");
-  assert.ok(match, "English Calvin-Benson cycle record should be retrieved");
-  assert.match(match.content, /glyceraldehyde-3-phosphate/i);
-  assert.match(match.content, /does not directly produce glucose/i);
-  assert.ok(match.sources.some(source => source.publisher === "OpenStax Biology 2e"));
-});
-
-test("retrieves the reviewed Hindi Calvin-Benson cycle record", async () => {
-  const results = await searchKnowledge("प्रकाश संश्लेषण कैल्विन चक्र RuBP G3P", 8);
-  const match = results.find(record => record.id === "biology.photosynthesis.calvin-cycle.hi");
-  assert.ok(match, "Hindi Calvin-Benson cycle record should be retrieved");
-  assert.match(match.content, /ग्लूकोज़ नहीं/);
+test("excludes OpenStax-derived English and Hindi records until written AI-ingestion permission is reviewed", async () => {
+  const english = await searchKnowledge("Calvin cycle Rubisco RuBP 3-PGA G3P ATP NADPH", 8);
+  const hindi = await searchKnowledge("प्रकाश संश्लेषण कैल्विन चक्र RuBP G3P", 8);
+  const newton = await searchKnowledge("Newton second law force mass acceleration", 8);
+  const energy = await searchKnowledge("conservation of energy isolated system", 8);
+  const disabledIds = new Set([
+    "physics.newtons-second-law",
+    "physics.conservation-of-energy",
+    "biology.photosynthesis",
+    "biology.photosynthesis.calvin-cycle",
+    "biology.photosynthesis.calvin-cycle.hi"
+  ]);
+  for (const record of [...english, ...hindi, ...newton, ...energy]) {
+    assert.ok(!disabledIds.has(record.id), `license-pending record was retrieved: ${record.id}`);
+  }
 });
 
 test("respects the maximum result limit", async () => {
@@ -59,7 +60,7 @@ test("does not retrieve records that have not passed source review", async () =>
 });
 
 test("retrieved records are reviewed and have HTTPS provenance", async () => {
-  const results = await searchKnowledge("energy conservation isolated system", 8);
+  const results = await searchKnowledge("speed of light vacuum", 8);
   for (const record of results) {
     assert.ok(["source_checked", "expert_reviewed"].includes(record.review_status));
     assert.ok(record.sources.length > 0);
