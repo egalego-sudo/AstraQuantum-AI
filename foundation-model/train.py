@@ -11,8 +11,12 @@ from core import ByteTokenizer, ModelConfig, QuantumGPT
 
 
 def make_batch(data: torch.Tensor, batch_size: int, block_size: int, device: torch.device):
-    if data.numel() <= block_size:
-        raise ValueError("training split must contain more tokens than block_size")
+    if data.ndim != 1:
+        raise ValueError("training data must be a one-dimensional token sequence")
+    if batch_size < 1 or block_size < 1:
+        raise ValueError("batch_size and block_size must be positive")
+    if data.numel() <= block_size + 1:
+        raise ValueError("training split must contain at least block_size + 2 tokens")
     starts = torch.randint(0, data.numel() - block_size - 1, (batch_size,))
     x = torch.stack([data[i : i + block_size] for i in starts.tolist()])
     y = torch.stack([data[i + 1 : i + block_size + 1] for i in starts.tolist()])
