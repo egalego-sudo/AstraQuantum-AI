@@ -21,14 +21,14 @@ The plan covers all requested work:
 |---|---:|---|---|
 | G01 | 5% | Owner requirements mapped; repository tree, major modules, CI workflows and baseline commit inventoried; this ledger committed. | Complete |
 | G02 | 10% | Architecture/dependency map across Android, backend, knowledge base, research engines and foundation model; interfaces and gaps audited. | Complete |
-| G03 | 15% | Android core journeys verified: chat, settings, language, history, project/memory persistence and error states. | Pending |
-| G04 | 20% | Reasoning workflows verified for analysis, logic, root cause, alternatives, contradiction checks, hypotheses and self-review. | Pending |
-| G05 | 25% | Knowledge/education coverage audited and tested across requested subject families and progressive explanation levels. | Pending |
-| G06 | 30% | Programming/software-engineering workflows audited and tested across supported language families and development tasks. | Pending |
+| G03 | 15% | Android core journeys verified: chat navigation/history, settings, project/memory persistence and opt-in controls; Hindi/English prompts and API error paths checked at backend layer. | In progress: emulator UI regression test PR #61 is running; no physical-device acceptance yet |
+| G04 | 20% | Reasoning workflows verified for analysis, logic, root cause, alternatives, contradiction checks, hypotheses and self-review. | In progress: logic/pattern/cross-domain/creative checklists and tests merged in PRs #60 and #62; real held-out reasoning capability benchmark remains pending |
+| G05 | 25% | Knowledge/education coverage audited and tested across requested subject families and progressive explanation levels. | In progress: domain-specific Hindi/English guidance and regression tests merged in PR #62; subject-matter accuracy benchmark remains pending |
+| G06 | 30% | Programming/software-engineering workflows audited and tested across supported language families and development tasks. | In progress: language-family coverage and HDL/Kotlin engineering guidance merged in PR #65; per-language compile/runtime verification remains pending |
 | G07 | 35% | Scientific research workflows verified: source retrieval, provenance, synthesis, modelling/experiment support and limitations. | Pending |
 | G08 | 40% | Independent model architecture and tokenizer design validated; external-provider and third-party models clearly separated from QUANTUM AI-owned weights. | Pending |
 | G09 | 45% | Lawful Hindi/English/code training and evaluation corpora sourced, rights/privacy/quality reviewed, hashed and explicitly approved. | Blocked: candidate sources reviewed, but no source is yet approved for this project's actual use; see DATASET-RIGHTS-REVIEW-2026-11-18.md |
-| G10 | 50% | Training pipeline reliability verified: deterministic configuration, best-checkpoint correctness, resume/scheduler/metrics and failure recovery. | In progress |
+| G10 | 50% | Training pipeline reliability verified: deterministic configuration, best-checkpoint correctness, resume/scheduler/metrics and failure recovery. | In progress: deterministic validation, best-step model/optimizer/RNG checkpoints, resume, warmup/cosine schedule and throughput metrics merged in PRs #55, #57 and #59; real approved-data training run remains blocked |
 | G11 | 55% | Reproducible real training run on approved data and feasible compute; checkpoint provenance and resource metrics recorded. | Blocked: no approved training corpus is currently registered |
 | G12 | 60% | Held-out language, reasoning, math, coding, factuality and instruction-following benchmarks run; baseline comparisons and reports recorded. | Pending; no approved held-out corpus is registered |
 | G13 | 65% | Safety/security testing: prompt injection, data leakage, memorization, harmful requests, citation reliability and abuse controls. | Pending |
@@ -37,7 +37,7 @@ The plan covers all requested work:
 | G16 | 80% | Agent/tool architecture verified with scoped permissions, preview/confirmation for consequential actions and audit logs. | Pending |
 | G17 | 85% | QUANTUM AI-owned model export/quantization and offline Android inference verified on representative real devices. | Pending |
 | G18 | 90% | End-to-end Android/backend integration, compatibility, latency, memory, battery, thermal and stability tests passed. | Pending |
-| G19 | 95% | Full applicable unit/integration/regression/security/build checks pass; fresh APK/AAB artifacts built, inspected and checksummed. | Pending |
+| G19 | 95% | Full applicable unit/integration/regression/security/build checks pass; fresh APK/AAB artifacts built, inspected and checksummed. | In progress: fresh Debug APK built and archive/hash verified; signed Release/AAB and physical-device install remain NOT VERIFIED |
 | G20 | 100% | Independent final review, complete Git diff/commit/PR evidence, limitations and BLOCKED/NOT VERIFIED disclosures, final report and UPDATE NOW confirmation package. | Pending |
 
 ## Progress rules
