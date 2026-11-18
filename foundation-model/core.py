@@ -4,6 +4,8 @@ This is original educational code, not GPT-6 source code or pretrained weights.
 """
 from __future__ import annotations
 
+import math
+
 from dataclasses import asdict, dataclass
 from typing import Iterable
 
@@ -155,12 +157,16 @@ class QuantumGPT(nn.Module):
         temperature: float = 1.0,
         top_k: int | None = None,
     ) -> torch.Tensor:
-        if max_new_tokens < 0:
-            raise ValueError("max_new_tokens cannot be negative")
-        if temperature <= 0:
-            raise ValueError("temperature must be positive")
-        if top_k is not None and top_k < 1:
-            raise ValueError("top_k must be positive")
+        if not isinstance(max_new_tokens, int) or max_new_tokens < 0:
+            raise ValueError("max_new_tokens must be a non-negative integer")
+        if input_ids.ndim != 2 or input_ids.size(1) < 1:
+            raise ValueError("input_ids must have shape [batch, non-empty sequence]")
+        if torch.any(input_ids < 0) or torch.any(input_ids >= self.config.vocab_size):
+            raise ValueError("input token id is outside the vocabulary")
+        if not math.isfinite(float(temperature)) or temperature <= 0:
+            raise ValueError("temperature must be finite and positive")
+        if top_k is not None and (not isinstance(top_k, int) or top_k < 1):
+            raise ValueError("top_k must be a positive integer")
         was_training = self.training
         self.eval()
         try:
