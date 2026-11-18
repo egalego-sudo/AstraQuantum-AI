@@ -1,0 +1,24 @@
+{"id":"logic-001","category":"logic","prompt":"Answer only Yes or No. All roses are flowers. No flowers are made of metal. Can any rose be made of metal?","reference":"No"}
+{"id":"logic-002","category":"logic","prompt":"Answer with one word. If every A is B, and every B is C, is every A necessarily C?","reference":"Yes"}
+{"id":"logic-003","category":"logic","prompt":"Answer only Yes or No. The statements 'P is true' and 'P is false' are both asserted in classical logic. Are they contradictory?","reference":"Yes"}
+{"id":"logic-004","category":"logic","prompt":"A train leaves at 09:00 and arrives at 11:30. How long is the journey? Answer as H hours M minutes.","reference":"2 hours 30 minutes"}
+{"id":"math-001","category":"mathematics","prompt":"Solve 3x + 5 = 20. Answer with the value of x only.","reference":"5"}
+{"id":"math-002","category":"mathematics","prompt":"What is 15 percent of 200? Answer with the number only.","reference":"30"}
+{"id":"math-003","category":"mathematics","prompt":"A rectangle has length 8 cm and width 3 cm. What is its area in square centimetres? Answer with the number only.","reference":"24"}
+{"id":"math-004","category":"mathematics","prompt":"A fair six-sided die is rolled once. What is the probability of rolling an even number? Answer as a simplified fraction.","reference":"1/2"}
+{"id":"math-005","category":"mathematics","prompt":"If today is Tuesday, what day of the week will it be 10 days later? Answer with the weekday only.","reference":"Friday"}
+{"id":"science-001","category":"physics","prompt":"A vehicle travels 120 kilometres in 2 hours at constant average speed. What is its average speed in km/h? Answer with the number only.","reference":"60"}
+{"id":"science-002","category":"physics","prompt":"In a vacuum, approximately how many metres per second is the speed of light? Use scientific notation with two significant digits.","reference":"3.0e8"}
+{"id":"science-003","category":"chemistry","prompt":"How many atoms are in one molecule of H2O? Answer with the integer only.","reference":"3"}
+{"id":"science-004","category":"biology","prompt":"In standard DNA base pairing, which base pairs with adenine? Answer with the base name only.","reference":"Thymine"}
+{"id":"science-005","category":"astronomy","prompt":"Does a light-year measure time or distance? Answer with one word.","reference":"Distance"}
+{"id":"cs-001","category":"computer_science","prompt":"What is the time complexity of scanning an unsorted list of n items once to find a target in the worst case? Answer in Big-O notation.","reference":"O(n)"}
+{"id":"cs-002","category":"programming","prompt":"In Python, what built-in function returns the number of items in a list named items? Answer with the function call only.","reference":"len(items)"}
+{"id":"cs-003","category":"programming","prompt":"In SQL, which clause filters rows before grouping? Answer with the clause name only.","reference":"WHERE"}
+{"id":"hindi-001","category":"hindi_comprehension","prompt":"केवल संख्या में उत्तर दें: सीमा के पास 7 आम थे। उसने 3 आम दे दिए। अब उसके पास कितने आम बचे?","reference":"4"}
+{"id":"hindi-002","category":"hindi_reasoning","prompt":"केवल हाँ या नहीं लिखें: यदि सभी वर्ग आयत हैं और कोई आयत वृत्त नहीं है, तो क्या कोई वर्ग वृत्त हो सकता है?","reference":"नहीं"}
+{"id":"english-001","category":"english_comprehension","prompt":"Answer with one number only: A library has 12 books. It lends 5 and receives 2 new books. How many books does it have now?","reference":"9"}
+{"id":"finance-001","category":"arithmetic","prompt":"A price is ₹500 and is discounted by 10 percent. What is the final price in rupees? Answer with the number only.","reference":"450"}
+{"id":"logic-005","category":"logic","prompt":"Answer only Yes or No. If an event is impossible, can its probability be greater than zero?","reference":"No"}
+{"id":"math-006","category":"mathematics","prompt":"What is the square root of 144? Answer with the positive integer only.","reference":"12"}
+{"id":"physics-001","category":"physics","prompt":"A 2 kg object accelerates at 3 m/s^2. What net force acts on it in newtons? Answer with the number only.","reference":"6"}
