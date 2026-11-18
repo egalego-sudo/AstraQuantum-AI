@@ -662,8 +662,9 @@ private fun AstraApp(
                                     val answer = withContext(Dispatchers.IO) {
                                         val onlineResult = if (imageUri != null) {
                                             runCatching {
-                                                val bytes = context.contentResolver.openInputStream(imageUri)?.use { it.readBytes() } ?: error("फोटो पढ़ी नहीं जा सकी")
-                                                require(bytes.size <= 7 * 1024 * 1024) { "फोटो 7 MB से छोटी रखें।" }
+                                                val bytes = context.contentResolver.openInputStream(imageUri)?.use {
+                                                    BoundedInputReader.read(it, 7 * 1024 * 1024, "फोटो 7 MB से छोटी रखें।")
+                                                } ?: error("फोटो पढ़ी नहीं जा सकी")
                                                 val encoded = Base64.encodeToString(bytes, Base64.NO_WRAP)
                                                 askBackend(backend, questionWithMemory, pickedMime, encoded)
                                             }.getOrElse { "फोटो विश्लेषण विफल: ${it.message}" }
@@ -892,8 +893,9 @@ private fun AstraApp(
                         activity.lifecycleScope.launch {
                             val result = withContext(Dispatchers.IO) {
                                 runCatching {
-                                    val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: error("फ़ाइल पढ़ी नहीं जा सकी")
-                                    require(bytes.size <= 7 * 1024 * 1024) { "फ़ाइल 7 MB से छोटी रखें।" }
+                                    val bytes = context.contentResolver.openInputStream(uri)?.use {
+                                        BoundedInputReader.read(it, 7 * 1024 * 1024, "फ़ाइल 7 MB से छोटी रखें।")
+                                    } ?: error("फ़ाइल पढ़ी नहीं जा सकी")
                                     val encoded = Base64.encodeToString(bytes, Base64.NO_WRAP)
                                     val pdfPrompt = "इस PDF दस्तावेज़ का गहराई से हिंदी में विश्लेषण करें: पहले संक्षिप्त सारांश, फिर विषयवार मुख्य बिंदु, महत्वपूर्ण तिथियाँ/नाम/आँकड़े, दस्तावेज़ में दिए गए निष्कर्ष और अंत में संभावित अस्पष्टताएँ बताएँ। केवल दस्तावेज़ में मौजूद जानकारी को तथ्य कहें।"
                                     val firstResult = askBackend(
@@ -1350,8 +1352,11 @@ private fun checkAstraBackend(baseUrl: String): String {
             readTimeout = 8000
         }
         val code = connection.responseCode
-        val body = (if (code in 200..299) connection.inputStream else connection.errorStream)
-            ?.bufferedReader()?.use { it.readText() }.orEmpty()
+        val body = BoundedInputReader.readText(
+            if (code in 200..299) connection.inputStream else connection.errorStream,
+            64 * 1024,
+            "Backend health response is too large."
+        )
         connection.disconnect()
         if (code !in 200..299) "सर्वर उपलब्ध नहीं · HTTP $code"
         else {
@@ -1382,7 +1387,7 @@ private fun quantumApiRequest(baseUrl: String, path: String, method: String, pay
         }
         val code = connection.responseCode
         val stream = if (code in 200..299) connection.inputStream else connection.errorStream
-        val body = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+        val body = BoundedInputReader.readText(stream, 12 * 1024 * 1024, "Quantum response is too large.")
         connection.disconnect()
         if (code !in 200..299) {
             val message = runCatching { JSONObject(body).optString("error") }.getOrDefault("")
@@ -1412,7 +1417,7 @@ private fun askResearch(baseUrl: String, query: String): String {
         connection.outputStream.use { it.write(payload.toString().toByteArray(Charsets.UTF_8)) }
         val code = connection.responseCode
         val stream = if (code in 200..299) connection.inputStream else connection.errorStream
-        val body = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+        val body = BoundedInputReader.readText(stream, 12 * 1024 * 1024, "Research response is too large.")
         connection.disconnect()
         if (code !in 200..299) {
             val message = runCatching { JSONObject(body).optString("error") }.getOrDefault("")
@@ -1482,7 +1487,7 @@ internal fun askBackend(baseUrl: String, prompt: String, mimeType: String? = nul
         connection.outputStream.use { it.write(payload.toString().toByteArray(Charsets.UTF_8)) }
         val code = connection.responseCode
         val stream = if (code in 200..299) connection.inputStream else connection.errorStream
-        val body = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+        val body = BoundedInputReader.readText(stream, 2 * 1024 * 1024, "AI response is too large.")
         connection.disconnect()
         if (code !in 200..299) {
             val message = runCatching { JSONObject(body).optString("error") }.getOrDefault("")

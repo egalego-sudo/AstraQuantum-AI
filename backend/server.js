@@ -1,4 +1,5 @@
 import http from "node:http";
+import { readJsonBody } from "./read-json-body.js";
 import { timingSafeEqual } from "node:crypto";
 import { clientAddress } from "./client-address.js";
 import { searchKnowledge, validateKnowledgeCitations } from "./knowledge.js";
@@ -88,27 +89,6 @@ function send(res, status, data, requestOrigin = "") {
     "referrer-policy": "no-referrer"
   });
   res.end(JSON.stringify(data));
-}
-
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let body = "";
-    let bodyBytes = 0;
-    req.on("data", chunk => {
-      bodyBytes += chunk.length;
-      if (bodyBytes > 12 * 1024 * 1024) {
-        reject(new Error("Request too large"));
-        req.destroy();
-        return;
-      }
-      body += chunk.toString("utf8");
-    });
-    req.on("end", () => {
-      try { resolve(JSON.parse(body || "{}")); }
-      catch { reject(new Error("Invalid JSON")); }
-    });
-    req.on("error", reject);
-  });
 }
 
 async function generate(input) {
@@ -780,7 +760,7 @@ const server = http.createServer(async (req, res) => {
       const jobId = pathname.slice("/v1/quantum/jobs/".length);
       return send(res, 200, await quantumJob(jobId), requestOrigin);
     }
-    const input = await readBody(req);
+    const input = await readJsonBody(req, { maxBytes: 12 * 1024 * 1024 });
     if (pathname === "/v1/quantum/demo") {
       return send(res, 200, await submitQuantumDemo(input), requestOrigin);
     }
