@@ -72,7 +72,7 @@ RESPONSE STANDARD
         append("\n\n")
         append(INSTRUCTIONS.trim())
         append("\n\n")
-        append(taskSpecificGuidance(userPrompt))
+        append(taskSpecificGuidance(userPrompt.substringBefore("\n\n[QUANTUM AI CONTEXT INTELLIGENCE")))
         append("\n\n[ANSWERING RULE]\n")
         append("Answer the current request directly if it is understandable. Never ask the user to complete or rewrite a clear question. ")
         append("For short questions, give a short answer. Ask for clarification only if an essential fact is genuinely missing.")
