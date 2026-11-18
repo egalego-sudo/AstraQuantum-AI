@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - "app/**"
+      - "ApkPatchLibrary/**"
       - "backend/**"
       - "*.gradle.kts"
       - "gradle.properties"
