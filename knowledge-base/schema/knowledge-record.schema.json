@@ -105,7 +105,8 @@
         "source_checked",
         "expert_reviewed",
         "disputed",
-        "deprecated"
+        "deprecated",
+        "license_review_pending"
       ]
     },
     "confidence": {
