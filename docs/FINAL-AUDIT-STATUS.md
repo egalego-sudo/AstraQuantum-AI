@@ -93,3 +93,7 @@ This section adds independent byte-level checks performed after the earlier audi
 - The service configuration currently reports an empty `healthCheckPath`; therefore Render's configured deploy health-check gate is absent. This is recorded as a configuration gap, not proof that the backend is unhealthy. No service configuration was changed.
 - CPU/memory/request/latency metrics and a fresh request-log check are **NOT VERIFIED** in this pass because the Render metrics/log tools require the user to select a workspace first. The available workspace is `Manju's workspace` (`tea-dbt2quui0phs73ehif60`); no workspace was selected by the assistant.
 - A live deployment status does not prove a successful authenticated Groq request or full application functionality.
+
+
+- Cross-checking the six `baseApkSha256` values in Build 387 metadata against the corresponding `ASTRA-QUANTUM-AI.apk` GitHub Release digests for Builds 386, 385, 384, 382, 381 and 150 returned six exact matches. This independently confirms that the metadata's selected base APK identities match the published release inventory.
+- APK ZIP inspection found native library directories for `arm64-v8a`, `armeabi-v7a`, `x86` and `x86_64`. This confirms packaged ABI entries, not runtime compatibility on every device.
