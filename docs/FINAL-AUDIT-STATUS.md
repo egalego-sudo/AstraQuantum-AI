@@ -84,3 +84,12 @@ This section adds independent byte-level checks performed after the earlier audi
 - The 2026-11-18 release-asset CSV was independently reconciled against the live GitHub Releases API: 38 releases and 280 assets on both sides, with zero missing rows, zero extra rows, zero mismatched names/sizes/digests/download URLs, and a valid SHA-256 digest present for every listed asset. This verifies the inventory metadata only; it does not mean all 280 asset payloads were downloaded or independently hashed.
 
 **Build 387 artifact-integrity conclusion:** APK digest, metadata digest, update-signing certificate fingerprint, detached metadata signature and all six patch hashes/sizes match. **Whole-project audit remains incomplete.**
+
+
+## Render deployment status recheck (2026-11-18)
+
+- Render service `srv-dbt2v3vf3r2c73bpcn0g` was queried through the connected Render account. It is a Node web service named `AstraQuantum-AI`, on the Free plan, configured for the repository `egalego-sudo/Quantum-AI`, branch `main`, root directory `backend/`, with automatic deploys enabled.
+- The latest deployment record returned status `live` for commit `225d4c5bcf9c692d0ebee317e1d7aff79bd44d59`. The service was not suspended at query time.
+- The service configuration currently reports an empty `healthCheckPath`; therefore Render's configured deploy health-check gate is absent. This is recorded as a configuration gap, not proof that the backend is unhealthy. No service configuration was changed.
+- CPU/memory/request/latency metrics and a fresh request-log check are **NOT VERIFIED** in this pass because the Render metrics/log tools require the user to select a workspace first. The available workspace is `Manju's workspace` (`tea-dbt2quui0phs73ehif60`); no workspace was selected by the assistant.
+- A live deployment status does not prove a successful authenticated Groq request or full application functionality.
