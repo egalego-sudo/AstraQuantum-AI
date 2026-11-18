@@ -30,6 +30,10 @@ class TrainingTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             make_batch(torch.arange(40).reshape(20, 2), batch_size=2, block_size=8, device=torch.device("cpu"))
 
+    def test_make_batch_rejects_non_integer_tokens(self):
+        with self.assertRaises(ValueError):
+            make_batch(torch.arange(40, dtype=torch.float32), batch_size=2, block_size=8, device=torch.device("cpu"))
+
     def test_tiny_training_run_writes_checkpoint(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
