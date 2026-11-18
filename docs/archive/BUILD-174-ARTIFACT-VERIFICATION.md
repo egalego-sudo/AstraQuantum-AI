@@ -85,3 +85,31 @@ Continue with Build 184 next. This branch contains the audit evidence and hashes
 - APK cryptographic signer verification, package identity checks and physical-device installation remain **NOT VERIFIED**.
 
 Next build to inspect: **194**.
+
+## Extended verification — Builds 194–202
+
+**33 additional Actions artifact ZIPs were downloaded and independently SHA-256 verified. All 33 matched the GitHub API digest and passed ZIP member-integrity checks.** The archive contents were enumerated; the ZIP filename, size, artifact ID, digest, expiry and member names are recorded in `BUILD-194-202-ARTIFACT-SHA256.csv`.
+
+| Build | Android workflow result | Retained artifacts | Verification |
+|---:|---|---:|---|
+| 194 | Success | 4 | 4/4 PASS |
+| 195 | Success | 4 | 4/4 PASS |
+| 196 | Success | 4 | 4/4 PASS |
+| 197 | Success | 4 | 4/4 PASS |
+| 198 | Success | 4 | 4/4 PASS |
+| 199 | Failure | 1 source-patch ZIP | 1/1 PASS; APK/delta not present |
+| 200 | Success | 4 | 4/4 PASS |
+| 201 | Success | 4 | 4/4 PASS |
+| 202 | Success | 4 | 4/4 PASS |
+
+### Cumulative verified scope — Builds 174–202
+
+- Build numbers examined: **29** (174–202 inclusive).
+- Artifact ZIPs downloaded and independently hashed: **95/95**.
+- GitHub API digest comparisons: **95/95 PASS**.
+- ZIP member-integrity checks: **95/95 PASS**.
+- Failed runs with only source-patch artifacts: **175, 176, 179, 181, 185, 190, 199**. Missing APK/debug/delta files are not claimed as recovered.
+- Build **203** has no Android-build workflow run in the historical inventory (workflow-file run only); therefore no Android artifact ZIP set is available under an Android build run for 203.
+- APK signature cryptographic verification, installability and physical-device tests remain **NOT VERIFIED**.
+
+Next Android build number to inspect: **204**. The 203 workflow-only entry should remain explicitly classified as NO_ANDROID_BUILD_RUN, not treated as a successful empty artifact set.
