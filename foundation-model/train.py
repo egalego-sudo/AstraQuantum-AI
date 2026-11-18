@@ -113,6 +113,20 @@ def train(args: argparse.Namespace) -> Path:
             "best_validation_loss": best_val,
             "tokenizer": "utf8-byte-v1",
             "seed": args.seed,
+            "dataset": {
+                "id": args.dataset_id,
+                "sha256": approved_record["sha256"],
+                "license_id": approved_record["license_id"],
+                "source_url": approved_record["source_url"],
+            },
+            "training": {
+                "steps": args.steps,
+                "batch_size": args.batch_size,
+                "block_size": args.block_size,
+                "learning_rate": args.learning_rate,
+                "eval_interval": args.eval_interval,
+                "max_corpus_mb": args.max_corpus_mb,
+            },
         },
         temporary,
     )
