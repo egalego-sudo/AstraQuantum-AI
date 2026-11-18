@@ -20,7 +20,7 @@ The plan covers all requested work:
 | Gate | Progress | Acceptance evidence | Current status |
 |---|---:|---|---|
 | G01 | 5% | Owner requirements mapped; repository tree, major modules, CI workflows and baseline commit inventoried; this ledger committed. | Complete |
-| G02 | 10% | Architecture/dependency map across Android, backend, knowledge base, research engines and foundation model; interfaces and gaps audited. | Pending |
+| G02 | 10% | Architecture/dependency map across Android, backend, knowledge base, research engines and foundation model; interfaces and gaps audited. | Complete |
 | G03 | 15% | Android core journeys verified: chat, settings, language, history, project/memory persistence and error states. | Pending |
 | G04 | 20% | Reasoning workflows verified for analysis, logic, root cause, alternatives, contradiction checks, hypotheses and self-review. | Pending |
 | G05 | 25% | Knowledge/education coverage audited and tested across requested subject families and progressive explanation levels. | Pending |
