@@ -150,6 +150,30 @@ class TrainingTests(unittest.TestCase):
             for key, expected in validation_snapshots[0].items():
                 torch.testing.assert_close(checkpoint["state_dict"][key], expected)
 
+            # Reject altered optimizer state before attempting to continue training.
+            corrupt = dict(checkpoint)
+            corrupt_optimizer = dict(checkpoint["optimizer_state_dict"])
+            corrupt_slots = dict(corrupt_optimizer["state"])
+            first_slot_id = next(iter(corrupt_slots))
+            first_slot = dict(corrupt_slots[first_slot_id])
+            first_slot["exp_avg"] = torch.full_like(first_slot["exp_avg"], float("nan"))
+            corrupt_slots[first_slot_id] = first_slot
+            corrupt_optimizer["state"] = corrupt_slots
+            corrupt["optimizer_state_dict"] = corrupt_optimizer
+            corrupt_path = root / "corrupt-resume.pt"
+            torch.save(corrupt, corrupt_path)
+            args.resume = str(corrupt_path)
+            args.output = str(root / "should-not-exist.pt")
+            with self.assertRaisesRegex(ValueError, "non-finite"):
+                train(args)
+
+            # Resume configuration is bound to the original seed and batch shape.
+            args.resume = str(output)
+            args.seed += 1
+            with self.assertRaisesRegex(ValueError, "seed"):
+                train(args)
+            args.seed -= 1
+
             # Continue from the saved best step with the same approved data and model config.
             resumed_output = root / "resumed-model.pt"
             args.resume = str(output)

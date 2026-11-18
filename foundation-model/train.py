@@ -74,6 +74,30 @@ def scheduled_learning_rate(step: int, total_steps: int, warmup_steps: int, base
     return base_learning_rate * 0.5 * (1.0 + math.cos(math.pi * progress))
 
 
+def _validate_optimizer_state_dict(state, optimizer) -> None:
+    if not isinstance(state, dict) or set(state) != {"state", "param_groups"}:
+        raise ValueError("resume checkpoint optimizer state has an invalid structure")
+    if not isinstance(state["state"], dict) or not isinstance(state["param_groups"], list):
+        raise ValueError("resume checkpoint optimizer state has invalid collections")
+    if len(state["param_groups"]) != len(optimizer.param_groups):
+        raise ValueError("resume checkpoint optimizer parameter groups do not match the model")
+    for saved_group, current_group in zip(state["param_groups"], optimizer.param_groups):
+        saved_params = saved_group.get("params") if isinstance(saved_group, dict) else None
+        if not isinstance(saved_params, list) or len(saved_params) != len(current_group["params"]):
+            raise ValueError("resume checkpoint optimizer parameter count does not match the model")
+    for parameter_state in state["state"].values():
+        if not isinstance(parameter_state, dict):
+            raise ValueError("resume checkpoint optimizer parameter state is malformed")
+        for value in parameter_state.values():
+            if isinstance(value, torch.Tensor):
+                if value.is_floating_point() and not torch.isfinite(value).all():
+                    raise ValueError("resume checkpoint optimizer state contains non-finite tensors")
+            elif isinstance(value, float) and not math.isfinite(value):
+                raise ValueError("resume checkpoint optimizer state contains non-finite scalars")
+            elif not isinstance(value, (int, float, bool)):
+                raise ValueError("resume checkpoint optimizer state contains an unsupported value")
+
+
 def _to_cpu_tree(value):
     if isinstance(value, torch.Tensor):
         return value.detach().cpu().clone()
@@ -150,10 +174,27 @@ def train(args: argparse.Namespace) -> Path:
         dataset_metadata = metadata.get("dataset")
         if not isinstance(dataset_metadata, dict) or dataset_metadata.get("id") != args.dataset_id or dataset_metadata.get("sha256") != approved_record["sha256"]:
             raise ValueError("resume checkpoint dataset provenance does not match the approved corpus")
+        saved_training = metadata.get("training")
+        if not isinstance(saved_training, dict):
+            raise ValueError("resume checkpoint lacks training configuration metadata")
+        if metadata.get("seed") != args.seed:
+            raise ValueError("resume checkpoint seed does not match the requested seed")
+        for field in ("batch_size", "block_size", "learning_rate", "warmup_steps"):
+            saved_value = saved_training.get(field)
+            requested_value = getattr(args, field, 0 if field == "warmup_steps" else None)
+            if saved_value != requested_value:
+                raise ValueError(f"resume checkpoint {field} does not match the requested training configuration")
+        saved_device_type = saved_training.get("device_type")
+        if saved_device_type is None:
+            # Backward compatibility for resumable checkpoints written before device_type was recorded.
+            saved_device_type = "cuda" if metadata.get("cuda_rng_state") else "cpu"
+        if saved_device_type != device.type:
+            raise ValueError("resume checkpoint device type does not match the current training device")
         optimizer_state = metadata.get("optimizer_state_dict")
         rng_state = metadata.get("rng_state")
         if not isinstance(optimizer_state, dict) or not isinstance(rng_state, torch.Tensor):
             raise ValueError("resume checkpoint lacks optimizer/RNG state; start a new run or use a newer resumable checkpoint")
+        _validate_optimizer_state_dict(optimizer_state, optimizer)
         try:
             model.load_state_dict(resumed_model.state_dict(), strict=True)
             optimizer.load_state_dict(optimizer_state)
@@ -235,6 +276,7 @@ def train(args: argparse.Namespace) -> Path:
         "lr_schedule": "linear_warmup_cosine_decay",
         "max_corpus_mb": args.max_corpus_mb,
         "resumed_from": str(resume_path) if resume_path else None,
+        "device_type": device.type,
     }
     payload = {
         "format": "quantum-gpt-research-v1",
