@@ -816,7 +816,7 @@ private fun AstraApp(
                     SelectionContainer { Text(researchResult, color = white, lineHeight = 20.sp) }
                     val researchLinks = Regex("https?://[^\\s)]+").findAll(researchResult)
                         .map { it.value.trimEnd('.', ',', ';', ')', ']') }
-                        .distinct().take(12).toList()
+                        .distinct().filter(ExternalLinkPolicy::allows).take(12).toList()
                     if (researchLinks.isNotEmpty()) {
                         Text("स्रोत सीधे खोलें", color = mint, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         researchLinks.forEachIndexed { index, link ->
