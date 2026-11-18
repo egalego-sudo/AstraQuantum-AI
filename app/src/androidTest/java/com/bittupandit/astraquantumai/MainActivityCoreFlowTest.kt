@@ -61,6 +61,7 @@ class MainActivityCoreFlowTest {
         composeRule.waitUntil(timeoutMillis = 15_000) {
             composeRule.onAllNodesWithText("Memory", substring = false).fetchSemanticsNodes().isNotEmpty()
         }
+        repeat(4) { composeRule.onNodeWithTag("main_navigation").performTouchInput { swipeLeft() } }
         composeRule.onNodeWithText("Memory", useUnmergedTree = true).performClick()
         composeRule.onNodeWithText("ADVANCED PRIVATE MEMORY").assertExists()
         composeRule.onNodeWithText("QUANTUM-AI emulator persistence check", substring = true).assertExists()
