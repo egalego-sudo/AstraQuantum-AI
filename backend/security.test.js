@@ -68,3 +68,40 @@ test("private API requires bearer token and keeps health response minimal", asyn
   const allowedOrigin = await fetch(base + "/health", { headers: { origin: "https://allowed.example" } });
   assert.equal(allowedOrigin.headers.get("access-control-allow-origin"), "https://allowed.example");
 });
+
+test("private API fails closed when APP_ACCESS_TOKEN is not configured", async t => {
+  const port = 18000 + Math.floor(Math.random() * 20000);
+  const child = spawn(process.execPath, ["server.js"], {
+    cwd: backendDir,
+    env: {
+      ...process.env,
+      PORT: String(port),
+      APP_ACCESS_TOKEN: "",
+      GROQ_API_KEY: "test-placeholder"
+    },
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  let stderr = "";
+  child.stderr.setEncoding("utf8");
+  child.stderr.on("data", chunk => { stderr += chunk; });
+  t.after(() => { if (!child.killed) child.kill("SIGTERM"); });
+
+  const base = "http://127.0.0.1:" + port;
+  let ready = false;
+  for (let attempt = 0; attempt < 60; attempt++) {
+    try {
+      const response = await fetch(base + "/health");
+      if (response.ok) { ready = true; break; }
+    } catch {}
+    if (child.exitCode !== null) break;
+    await sleep(100);
+  }
+  assert.equal(ready, true, "server should start without a token but keep private routes closed; stderr: " + stderr);
+
+  const response = await fetch(base + "/v1/generate", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ prompt: "test" })
+  });
+  assert.equal(response.status, 503, "missing private API token must fail closed");
+});
