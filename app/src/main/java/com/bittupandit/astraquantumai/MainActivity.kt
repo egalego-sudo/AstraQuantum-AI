@@ -213,29 +213,7 @@ private fun securePreferences(context: Context): SharedPreferences {
         EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
         EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM)
     val legacy = context.getSharedPreferences("astra_private", Context.MODE_PRIVATE)
-    if (!secure.getBoolean("_secure_migration_complete", false)) {
-        val editor = secure.edit()
-        legacy.all.forEach { (key, value) ->
-            when (value) {
-                is String -> editor.putString(key, value)
-                is Boolean -> editor.putBoolean(key, value)
-                is Int -> editor.putInt(key, value)
-                is Long -> editor.putLong(key, value)
-                is Float -> editor.putFloat(key, value)
-                is Set<*> -> editor.putStringSet(key, value.filterIsInstance<String>().toSet())
-            }
-        }
-        // Commit encrypted copies first, then clear the legacy plaintext store.
-        // Set the completion marker last so a crash between these steps retries cleanup.
-        check(editor.commit()) { "Secure migration failed" }
-        check(legacy.edit().clear().commit()) { "Legacy storage cleanup failed" }
-        check(secure.edit().putBoolean("_secure_migration_complete", true).commit()) {
-            "Secure migration completion marker failed"
-        }
-    } else if (legacy.all.isNotEmpty()) {
-        // Also clean up a legacy store left behind by an interrupted older migration.
-        check(legacy.edit().clear().commit()) { "Legacy storage cleanup failed" }
-    }
+    migrateLegacyPreferences(secure, legacy)
     return secure
 }
 private object AppSecurity { @Volatile var accessToken: String = "" }
