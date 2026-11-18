@@ -10,7 +10,7 @@ from pathlib import Path
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from train import make_batch, train
+from train import evaluate, make_batch, train
 
 
 class TrainingTests(unittest.TestCase):
@@ -20,6 +20,30 @@ class TrainingTests(unittest.TestCase):
         self.assertEqual(tuple(x.shape), (3, 8))
         self.assertEqual(tuple(y.shape), (3, 8))
         torch.testing.assert_close(y[:, :-1], x[:, 1:])
+
+    def test_evaluation_is_deterministic_preserves_rng_and_training_state(self):
+        from core import ModelConfig, QuantumGPT
+
+        torch.manual_seed(7)
+        model = QuantumGPT(ModelConfig(block_size=8, n_embd=16, n_head=4, n_layer=1, dropout=0.2))
+        model.train()
+        data = torch.randint(0, 258, (128,), dtype=torch.long)
+        rng_before = torch.random.get_rng_state().clone()
+
+        first = evaluate(model, data, batch_size=3, block_size=8, device=torch.device("cpu"), batches=5)
+        rng_after_first = torch.random.get_rng_state().clone()
+        second = evaluate(model, data, batch_size=3, block_size=8, device=torch.device("cpu"), batches=5)
+
+        self.assertEqual(first, second)
+        torch.testing.assert_close(rng_before, rng_after_first)
+        self.assertTrue(model.training)
+
+    def test_evaluation_rejects_invalid_batch_count(self):
+        from core import ModelConfig, QuantumGPT
+
+        model = QuantumGPT(ModelConfig(block_size=8, n_embd=16, n_head=4, n_layer=1))
+        with self.assertRaisesRegex(ValueError, "must be positive"):
+            evaluate(model, torch.arange(40, dtype=torch.long), 2, 8, torch.device("cpu"), batches=0)
 
     def test_make_batch_rejects_short_data(self):
         with self.assertRaises(ValueError):
