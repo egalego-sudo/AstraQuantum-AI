@@ -8,6 +8,7 @@ from pathlib import Path
 import torch
 
 from core import ByteTokenizer, ModelConfig, QuantumGPT
+from datasets.validate_manifest import verify_training_corpus
 
 
 def make_batch(data: torch.Tensor, batch_size: int, block_size: int, device: torch.device):
@@ -52,6 +53,8 @@ def train(args: argparse.Namespace) -> Path:
     max_bytes = args.max_corpus_mb * 1024 * 1024
     if corpus_path.stat().st_size > max_bytes:
         raise ValueError(f"corpus exceeds configured {args.max_corpus_mb} MiB safety limit")
+    manifest_path = Path(args.manifest)
+    verify_training_corpus(manifest_path, args.dataset_id, corpus_path)
     text = corpus_path.read_text(encoding="utf-8")
     tokenizer = ByteTokenizer()
     tokens = torch.tensor(tokenizer.encode(text), dtype=torch.long)
@@ -112,6 +115,12 @@ def train(args: argparse.Namespace) -> Path:
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--text-file", required=True)
+    parser.add_argument("--dataset-id", required=True, help="approved training dataset ID in the manifest")
+    parser.add_argument(
+        "--manifest",
+        default=str(Path(__file__).resolve().parent / "datasets" / "manifest.json"),
+        help="dataset governance manifest path",
+    )
     parser.add_argument("--output", default="quantum-small.pt")
     parser.add_argument("--steps", type=int, default=500)
     parser.add_argument("--batch-size", type=int, default=16)
