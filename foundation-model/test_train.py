@@ -83,6 +83,35 @@ class TrainingTests(unittest.TestCase):
             self.assertEqual(checkpoint["seed"], 1337)
             self.assertGreater(checkpoint["best_validation_loss"], 0)
 
+    def test_training_rejects_corpus_hash_mismatch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            corpus = root / "corpus.txt"
+            corpus.write_text(("changed corpus " * 40), encoding="utf-8")
+            manifest = root / "manifest.json"
+            manifest.write_text(json.dumps({
+                "manifest_version": 1,
+                "datasets": [{
+                    "id": "approved-but-different-artifact", "name": "Approved corpus",
+                    "source_url": "https://example.org/corpus",
+                    "license_id": "CC-BY-4.0",
+                    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+                    "languages": ["en"],
+                    "sha256": "a" * 64,
+                    "usage": "train", "split": "train",
+                    "attribution": "Test", "review_status": "approved"
+                }]
+            }), encoding="utf-8")
+            args = argparse.Namespace(
+                text_file=str(corpus), dataset_id="approved-but-different-artifact",
+                manifest=str(manifest), output=str(root / "out.pt"), steps=1,
+                batch_size=1, block_size=8, eval_interval=1, learning_rate=1e-3,
+                seed=1, max_corpus_mb=1, width=16, heads=4, layers=1,
+                dropout=0.0, cpu=True,
+            )
+            with self.assertRaisesRegex(ValueError, "SHA-256"):
+                train(args)
+
     def test_training_rejects_unapproved_dataset(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
