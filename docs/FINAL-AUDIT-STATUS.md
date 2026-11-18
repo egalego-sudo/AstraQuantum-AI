@@ -133,3 +133,12 @@ This section adds independent byte-level checks performed after the earlier audi
 - The current migration helper copies supported legacy preference types into encrypted preferences with a synchronous commit, clears the legacy plaintext store only after the encrypted copy succeeds, and writes the completion marker only after cleanup succeeds.
 - The migration is idempotent and includes retry handling for failed encrypted copy, failed legacy cleanup and failed completion-marker commits. The current unit tests exercise these failure/retry cases and cleanup of stale legacy data.
 - This is source and unit-test evidence. Real user-data migration, process-death recovery and restore behavior on the user's installed phone remain **NOT VERIFIED**.
+
+
+## App-lock and Personal Context privacy recheck (2026-11-18)
+
+- The app lock is enabled by default and authenticates through Android `BIOMETRIC_STRONG` or `DEVICE_CREDENTIAL`; the activity resets its unlocked state when backgrounded while the lock is enabled. The app also sets `FLAG_SECURE` to block ordinary screenshots/recents previews.
+- The app stores chat history, saved memory, projects and the private API token through the encrypted preferences instance. Personal Context sharing defaults to `false`; the prompt builder returns only the user's question when opt-out is active. When opted in, the selected history/memory/project context is bounded before being sent.
+- Unit tests explicitly verify that opt-out excludes conversation history, saved memory and project notes, and that opt-in context remains bounded and can retrieve relevant older numerical context.
+- Backend security tests verify minimal unauthenticated health output, 401 for absent/incorrect tokens, 503 when the private token is not configured, and CORS allowlist behavior.
+- Physical-device biometric/PIN lifecycle, screenshot behavior, encrypted preference restore, and real authenticated API requests remain **NOT VERIFIED** on the user's phone.
