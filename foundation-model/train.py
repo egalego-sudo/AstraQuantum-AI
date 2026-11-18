@@ -13,6 +13,8 @@ from core import ByteTokenizer, ModelConfig, QuantumGPT
 def make_batch(data: torch.Tensor, batch_size: int, block_size: int, device: torch.device):
     if data.ndim != 1:
         raise ValueError("training data must be a one-dimensional token sequence")
+    if data.dtype != torch.long:
+        raise ValueError("training data must use torch.long token IDs")
     if batch_size < 1 or block_size < 1:
         raise ValueError("batch_size and block_size must be positive")
     if data.numel() <= block_size + 1:
