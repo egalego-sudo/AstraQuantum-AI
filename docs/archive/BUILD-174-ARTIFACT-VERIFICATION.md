@@ -57,3 +57,31 @@ Per-member hashes and exact artifact IDs are in `BUILD-174-ARTIFACT-SHA256.csv`.
 - Android APK signature verification and installation/runtime testing remain **NOT VERIFIED**.
 
 Continue with Build 184 next. This branch contains the audit evidence and hashes, not the binary ZIP payloads themselves. Actions artifact retention remains time-limited; the listed expiry dates must be respected.
+
+## Extended verification — Builds 184–193
+
+**34 additional artifact ZIPs across Builds 184–193 were downloaded and independently SHA-256 verified. All 34 local ZIP hashes matched the corresponding GitHub Actions API digests; all ZIPs passed member integrity checks.** The manifest records the SHA-256 of each extracted member.
+
+| Build | Android workflow result | Retained artifacts | Verification |
+|---:|---|---:|---|
+| 184 | Success | 4 (signed APK, debug APK, source patch, delta) | 4/4 PASS |
+| 185 | Failure | 1 source-patch ZIP | 1/1 PASS; APK/delta not present |
+| 186 | Success | 4 | 4/4 PASS |
+| 187 | Success | 4 | 4/4 PASS |
+| 188 | Success | 4 | 4/4 PASS |
+| 189 | Success | 4 | 4/4 PASS |
+| 190 | Failure | 1 source-patch ZIP | 1/1 PASS; APK/delta not present |
+| 191 | Success | 4 | 4/4 PASS |
+| 192 | Success | 4 | 4/4 PASS |
+| 193 | Success | 4 | 4/4 PASS |
+
+### Cumulative verified scope — Builds 174–193
+
+- Build numbers covered: **20**.
+- Downloaded and independently hashed ZIPs: **62/62**.
+- GitHub digest comparisons: **62/62 PASS**.
+- ZIP CRC/member integrity checks: **62/62 PASS**.
+- Failed runs 175, 176, 179, 181, 185 and 190 retained only source-patch ZIPs in the queried Actions artifacts. APK/debug/delta artifacts were absent and are not claimed recovered.
+- APK cryptographic signer verification, package identity checks and physical-device installation remain **NOT VERIFIED**.
+
+Next build to inspect: **194**.
