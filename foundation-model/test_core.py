@@ -71,6 +71,14 @@ class ModelTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.model.generate(torch.tensor([[1]]), max_new_tokens=1, temperature=float("inf"))
 
+    def test_forward_rejects_wrong_token_dtypes_and_out_of_range_targets(self):
+        with self.assertRaises(ValueError):
+            self.model(torch.ones((1, 4), dtype=torch.float32))
+        with self.assertRaises(ValueError):
+            self.model(torch.tensor([[1, 2, 3, 4]]), torch.tensor([[1, 2, 3, 258]]))
+        with self.assertRaises(ValueError):
+            self.model(torch.tensor([[1, 2, 3, 4]]), torch.ones((1, 4), dtype=torch.float32))
+
     def test_parameter_count_is_positive(self):
         self.assertGreater(self.model.parameter_count(), 0)
 
