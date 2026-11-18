@@ -37,7 +37,7 @@ Copy that generated `APP_ACCESS_TOKEN` into QUANTUM AI Settings. For Render, sto
 - JSON body: `{"prompt":"Your question"}`
 - For image analysis, also provide `mimeType` and base64-encoded `base64` fields.
 - Supported image MIME types: `image/jpeg`, `image/png`, `image/webp`.
-- PDF MIME type `application/pdf` is accepted for text extraction (up to 60 pages and 80,000 extracted characters); scanned PDFs need OCR and are not supported yet.
+- PDF MIME type `application/pdf` is accepted for server-side selectable-text extraction (up to 60 pages and 80,000 extracted characters). The Android app separately attempts on-device Latin/Devanagari OCR for scanned PDFs (up to 60 pages and 80,000 characters); direct backend API calls do not perform OCR.
 - Response: `{"text":"..."}`
 
 The `/v1/analyze` route is also accepted by the server and uses the same request handler.
@@ -46,7 +46,7 @@ The `/v1/analyze` route is also accepted by the server and uses the same request
 
 - `POST /v1/research`
 - JSON body: `{"query":"research topic"}`
-- Searches six public knowledge/scholarly sources in parallel: OpenAlex, Crossref, Europe PMC, arXiv, Semantic Scholar and Wikipedia. Semantic Scholar is a metadata/abstract index and may rate-limit unauthenticated requests.
+- Searches six public knowledge/scholarly sources in parallel: OpenAlex, Crossref, Europe PMC, arXiv, Semantic Scholar and Wikipedia. Semantic Scholar is a metadata/abstract index and may rate-limit unauthenticated requests. Research HTTP requests use an explicit HTTPS host allowlist and manually validate each redirect; Groq and IBM API calls reject redirects.
 - Deduplicates and ranks indexed records; up to 24 records are returned to the client, while the compact synthesis stage uses at most the top 8 evidence records.
 - Attempts full-text retrieval for up to three Europe PMC Open Access records and up to two arXiv HTML records, subject to availability and timeouts. A failed or unavailable full-text fetch remains labeled as abstract/metadata only.
 - Up to 12 DOI-bearing results are independently looked up in Crossref; the returned title is compared with the indexed title. The API returns `doi_verified`, `doi_verification`, `crossref_title`, and title similarity per source. Missing DOI records, lookup failures, missing titles, and title mismatches have distinct statuses. A title match verifies only the Crossref DOI record/title match; it does not prove that every citation field or the paper's claims are correct.
@@ -75,7 +75,8 @@ The `/v1/analyze` route is also accepted by the server and uses the same request
 - Optional server overrides: `GROQ_TPM_LIMIT` (diagnostic/metadata value, not a hard TPM enforcement control) and `GROQ_MAX_INPUT_BYTES` (clamped to 3,000–7,000 bytes).
 - Encoded file limit: 10 MiB in the backend; the Android app currently applies a smaller 7 MiB source-file limit.
 - Basic rate limit: 20 requests per IP per minute (configurable with `API_MAX_REQUESTS_PER_MINUTE`).
-- Upstream research/provider response bodies are limited to 2 MiB before JSON parsing or text processing.
+- Upstream research/provider response bodies are limited to 2 MiB before JSON parsing or text processing. Research redirects are followed only when the destination remains HTTPS on the explicit provider host allowlist; Groq and IBM requests use redirect rejection.
+- CI installs backend dependencies with `npm ci` from the committed `backend/package-lock.json` and runs `npm audit --audit-level=high`.
 - Apply provider-level access controls, stronger abuse protection, monitoring and operational review before public production use.
 
 
