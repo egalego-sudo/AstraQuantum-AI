@@ -10,6 +10,8 @@ on:
       - "*.gradle.kts"
       - "settings.gradle.kts"
       - ".github/workflows/capability-ci.yml"
+      - ".github/workflows/android-build.yml"
+      - ".github/workflows/knowledge-base-tests.yml"
 
 permissions:
   contents: read
