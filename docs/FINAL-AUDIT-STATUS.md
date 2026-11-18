@@ -177,3 +177,32 @@ This section adds independent byte-level checks performed after the earlier audi
 
 
 - A focused static assertion over the branch's re-fetched workflow returned 7/7 checks true: main-only job guard; each of the four signing secrets gated to main; checkout credentials disabled; and release publication still main-only. This is a static text/structure check, not a GitHub Actions execution or full YAML/schema validation.
+
+
+## Autonomous execution checkpoint (2026-11-18)
+
+**Current branch:** `audit/verify-build387-release-integrity`  
+**Base:** current `main` at `c3fef058bfe2f6dec9b80fab4c892b08268a47ff`  
+**Latest checkpoint commit:** `69b15aa5b2bd754838ac3526a36abc173f94ba36`  
+**Comparison:** 18 commits ahead, 0 behind; exactly two changed files (`.github/workflows/android-build.yml`, `docs/FINAL-AUDIT-STATUS.md`). No PR, merge, production deployment or new release was performed.
+
+### Verified in this execution
+- Build 387 signed Release APK downloaded, extracted and independently SHA-256 checked against GitHub Release digest and signed metadata.
+- Detached update-metadata signature verified locally as `Verified OK`; all six patch hashes/sizes and six base APK digests match their metadata and release inventory records.
+- All 38 GitHub Releases / 280 assets reconcile exactly to the committed metadata inventory.
+- Capability CI for PRs #43 and #44 passed; backend tests 51/51, npm audit 0 vulnerabilities, inventory/navigation checks, native smoke tests, Android unit tests, lint and debug build passed.
+- Focused source reviews covered updater verification, backend auth/CORS/rate limits, HTTPS research redirects, response byte limits, encrypted preference migration, Personal Context opt-in, offline model integrity and native patch bounds.
+- Android release workflow now gates the release-capable job and all signing secrets to `main`; 7/7 static assertions passed. This workflow change still requires GitHub CI validation before merge.
+
+### Remaining hard gates / NOT VERIFIED
+1. Execute Capability CI against this branch's workflow change (requires a PR or an authorized CI trigger).
+2. User confirmation to select Render workspace before querying current metrics and request logs.
+3. Configure Render `healthCheckPath=/health` only after explicit approval; no production configuration was changed.
+4. Physical Android install/update, app lock, encrypted-data migration/restore, navigation and stability acceptance.
+5. Authenticated live Groq text, vision, research and PDF requests without exposing credentials.
+6. Offline model download, hash verification, initialization, performance and airplane-mode test on the user's phone.
+7. Independent payload download/hash for all historical Release assets and durable archive of recoverable APK/patch/delta payloads; the 280-row manifest is metadata reconciliation only.
+8. Native coverage-guided fuzzing, supported-ABI sanitizer testing, complete secret-history scan and independent penetration test.
+9. Resolve or close stale PR #41 only after reviewing its documentation conflict; it remains unmerged.
+
+**Checkpoint status:** work is intentionally incomplete; do not report whole-project 100% until all applicable gates above have reproducible evidence.
