@@ -12,6 +12,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
+import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
@@ -79,6 +80,7 @@ class MainActivityCoreFlowTest {
         composeRule.waitUntil(timeoutMillis = 15_000) {
             composeRule.onAllNodesWithText("Memory", substring = false).fetchSemanticsNodes().isNotEmpty()
         }
+        repeat(4) { composeRule.onNodeWithTag("main_navigation").performTouchInput { swipeRight() } }
         composeRule.onNodeWithText("AI Chat", useUnmergedTree = true).performClick()
         composeRule.onNodeWithText("QUANTUM-AI chat restore smoke check", substring = true).assertExists()
         repeat(4) { composeRule.onNodeWithTag("main_navigation").performTouchInput { swipeLeft() } }
