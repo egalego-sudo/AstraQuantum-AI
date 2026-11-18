@@ -51,6 +51,7 @@ jobs:
           node --check backend/server.js
           npm test --prefix backend
           node scripts/verify-build-inventory.mjs
+          node scripts/verify-android-navigation.mjs
 
       - name: Host native patch parser smoke tests
         shell: bash
