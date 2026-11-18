@@ -23,17 +23,21 @@ export function readJsonBody(req, { maxBytes = DEFAULT_MAX_BYTES } = {}) {
       reject(error);
     };
 
-    req.on("data", chunk => {
+    const onData = chunk => {
       if (settled) return;
       const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
       bodyBytes += buffer.length;
       if (bodyBytes > maxBytes) {
         fail(new Error("Request too large"));
-        req.destroy();
+        // Stop buffering, but drain the incoming request so the server can
+        // still send the intended 413 response instead of resetting the socket.
+        req.removeListener("data", onData);
+        req.resume();
         return;
       }
       body += decoder.write(buffer);
-    });
+    };
+    req.on("data", onData);
 
     req.on("end", () => {
       if (settled) return;
