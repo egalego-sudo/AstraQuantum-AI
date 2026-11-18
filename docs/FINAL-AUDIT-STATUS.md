@@ -142,3 +142,11 @@ This section adds independent byte-level checks performed after the earlier audi
 - Unit tests explicitly verify that opt-out excludes conversation history, saved memory and project notes, and that opt-in context remains bounded and can retrieve relevant older numerical context.
 - Backend security tests verify minimal unauthenticated health output, 401 for absent/incorrect tokens, 503 when the private token is not configured, and CORS allowlist behavior.
 - Physical-device biometric/PIN lifecycle, screenshot behavior, encrypted preference restore, and real authenticated API requests remain **NOT VERIFIED** on the user's phone.
+
+
+## Latest main tree and pending-PR reconciliation (2026-11-18)
+
+- A fresh recursive tree scan at current `main` commit `c3fef058bfe2f6dec9b80fab4c892b08268a47ff` returned `truncated=false`: 157 tree entries, 123 tracked files and 34 directories; zero zero-byte tracked files and zero duplicate identical-blob groups.
+- PR #43 and PR #44 are merged. Their configured Capability CI runs completed successfully.
+- PR #41 remains open and is not mergeable: GitHub reports `mergeable_state=dirty`; its branch is 6 commits ahead and 6 behind current `main`, with the conflicting change limited to `docs/FINAL-AUDIT-STATUS.md`. It is stale documentation, not a pending production-code fix. It has not been merged or modified.
+- The new branch `audit/verify-build387-release-integrity` is based on current `main`, currently 10 commits ahead and zero behind, and changes only `docs/FINAL-AUDIT-STATUS.md`. No PR has been opened.
