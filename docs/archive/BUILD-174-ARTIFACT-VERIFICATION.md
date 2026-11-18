@@ -113,3 +113,25 @@ Next build to inspect: **194**.
 - APK signature cryptographic verification, installability and physical-device tests remain **NOT VERIFIED**.
 
 Next Android build number to inspect: **204**. The 203 workflow-only entry should remain explicitly classified as NO_ANDROID_BUILD_RUN, not treated as a successful empty artifact set.
+
+## Extended verification — Builds 203–214
+
+- Build 203: no Android-build run; workflow-only run 43941972191 returned **zero artifacts**.
+- Build 204: no Android-build run; workflow-only run 43942059158 returned **zero artifacts**.
+- Build 205: 4 artifacts (multi-base delta, signed APK, debug APK, source patch), **4/4 downloaded and independently SHA-256 verified**.
+- Build 206: 4 artifacts (multi-base delta, signed APK, debug APK, source patch), **4/4 verified**.
+- Build 207: no Android-build run; workflow-only run 43943363790 returned **zero artifacts**.
+- Build 208: 4 artifacts (multi-base delta, signed APK, debug APK, source patch), **4/4 verified**.
+- Builds 209–214: all six Android workflow runs were **cancelled** and each returned **zero retained artifacts**. No APK/source/delta ZIP is available from these runs.
+
+The 12 downloaded ZIPs for Builds 205, 206 and 208 all matched their GitHub API SHA-256 digest and passed ZIP member-integrity checks. Their inventory is in `BUILD-205-208-ARTIFACT-SHA256.csv`.
+
+### Cumulative verified scope — Builds 174–214
+
+- Build numbers considered: **41** (174–214 inclusive).
+- Builds with actual Android artifact runs: **35**; no Android build runs: **203, 204, 207**.
+- Artifact ZIPs downloaded and independently verified: **107/107**.
+- Failed Android runs with source-only artifact records in this range: **175, 176, 179, 181, 185, 190, 199**.
+- Cancelled runs with zero artifacts: **209–214**.
+- Build 215 is the next Android build run to inspect.
+- APK signer verification, Android installation/runtime tests and durable binary mirroring outside GitHub Actions retention remain **NOT VERIFIED**.
