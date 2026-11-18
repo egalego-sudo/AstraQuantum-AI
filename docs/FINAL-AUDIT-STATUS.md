@@ -249,3 +249,24 @@ This section supersedes the earlier Render workspace-selection and empty-health-
 - The tests have not yet run inside the repository's GitHub Actions workflow, and the corrected code has not been deployed. CI validation and deployed research acceptance remain pending. This change is confined to the audit branch; production `main` and the Render service were not changed.
 
 **arXiv parser source defect:** corrected on audit branch; local regression tests PASS; GitHub CI / deployment acceptance PENDING.
+
+
+## Superseding PR #45 CI verification (2026-11-18, 08:38 UTC)
+
+This section supersedes the pending-CI statements in the earlier arXiv parser and Android signing-secret hardening notes above.
+
+- Draft PR [#45](https://github.com/egalego-sudo/Quantum-AI/pull/45), head commit `2dad6f582d737e434c1ccedd1cd108f3644bcdb8`, base commit `c3fef058bfe2f6dec9b80fab4c892b08268a47ff`, completed both configured pull-request workflows successfully.
+- Capability CI run [44268166785](https://github.com/egalego-sudo/Quantum-AI/actions/runs/44268166785) completed with conclusion `success`. Its job passed backend install/audit/syntax/tests, native BSDIFF smoke tests, Android unit tests, Android lint and Debug APK build.
+- The backend Node test runner discovered and executed the newly added arXiv Atom regression tests. Exact TAP summary: **54 tests, 54 passed, 0 failed, 0 cancelled, 0 skipped**. The three arXiv tests all passed.
+- `npm audit --audit-level=high` reported **0 vulnerabilities**. Build inventory validation passed: 385 sequential build rows, 380 Android runs, five accounted gaps, 36 releases and all 380 source commits present. Android navigation validation passed: 19 unique menu items/routes reachable, creator credit and branding present.
+- Native BSDIFF parser host smoke tests completed successfully.
+- Android `testDebugUnitTest`, `lintDebug` and `assembleDebug` all completed successfully. The debug APK build compiled native code for arm64-v8a, armeabi-v7a and x86_64 in this CI job. The workflow did not upload an artifact, so no downloadable APK is claimed from this run.
+- Knowledge Base Tests run [44268166905](https://github.com/egalego-sudo/Quantum-AI/actions/runs/44268166905) completed successfully.
+- GitHub reports PR #45 as open, Draft, unmerged, and `mergeable_state=clean`. No merge, release publication, production deployment or main-branch change occurred.
+- The Android workflow file was accepted by GitHub's workflow parser as part of the PR-triggered validation, and the Capability CI ran with its read-only `contents: read` permission. The release-capable Android build job itself is intentionally restricted to `refs/heads/main`; its signed release path was not executed by this PR validation. The main-only secret expressions and job guard have 7/7 focused static assertions, but no signing secrets were accessed or tested.
+- CI logs emit a non-fatal Gradle 8.9 deprecation warning (future Kotlin Gradle Plugin 2.5 requires Gradle 8.14.4 or newer) and Node/action deprecation warnings. The build succeeded; toolchain modernization is a separate maintenance item and was not changed in this PR.
+- CI success proves repository-side automated checks only. Physical Android installation/runtime, external Render HTTP response, authenticated Groq text/vision/research/PDF flows, offline-model device acceptance, historical payload re-hashing, fuzzing/sanitizers and independent penetration testing remain **NOT VERIFIED**.
+
+**PR #45 configured CI gate:** PASS (both workflows successful; backend 54/54; Android unit tests, lint and debug build successful).  
+**Whole-project/device/production acceptance:** INCOMPLETE.  
+**Release/merge/deploy:** NOT PERFORMED; PR remains Draft and unmerged.
