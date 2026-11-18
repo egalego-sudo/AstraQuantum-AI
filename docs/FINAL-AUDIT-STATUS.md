@@ -31,6 +31,7 @@ This is an evidence-based status record. Code review and automated CI are not su
 
 ## Latest recheck (2026-11-18)
 
+- Repository PR history was inspected across all states: 36 earlier PRs (#1–#39, excluding unused numbers) are closed and merged into `main`; PR #40 is the only open PR. The 37 non-main branches correspond to those merged PRs plus PR #40. Do not re-merge old feature branches merely because their branch tips have diverged from current `main`; their PRs already landed.
 - GitHub reports PR #40 head `a273acd61b376ac4a53e1ae934f10ff583947ab7`, still open and not merged.
 - Capability CI run `44214014677` completed successfully: backend syntax/tests, Android unit tests and Debug APK build all passed. Knowledge Base Tests run `44214014697` also passed.
 - The connected Render service is live on `main` at `b8952cd25b5908e60e96b2794b0dc571e656b89d`, not at the PR head. Startup logs show Node `26.13.1` and Groq model `openai/gpt-oss-20b`; this does not verify an authenticated provider call.
