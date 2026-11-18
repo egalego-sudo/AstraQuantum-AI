@@ -10,7 +10,8 @@
 cmake_minimum_required(VERSION 3.18.1)
 project(apk_patch_library C)
 
-# bzip2 源码清单。注意必须排除带 main() 的程序入口文件：
+# Bundled upstream bzip2/libbz2 1.0.8 (13 July 2019); see bzip2/LICENSE.
+# Only the library sources are compiled; command-line entry points are excluded:
 #   bzip2.c          —— bzip2 命令行工具的 main()
 #   bzip2recover.c   —— bzip2recover 命令行工具的 main()
 set(BZIP2_SOURCES
