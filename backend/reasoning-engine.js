@@ -47,7 +47,7 @@ const MODES = [
   {
     id: "software_engineering",
     pattern: /code|coding|program|programming|software|api|backend|frontend|android|kotlin|python|javascript|typescript|java|rust|golang|sql|database|github|pull request|deploy|build|compile|c\+\+|c#|\bc\b|\bgo\b|csharp|php|swift|verilog|systemverilog|bash|html|css|कोड|प्रोग्रामिंग|ऐप|एप्लीकेशन|सॉफ्टवेयर/i,
-    guide: "SOFTWARE ENGINEERING CHECK: clarify runtime, interfaces and constraints; inspect existing conventions before changing code; make the smallest maintainable change; handle invalid input, errors, resource bounds and security; add focused unit/integration/regression tests; report exactly what was and was not run."
+    guide: "SOFTWARE ENGINEERING CHECK: explicitly support Python, JavaScript/TypeScript, Java/Kotlin, C/C++, C#, Go, Rust, PHP, Swift, SQL, HTML/CSS, Verilog/SystemVerilog and Bash. Identify language/runtime version, target platform, inputs/outputs and dependencies. Inspect existing conventions before changing code; make the smallest maintainable implementation; handle invalid input, errors, resource bounds, security and complexity; add focused unit/integration/regression tests. For APIs/databases/auth/payments, define trust boundaries, validation, transactions and secret handling. For HDL, distinguish synthesizable RTL from testbench-only code and state clock/reset assumptions. Report exactly what was and was not run."
   },
   {
     id: "ai_engineering",
