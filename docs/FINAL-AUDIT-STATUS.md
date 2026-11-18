@@ -150,3 +150,12 @@ This section adds independent byte-level checks performed after the earlier audi
 - PR #43 and PR #44 are merged. Their configured Capability CI runs completed successfully.
 - PR #41 remains open and is not mergeable: GitHub reports `mergeable_state=dirty`; its branch is 6 commits ahead and 6 behind current `main`, with the conflicting change limited to `docs/FINAL-AUDIT-STATUS.md`. It is stale documentation, not a pending production-code fix. It has not been merged or modified.
 - The new branch `audit/verify-build387-release-integrity` is based on current `main`, currently 10 commits ahead and zero behind, and changes only `docs/FINAL-AUDIT-STATUS.md`. No PR has been opened.
+
+
+## Native APK patch parser source recheck (2026-11-18)
+
+- Native BSDIFF parser rejects patch files above 80 MiB, APK input/output above 150 MiB, malformed headers/segments, out-of-range output controls and control streams exceeding one million tuples.
+- Allocation sizes are checked against platform `SIZE_MAX`; signed offset arithmetic uses checked addition; old/patch/output inode aliasing is rejected; output is written to a temporary file, fsynced and atomically renamed only after reconstruction succeeds.
+- JNI bridge validates non-null paths and releases acquired UTF strings in its cleanup path.
+- Host smoke tests cover null arguments, missing/truncated/invalid patches, out-of-bounds control segments and oversized APK/patch limits; latest Capability CI reports this stage passed.
+- Coverage-guided fuzzing, sanitizer runs across supported ABIs and device-level patch reconstruction remain **NOT VERIFIED**. No native code was changed in this recheck.
