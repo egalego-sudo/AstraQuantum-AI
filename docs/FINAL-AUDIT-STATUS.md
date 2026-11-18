@@ -63,3 +63,21 @@ The seven selected APKs are not the full historic binary archive. Actions artifa
 8. Add coverage-guided native patch fuzzing, complete a secret-history scan and obtain independent security review.
 
 Do not mark the entire ten-point project audit complete until the applicable remaining gates have been evidenced. Do not install the recovered historical DEBUG APKs over the current app; their signing identity and update lineage are not certified.
+
+
+## Superseding Build 387 release-integrity verification (2026-11-18)
+
+This section adds independent byte-level checks performed after the earlier audit snapshot. It does not close the physical-device or full historical-archive gates.
+
+- GitHub Actions Android Build run [44237351176](https://github.com/egalego-sudo/Quantum-AI/actions/runs/44237351176), run number 387, completed with conclusion `success`; its single build job completed successfully.
+- The signed-update Actions artifact was downloaded. Its ZIP extracted successfully and contained `app-release.apk` (104,060,996 bytes).
+- The extracted APK SHA-256 was independently computed as `0cf5bfa4c8fd128d07fa8c6985e75c719d560c0b6096a482243dd27d98a85103`. This exactly matches the GitHub Release asset digest and the `targetApkSha256` value in Build 387 update metadata.
+- The multi-base update artifact was downloaded and extracted. Metadata identifies package `com.bittupandit.astraquantumai`, versionCode `387`, versionName `1.0.387`, and signer certificate SHA-256 `d6396923299c943b5726af5b48126969e257d55e09f987286d2b68b238312b6d`.
+- The public update-signing certificate was extracted from `assets/update_signer.pem` inside the APK. Its DER SHA-256 independently matches the metadata signer-certificate fingerprint.
+- Detached `UPDATE-METADATA.sig` verification against the public certificate and exact metadata bytes returned OpenSSL `Verified OK`.
+- All six published patch files were extracted; each file's independently computed SHA-256 and byte size matched its corresponding metadata record. The six base builds are 386, 385, 384, 382, 381 and 150.
+- This confirms release-payload integrity and metadata authenticity for Build 387. The GitHub Actions workflow log also shows `apksigner verify --print-certs` was invoked on the APK and that six base patches were reconstructed and verified by the workflow.
+- The APK has not been installed on a physical Android device in this audit. Installed-app version, update continuity, runtime behavior, device-specific stability and offline inference remain NOT VERIFIED.
+- The signed APK is 104,060,996 bytes (about 99.2 MiB). A conversation copy was created for user download; this does not constitute a durable repository backup.
+
+**Build 387 artifact-integrity conclusion:** APK digest, metadata digest, update-signing certificate fingerprint, detached metadata signature and all six patch hashes/sizes match. **Whole-project audit remains incomplete.**
