@@ -91,4 +91,15 @@ class ScientificIntelligenceTest {
         }
     }
 
+
+    @Test
+    fun priorConversationDoesNotPolluteCurrentTaskClassification() {
+        val question = "मुझे calculus समझाइए\\n\\n[QUANTUM AI CONTEXT INTELLIGENCE]\\nपुरानी बातचीत में research root cause experiment और code हैं"
+        val prompt = ScientificIntelligence.enhancePrompt(question)
+        assertTrue(prompt.contains("EDUCATION CHECK"))
+        assertTrue(!prompt.contains("ROOT-CAUSE CHECK"))
+        assertTrue(!prompt.contains("RESEARCH CHECK"))
+        assertTrue(!prompt.contains("EXPERIMENT CHECK"))
+    }
+
 }
