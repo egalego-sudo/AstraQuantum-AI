@@ -42,3 +42,29 @@ The script first checks `foundation-model/datasets/manifest.json` (or `--manifes
 6. Compare against public baselines using identical held-out tasks and disclose compute/data.
 
 **Honesty rule:** call this an experimental Transformer implementation until a trained checkpoint and independent evaluations justify stronger claims.
+
+## Held-out benchmark evaluation
+
+The evaluation CLI measures byte-level next-token cross-entropy, perplexity,
+next-token accuracy, evaluation throughput, and autoregressive generation
+throughput. It requires a separate, human-approved manifest record with
+`usage=evaluate` and `split=validation` or `split=test`; the exact artifact
+SHA-256 is checked before evaluation. Keep this corpus held out from training.
+
+```bash
+python foundation-model/evaluate.py \
+  --checkpoint ./quantum-small.pt \
+  --text-file ./held-out-test.txt \
+  --dataset-id YOUR_APPROVED_EVALUATION_DATASET_ID \
+  --manifest foundation-model/datasets/manifest.json \
+  --output ./quantum-evaluation.json \
+  --cpu
+```
+
+Results include model configuration, parameter count, dataset provenance,
+hardware/device, seed, and checkpoint training metadata. Compare models only
+on the same frozen test artifact and settings; do not tune on the test split.
+Perplexity and token accuracy measure byte-level language modeling, not
+reasoning, factuality, instruction following, safety, or general intelligence.
+The generated text is not quality-scored by this harness. A separate curated
+task suite and human review are required for those claims.
