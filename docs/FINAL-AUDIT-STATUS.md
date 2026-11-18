@@ -227,3 +227,14 @@ This section supersedes the earlier Render workspace-selection and empty-health-
 
 **Render health-check configuration gate:** PASS (configuration read-back and successful deployment).  
 **External HTTP response / authenticated AI acceptance:** NOT VERIFIED.
+
+
+## Focused backend research-pipeline code review (2026-11-18)
+
+- A follow-up source review of `backend/server.js` found a deterministic defect in the arXiv Atom XML tag extractor: it constructs a `RegExp` from a normal JavaScript string containing single-backslash escapes such as `\s` and `[\s\S]`. In a JavaScript string literal these become literal `s` / `[sS]`, not regular-expression whitespace / any-character classes. A direct Node reproduction confirms the generated pattern fails to match a normal `<published>2025-01-01</published>` element.
+- Impact is limited to extraction of arXiv entry fields (including title, id, summary, author and published tags) in the research pipeline; this may cause arXiv records to be silently omitted or incompletely parsed. It does not alter the separate `/health` route or prove a live-provider failure.
+- This is a source-level finding reproduced with a standalone Node expression, not yet fixed or exercised against the deployed service. A targeted helper-level regression test and correction are recommended before the next research-pipeline acceptance run.
+- No production source code was changed in this pass. Keep the fix on the audit branch, add a focused regression test, then validate through Capability CI before considering a PR merge.
+- External `/health` HTTP verification was attempted from the connected execution environment but DNS resolution failed (`Temporary failure in name resolution`). Render configuration read-back and successful deployment remain verified; external response status/body remains **NOT VERIFIED**.
+
+**New actionable source finding:** arXiv Atom tag extraction regex escaping defect — OPEN, needs fix + regression test.
