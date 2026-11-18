@@ -34,7 +34,7 @@ def evaluate(model: QuantumGPT, data: torch.Tensor, batch_size: int, block_size:
     if data.ndim != 1 or data.dtype != torch.long:
         raise ValueError("evaluation data must be a one-dimensional torch.long token sequence")
     max_start = data.numel() - block_size - 1
-    if max_start < 0:
+    if data.numel() <= block_size + 1:
         raise ValueError("evaluation split must contain at least block_size + 2 tokens")
 
     # Fixed, evenly spaced windows make validation comparable between steps and
