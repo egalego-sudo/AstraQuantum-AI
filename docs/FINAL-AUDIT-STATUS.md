@@ -126,3 +126,10 @@ This section adds independent byte-level checks performed after the earlier audi
 - Offline model download is initiated only after an explicit user action, writes to app-private storage, bounds the downloaded byte count, checks the pinned SHA-256, and rechecks the full model hash before initialization. GPU initialization falls back to CPU when GPU initialization fails; cancellation is rethrown rather than swallowed.
 - The model is identified in the UI as Qwen3-0.6B (328 MiB). Its download, integrity and runtime behavior have **NOT VERIFIED** on the user's physical device or in airplane mode.
 - The Android package/application ID and Kotlin namespace remain `com.bittupandit.astraquantumai`. The old package ID is an update-lineage compatibility anchor; changing it would create a different Android app and could prevent in-place updates. User-facing app branding is QUANTUM AI. Legacy internal artifact names and service identifiers are not, by themselves, visible app branding and should not be renamed without a compatibility/migration plan.
+
+
+## Encrypted preference migration recheck (2026-11-18)
+
+- The current migration helper copies supported legacy preference types into encrypted preferences with a synchronous commit, clears the legacy plaintext store only after the encrypted copy succeeds, and writes the completion marker only after cleanup succeeds.
+- The migration is idempotent and includes retry handling for failed encrypted copy, failed legacy cleanup and failed completion-marker commits. The current unit tests exercise these failure/retry cases and cleanup of stale legacy data.
+- This is source and unit-test evidence. Real user-data migration, process-death recovery and restore behavior on the user's installed phone remain **NOT VERIFIED**.
