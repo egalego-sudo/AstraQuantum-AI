@@ -77,4 +77,18 @@ class ScientificIntelligenceTest {
         assertTrue(general.contains("GENERAL CHECK"))
     }
 
+
+    @Test
+    fun recognizesTheRequestedProgrammingLanguageNamesOffline() {
+        val languages = listOf(
+            "Python", "JavaScript", "TypeScript", "Java", "Kotlin", "C", "C++", "C#",
+            "Go", "Golang", "Rust", "PHP", "Swift", "SQL", "HTML", "CSS",
+            "Verilog", "SystemVerilog", "Bash"
+        )
+        languages.forEach { language ->
+            val prompt = ScientificIntelligence.enhancePrompt(language)
+            assertTrue("Language not recognized offline: $language", prompt.contains("SOFTWARE CHECK"))
+        }
+    }
+
 }
