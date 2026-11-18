@@ -25,7 +25,7 @@ The local SHA-256 was calculated from each downloaded ZIP's bytes and compared w
 - Builds 203, 204 and 207: no Android-build workflow run in the inventory (workflow-file runs only).
 - Builds 209–214: queried runs returned zero artifacts.
 - Builds 215–318: the existing inventory/audit records partial artifact sets and no-artifact runs. All 86 ZIPs present in the three existing manifests were re-downloaded and independently verified.
-- Builds 319–385 with retained artifacts: 115 ZIPs were independently verified. The following runs returned zero artifacts: 324, 326–327, 330, 338–343, 356, 363, 365, 367–368, 370–371, 376 and 383. Builds 369 and 372–375, 377–382 and 384–385 had retained artifacts as itemized in the run/artifact API.
+- Builds 319–385 with retained artifacts: 115 ZIPs were independently verified. The following runs returned zero artifacts: 324, 326–327, 330, 338–343, 356, 363, 365, 367–368, 370–371, 376 and 383. Builds 319–323, 325, 328–329, 331–337, 344–355, 357–362, 364, 366, 369, 372–375, 377–382 and 384–385 had retained artifacts as itemized in the run/artifact API.
 - Failed/cancelled workflow status is not treated as a successful Android build. A retained source-patch artifact is recorded as a partial artifact set, not a complete APK release set.
 
 ## Corrections and integrity notes
