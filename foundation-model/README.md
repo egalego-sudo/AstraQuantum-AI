@@ -97,3 +97,38 @@ formats. This deliberately strict score needs human review for ambiguous
 answers. Do not tune on the test split. The current randomly initialized
 research model is expected to perform poorly until it is trained; this harness
 measures performance and does not itself improve model capability.
+
+
+## Deterministic corpus preparation (approval remains manual)
+
+For a small, auditable first pass, prepare a UTF-8 text file with one
+document/example per line. The utility normalizes Unicode to NFC, removes
+blank lines and exact duplicate documents, then makes a deterministic,
+seeded train/validation split. It writes SHA-256 hashes and a manifest
+template for both output artifacts.
+
+```bash
+python foundation-model/datasets/prepare_corpus.py \
+  --input ./lawful-source.txt \
+  --train-output ./prepared/train.txt \
+  --validation-output ./prepared/validation.txt \
+  --manifest-output ./prepared/manifest-draft.json \
+  --dataset-prefix my-reviewed-corpus \
+  --source-url https://example.org/source-description \
+  --license-id CC-BY-4.0 \
+  --license-url https://creativecommons.org/licenses/by/4.0/ \
+  --languages hi,en \
+  --validation-fraction 0.1 \
+  --seed 2026
+```
+
+**Important:** generated manifest records deliberately use
+`usage=not_permitted` and `review_status=pending`. This tool does not
+grant copyright permission or approve data. A human must verify source
+rights, license compatibility, attribution, privacy/consent, personal or
+sensitive data, quality, contamination, and split suitability. Only then
+may an authorized maintainer edit the manifest to reflect the actual
+permissions and approval decision. The current utility performs exact
+deduplication only; it does not detect paraphrases, benchmark leakage,
+personal information, or harmful content. Keep the original source and
+document your review.
