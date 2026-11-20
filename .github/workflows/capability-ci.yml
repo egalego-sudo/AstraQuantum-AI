@@ -98,7 +98,7 @@ jobs:
           emulator-boot-timeout: 600
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           disable-animations: true
-          script: ./gradlew --no-daemon connectedDebugAndroidTest --stacktrace
+          script: gradle --no-daemon connectedDebugAndroidTest --stacktrace
 
       - name: Android lint
         run: gradle --no-daemon lintDebug
