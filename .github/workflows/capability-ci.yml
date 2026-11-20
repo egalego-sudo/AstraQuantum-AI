@@ -136,7 +136,7 @@ jobs:
           ndk: 29.0.14206865
           cmake: 3.31.6
           script: |
-            set -euo pipefail
+            bash -euo pipefail <<'BASH'
             adb wait-for-device
             adb devices -l
 
@@ -163,6 +163,7 @@ jobs:
 
             echo "Emulator ready: ADB state=$device_state, sys.boot_completed=$boot_completed"
             gradle --no-daemon connectedDebugAndroidTest --stacktrace
+            BASH
 
       - name: Diagnose emulator startup failure
         if: failure()
