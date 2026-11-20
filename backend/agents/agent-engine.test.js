@@ -122,3 +122,35 @@ test("controller wires registered agents to planning, execution, tools and memor
   const tests = await new AgentTestingFramework(controller).runCases([{ name: "worker contract", agent: "worker", input: {}, expected: "ready" }]);
   assert.equal(tests.passed, 1);
 });
+
+test("execution loop enforces task timeout even when a handler ignores AbortSignal", async () => {
+  const plan = new TaskPlanningEngine().plan([
+    { id: "slow", agent: "worker", description: "slow task" }
+  ]);
+  const result = await new AutonomousExecutionLoop({ maxTaskTimeoutMs: 40 }).run(plan, {
+    maxRetriesPerTask: 0,
+    executeTask: async () => await new Promise(() => {})
+  });
+  assert.equal(result.summary.failed, 1);
+  assert.match(result.tasks[0].error, /timed out/i);
+});
+
+test("execution loop runs explicitly parallel-safe tasks concurrently", async () => {
+  const plan = new TaskPlanningEngine().plan([
+    { id: "a", agent: "worker", description: "A", parallelSafe: true },
+    { id: "b", agent: "worker", description: "B", parallelSafe: true }
+  ]);
+  let active = 0;
+  let peak = 0;
+  const result = await new AutonomousExecutionLoop().run(plan, {
+    executeTask: async task => {
+      active++;
+      peak = Math.max(peak, active);
+      await new Promise(resolve => setTimeout(resolve, 20));
+      active--;
+      return task.id;
+    }
+  });
+  assert.equal(result.summary.completed, 2);
+  assert.equal(peak, 2);
+});
