@@ -135,35 +135,8 @@ jobs:
           disable-animations: true
           ndk: 29.0.14206865
           cmake: 3.31.6
-          script: |
-            bash -euo pipefail <<'BASH'
-            adb wait-for-device
-            adb devices -l
-
-            device_state="$(adb -s emulator-5554 get-state)"
-            if [[ "$device_state" != "device" ]]; then
-              echo "Expected emulator-5554 state=device, got: $device_state" >&2
-              adb devices -l >&2
-              exit 1
-            fi
-
-            boot_completed=""
-            for attempt in $(seq 1 60); do
-              boot_completed="$(adb -s emulator-5554 shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
-              [[ "$boot_completed" == "1" ]] && break
-              sleep 2
-            done
-
-            if [[ "$boot_completed" != "1" ]]; then
-              echo "Emulator did not report sys.boot_completed=1." >&2
-              adb devices -l >&2
-              adb -s emulator-5554 shell getprop >&2 || true
-              exit 1
-            fi
-
-            echo "Emulator ready: ADB state=$device_state, sys.boot_completed=$boot_completed"
-            gradle --no-daemon connectedDebugAndroidTest --stacktrace
-            BASH
+          script: >-
+            bash -lc 'set -euo pipefail; adb wait-for-device; adb devices -l; device_state="$(adb -s emulator-5554 get-state)"; if [ "$device_state" != "device" ]; then echo "Expected emulator-5554 state=device, got: $device_state" >&2; adb devices -l >&2; exit 1; fi; boot_completed=""; for attempt in $(seq 1 60); do boot_completed="$(adb -s emulator-5554 shell getprop sys.boot_completed 2>/dev/null || true)"; if [ "$boot_completed" = "1" ]; then break; fi; sleep 2; done; if [ "$boot_completed" != "1" ]; then echo "Emulator did not report sys.boot_completed=1." >&2; adb devices -l >&2; adb -s emulator-5554 shell getprop >&2 || true; exit 1; fi; echo "Emulator ready: ADB state=$device_state, sys.boot_completed=$boot_completed"; gradle --no-daemon connectedDebugAndroidTest --stacktrace'
 
       - name: Diagnose emulator startup failure
         if: failure()
