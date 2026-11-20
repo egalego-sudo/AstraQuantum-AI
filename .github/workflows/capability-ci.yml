@@ -87,19 +87,6 @@ jobs:
       - name: Android unit tests
         run: gradle --no-daemon testDebugUnitTest
 
-      - name: Android emulator core-flow and memory persistence tests
-        timeout-minutes: 15
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 34
-          target: google_apis
-          arch: x86_64
-          profile: pixel_2
-          emulator-boot-timeout: 600
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
-          disable-animations: true
-          script: gradle --no-daemon connectedDebugAndroidTest --stacktrace
-
       - name: Android lint
         run: gradle --no-daemon lintDebug
 
@@ -113,3 +100,74 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
+  android-emulator:
+    name: Android emulator instrumentation tests
+    needs: validate
+    runs-on: macos-15-intel
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Run Android emulator core-flow and memory persistence tests
+        timeout-minutes: 15
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          emulator-boot-timeout: 600
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          disable-animations: true
+          ndk: 29.0.14206865
+          cmake: 3.31.6
+          script: |
+            set -euo pipefail
+            adb wait-for-device
+            adb devices -l
+
+            device_state="$(adb -s emulator-5554 get-state)"
+            if [[ "$device_state" != "device" ]]; then
+              echo "Expected emulator-5554 state=device, got: $device_state" >&2
+              adb devices -l >&2
+              exit 1
+            fi
+
+            boot_completed=""
+            for attempt in $(seq 1 60); do
+              boot_completed="$(adb -s emulator-5554 shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+              [[ "$boot_completed" == "1" ]] && break
+              sleep 2
+            done
+
+            if [[ "$boot_completed" != "1" ]]; then
+              echo "Emulator did not report sys.boot_completed=1." >&2
+              adb devices -l >&2
+              adb -s emulator-5554 shell getprop >&2 || true
+              exit 1
+            fi
+
+            echo "Emulator ready: ADB state=$device_state, sys.boot_completed=$boot_completed"
+            gradle --no-daemon connectedDebugAndroidTest --stacktrace
+
+      - name: Diagnose emulator startup failure
+        if: failure()
+        shell: bash
+        run: |
+          adb devices -l || true
+          pgrep -alf 'emulator|qemu' || true
+          ls -la "$HOME/.android/avd" || true
