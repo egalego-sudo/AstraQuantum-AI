@@ -198,7 +198,7 @@ export class TaskPlanningEngine {
       if (!id || !agent || !description || ids.has(id)) throw new TypeError("Every task needs a unique ID, agent, and description.");
       ids.add(id);
       const dependsOn = Array.isArray(task.dependsOn) ? [...new Set(task.dependsOn.map(value => boundedText(value, 80)))] : [];
-      return { id, agent, description, dependsOn, input: clone(task.input ?? {}), status: "pending", attempts: 0, result: null, error: null };
+      return { id, agent, description, dependsOn, input: clone(task.input ?? {}), parallelSafe: task.parallelSafe === true, status: "pending", attempts: 0, result: null, error: null };
     });
     for (const task of normalized) {
       for (const dependency of task.dependsOn) {
@@ -246,10 +246,11 @@ export class AutonomousExecutionLoop {
       events.push(record);
       onEvent(clone(record));
     };
+    const retryLimit = Math.max(0, Math.min(5, Math.floor(maxRetriesPerTask)));
     const executeOne = async task => {
       if (signal?.aborted) { task.status = "cancelled"; return; }
       task.status = "running";
-      while (task.attempts <= maxRetriesPerTask) {
+      while (task.attempts <= retryLimit) {
         if (++steps > this.maxSteps) {
           task.status = "blocked";
           task.error = "Execution step limit reached.";
@@ -263,7 +264,19 @@ export class AutonomousExecutionLoop {
         signal?.addEventListener("abort", abortFromParent, { once: true });
         const timeout = setTimeout(() => controller.abort(new Error("Task timed out.")), this.maxTaskTimeoutMs);
         try {
-          const result = await executeTask(clone(task), { signal: controller.signal, attempt: task.attempts });
+          const aborted = new Promise((_, reject) => {
+            if (controller.signal.aborted) {
+              reject(controller.signal.reason || new Error("Task cancelled or timed out."));
+              return;
+            }
+            controller.signal.addEventListener("abort", () => {
+              reject(controller.signal.reason || new Error("Task cancelled or timed out."));
+            }, { once: true });
+          });
+          const result = await Promise.race([
+            Promise.resolve().then(() => executeTask(clone(task), { signal: controller.signal, attempt: task.attempts })),
+            aborted
+          ]);
           task.result = clone(result);
           task.error = null;
           task.status = "completed";
@@ -273,7 +286,7 @@ export class AutonomousExecutionLoop {
           task.error = boundedText(error?.message || error, 1_000);
           emit({ type: "task_error", taskId: task.id, attempt: task.attempts, error: task.error });
           if (signal?.aborted) { task.status = "cancelled"; return; }
-          if (task.attempts > maxRetriesPerTask) { task.status = "failed"; return; }
+          if (task.attempts > retryLimit) { task.status = "failed"; return; }
         } finally {
           clearTimeout(timeout);
           signal?.removeEventListener("abort", abortFromParent);
