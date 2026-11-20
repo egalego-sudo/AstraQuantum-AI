@@ -93,11 +93,26 @@ jobs:
       - name: Build debug APK
         run: gradle --no-daemon assembleDebug
 
-      - name: Upload validated debug APK
+      - name: Generate APK SHA-256 checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK_DIR="app/build/outputs/apk/debug"
+          mapfile -t APK_FILES < <(find "$APK_DIR" -maxdepth 1 -type f -name '*.apk' -print)
+          if [ "${#APK_FILES[@]}" -ne 1 ]; then
+            echo "Expected exactly one debug APK; found ${#APK_FILES[@]}." >&2
+            exit 1
+          fi
+          sha256sum "${APK_FILES[0]}" > "${APK_FILES[0]}.sha256"
+          cat "${APK_FILES[0]}.sha256"
+
+      - name: Upload validated debug APK and SHA-256 checksum
         uses: actions/upload-artifact@v4
         with:
           name: QUANTUM-AI-PR-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/debug/*.apk.sha256
           if-no-files-found: error
           retention-days: 14
   android-emulator:
