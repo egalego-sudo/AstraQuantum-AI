@@ -12,6 +12,7 @@ android {
         applicationId = "com.bittupandit.astraquantumai"
         minSdk = 24
         targetSdk = 35
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         versionCode = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
         versionName = "1.0.${System.getenv("GITHUB_RUN_NUMBER") ?: "0"}"
     }
@@ -58,6 +59,7 @@ kotlin {
 dependencies {
     implementation(project(":ApkPatchLibrary"))
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
+    androidTestImplementation(platform("androidx.compose:compose-bom:2024.12.01"))
     implementation("androidx.activity:activity-compose:1.10.0")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
@@ -74,5 +76,11 @@ dependencies {
     implementation("com.google.mlkit:text-recognition:16.0.1")
     implementation("com.google.mlkit:text-recognition-devanagari:16.0.1")
     testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:core-ktx:1.6.1")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("androidx.compose.ui:ui-test")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
