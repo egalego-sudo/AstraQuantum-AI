@@ -62,7 +62,7 @@ class MainActivityCoreFlowTest {
 
         composeRule.onNodeWithText("AI Chat", useUnmergedTree = true).performClick()
         composeRule.onNodeWithText("AI CONVERSATION").fetchSemanticsNode()
-        composeRule.onNodeWithText("QUANTUM-AI chat restore smoke check", substring = true).fetchSemanticsNode()
+        composeRule.onNodeWithTag("chat_message_QUANTUM-AI chat restore smoke check").fetchSemanticsNode()
 
         repeat(4) { composeRule.onNodeWithTag("main_navigation").performTouchInput { swipeLeft() } }
         composeRule.onNodeWithText("Memory", useUnmergedTree = true).performClick()
@@ -81,7 +81,7 @@ class MainActivityCoreFlowTest {
         }
         repeat(4) { composeRule.onNodeWithTag("main_navigation").performTouchInput { swipeRight() } }
         composeRule.onNodeWithText("AI Chat", useUnmergedTree = true).performClick()
-        composeRule.onNodeWithText("QUANTUM-AI chat restore smoke check", substring = true).fetchSemanticsNode()
+        composeRule.onNodeWithTag("chat_message_QUANTUM-AI chat restore smoke check").fetchSemanticsNode()
         repeat(4) { composeRule.onNodeWithTag("main_navigation").performTouchInput { swipeLeft() } }
         composeRule.onNodeWithText("Memory", useUnmergedTree = true).performClick()
         composeRule.onNodeWithText("ADVANCED PRIVATE MEMORY").fetchSemanticsNode()
