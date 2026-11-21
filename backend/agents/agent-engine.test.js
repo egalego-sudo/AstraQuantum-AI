@@ -53,7 +53,11 @@ test("shared memory is namespaced, replaceable and bounded", () => {
   assert.deepEqual(memory.recall({ key: "profile", namespace: "user" }).value, { language: "en" });
   memory.remember({ key: "latest", value: "bounded" });
   assert.equal(memory.snapshot().length, 2);
-  assert.equal(memory.forget({ key: "profile", namespace: "project" }), true);
+  // The project entry was the oldest and must have been evicted by the bound.
+  assert.equal(memory.recall({ key: "profile", namespace: "project" }), null);
+  assert.equal(memory.forget({ key: "profile", namespace: "project" }), false);
+  // A still-retained entry can be explicitly forgotten.
+  assert.equal(memory.forget({ key: "profile", namespace: "user" }), true);
 });
 
 test("message bus delivers cloned messages and rejects unknown recipients", async () => {
