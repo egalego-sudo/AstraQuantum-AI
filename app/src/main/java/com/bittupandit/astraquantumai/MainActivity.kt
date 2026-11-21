@@ -596,7 +596,7 @@ private fun AstraApp(
                                 Column(Modifier.widthIn(max = 310.dp).clip(RoundedCornerShape(if (isAi) 8.dp else 20.dp)).background(if (isAi) Color(0xAA182747) else Color(0xCC123A52)).padding(horizontal = 14.dp, vertical = 11.dp)) {
                                     if (isAi) Text("QUANTUM AI", color = muted, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                                     AndroidView(
-                                        modifier = Modifier.fillMaxWidth().wrapContentHeight(),
+                                        modifier = Modifier.fillMaxWidth().wrapContentHeight().testTag("chat_message_${item.text}"),
                                         factory = { viewContext ->
                                             TextView(viewContext).apply {
                                                 setTextColor(android.graphics.Color.WHITE)
