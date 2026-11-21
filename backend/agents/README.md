@@ -21,6 +21,8 @@ From the `backend/` directory:
 node --test agents/agent-engine.test.js
 ```
 
+The isolated contract suite has been executed by GitHub Actions: 11 tests passed, 0 failed. See [Agent Engine CI](https://github.com/egalego-sudo/Quantum-AI/actions/runs/44891336403). This is not evidence of end-to-end autonomous behavior.
+
 ## Security boundaries
 
 - No arbitrary shell execution, dynamic code evaluation, unrestricted file access or general-purpose URL fetching is exposed.
@@ -32,12 +34,11 @@ node --test agents/agent-engine.test.js
 
 ## Not yet integrated / not verified
 
-This is an isolated foundation, not yet wired to the Android Action Core, Groq model planning, a persistent database, external app connectors or a production API route. The test file is committed but has not yet been executed in a repository runtime in this work session. No claim is made that autonomous multi-agent operation is complete.
+This is an isolated foundation, not yet wired to the Android Action Core, model-backed planning, a persistent database, external app connectors or a production API route. The 11 passing tests cover this module's contract behavior only. Autonomous multi-agent operation is not complete.
 
 Next integration stages:
-1. Run backend tests and fix any failures.
-2. Add a schema-validated, authenticated agent-plan API route.
-3. Connect model-produced plans only after deterministic schema validation.
-4. Add durable, opt-in memory with retention and deletion controls.
-5. Add app-side plan preview, progress display and confirmation gates.
-6. Add CI, security, load and Android integration tests.
+1. Add a schema-validated, authenticated agent-plan API route.
+2. Connect model-produced plans only after deterministic schema validation.
+3. Add durable, opt-in memory with retention and deletion controls.
+4. Add app-side plan preview, progress display and confirmation gates.
+5. Add CI, security, load and Android integration tests.
