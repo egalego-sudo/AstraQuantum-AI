@@ -63,16 +63,16 @@ import java.util.Locale
 import io.noties.markwon.Markwon
 import io.noties.markwon.ext.tables.TablePlugin
 
-// QUANTUM AI ChatGPT-inspired neutral charcoal palette.
-private val ink = Color(0xFF212121)
-private val charcoal = Color(0xFF2F2F2F)
-private val graphite = Color(0xFF3A3A3A)
-private val paper = Color(0xFF212121)
-private val white = Color(0xFFECECEC)
-private val muted = Color(0xFFB4B4B4)
-private val line = Color(0xFF454545)
-private val violet = Color(0xFF8E8EA0)
-private val mint = Color(0xFFD6D6D6)
+// QUANTUM AI — Emerald Intelligence theme palette.
+private val ink = Color(0xFF06140F)
+private val charcoal = Color(0xFF0B2118)
+private val graphite = Color(0xFF123526)
+private val paper = Color(0xFF071B14)
+private val white = Color(0xFFF0FFF6)
+private val muted = Color(0xFFA8C7B6)
+private val line = Color(0xFF244B38)
+private val violet = Color(0xFF39D98A)
+private val mint = Color(0xFF39D98A)
 private const val TRUSTED_BACKEND_URL = "https://astraquantum-ai.onrender.com"
 
 class MainActivity : FragmentActivity() {
@@ -169,7 +169,7 @@ class MainActivity : FragmentActivity() {
             .build()
         setContent {
             MaterialTheme(colorScheme = darkColorScheme(
-                primary = white, onPrimary = ink, secondary = violet,
+                primary = mint, onPrimary = ink, secondary = violet,
                 background = ink, surface = charcoal, onSurface = white
             )) {
                 if (deviceUnlocked) AstraApp(
