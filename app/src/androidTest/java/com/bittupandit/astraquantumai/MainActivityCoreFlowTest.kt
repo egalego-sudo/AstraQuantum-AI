@@ -1,10 +1,8 @@
 package com.bittupandit.astraquantumai
 
-import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.isToggleable
-import androidx.compose.ui.test.onAllNodes
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
@@ -63,19 +61,19 @@ class MainActivityCoreFlowTest {
         }
 
         composeRule.onNodeWithText("AI Chat", useUnmergedTree = true).performClick()
-        composeRule.onNodeWithText("AI CONVERSATION").assertExists()
-        composeRule.onNodeWithText("QUANTUM-AI chat restore smoke check", substring = true).assertExists()
+        composeRule.onNodeWithText("AI CONVERSATION").fetchSemanticsNode()
+        composeRule.onNodeWithText("QUANTUM-AI chat restore smoke check", substring = true).fetchSemanticsNode()
 
         repeat(4) { composeRule.onNodeWithTag("main_navigation").performTouchInput { swipeLeft() } }
         composeRule.onNodeWithText("Memory", useUnmergedTree = true).performClick()
-        composeRule.onNodeWithText("ADVANCED PRIVATE MEMORY").assertExists()
+        composeRule.onNodeWithText("ADVANCED PRIVATE MEMORY").fetchSemanticsNode()
 
         // Personal context must be opt-in, not silently enabled by default.
         composeRule.onAllNodes(isToggleable()).onFirst().assertIsOff()
 
         composeRule.onAllNodes(hasSetTextAction()).onFirst().performTextInput("QUANTUM-AI emulator persistence check")
         composeRule.onNodeWithText("Memory में सेव करें").performClick()
-        composeRule.onNodeWithText("QUANTUM-AI emulator persistence check", substring = true).assertExists()
+        composeRule.onNodeWithText("QUANTUM-AI emulator persistence check", substring = true).fetchSemanticsNode()
 
         composeRule.activityRule.scenario.recreate()
         composeRule.waitUntil(timeoutMillis = 15_000) {
@@ -83,18 +81,18 @@ class MainActivityCoreFlowTest {
         }
         repeat(4) { composeRule.onNodeWithTag("main_navigation").performTouchInput { swipeRight() } }
         composeRule.onNodeWithText("AI Chat", useUnmergedTree = true).performClick()
-        composeRule.onNodeWithText("QUANTUM-AI chat restore smoke check", substring = true).assertExists()
+        composeRule.onNodeWithText("QUANTUM-AI chat restore smoke check", substring = true).fetchSemanticsNode()
         repeat(4) { composeRule.onNodeWithTag("main_navigation").performTouchInput { swipeLeft() } }
         composeRule.onNodeWithText("Memory", useUnmergedTree = true).performClick()
-        composeRule.onNodeWithText("ADVANCED PRIVATE MEMORY").assertExists()
-        composeRule.onNodeWithText("QUANTUM-AI emulator persistence check", substring = true).assertExists()
+        composeRule.onNodeWithText("ADVANCED PRIVATE MEMORY").fetchSemanticsNode()
+        composeRule.onNodeWithText("QUANTUM-AI emulator persistence check", substring = true).fetchSemanticsNode()
 
         // Project notes are private local data and should survive Activity recreation too.
         composeRule.onNodeWithText("Projects", useUnmergedTree = true).performClick()
-        composeRule.onNodeWithText("PROJECT WORKSPACE").assertExists()
+        composeRule.onNodeWithText("PROJECT WORKSPACE").fetchSemanticsNode()
         composeRule.onAllNodes(hasSetTextAction()).onFirst().performTextInput("QUANTUM-AI project persistence check")
         composeRule.onNodeWithText("प्रोजेक्ट / नोट सेव करें").performClick()
-        composeRule.onNodeWithText("QUANTUM-AI project persistence check", substring = true).assertExists()
+        composeRule.onNodeWithText("QUANTUM-AI project persistence check", substring = true).fetchSemanticsNode()
 
         composeRule.activityRule.scenario.recreate()
         composeRule.waitUntil(timeoutMillis = 15_000) {
@@ -102,11 +100,11 @@ class MainActivityCoreFlowTest {
         }
         repeat(4) { composeRule.onNodeWithTag("main_navigation").performTouchInput { swipeLeft() } }
         composeRule.onNodeWithText("Projects", useUnmergedTree = true).performClick()
-        composeRule.onNodeWithText("QUANTUM-AI project persistence check", substring = true).assertExists()
+        composeRule.onNodeWithText("QUANTUM-AI project persistence check", substring = true).fetchSemanticsNode()
 
         composeRule.onNodeWithText("Settings", useUnmergedTree = true).performClick()
-        composeRule.onNodeWithText("CONNECTION & SECURITY SETTINGS").assertExists()
-        composeRule.onNodeWithText("App Lock").assertExists()
+        composeRule.onNodeWithText("CONNECTION & SECURITY SETTINGS").fetchSemanticsNode()
+        composeRule.onNodeWithText("App Lock").fetchSemanticsNode()
 
         // Leave the emulator's app data clean for any following tests.
         composeRule.onNodeWithText("Projects", useUnmergedTree = true).performClick()
